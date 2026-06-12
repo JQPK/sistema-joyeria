@@ -1,4 +1,4 @@
-const API_URL = '/api';
+const API_URL = 'https://joyeria-marine-server.onrender.com/api';
 
 function getHeaders() {
   const token = localStorage.getItem('token');

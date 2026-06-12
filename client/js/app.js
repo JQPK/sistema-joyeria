@@ -109,7 +109,7 @@ window.app = {
 
   connectRealtime() {
     if (typeof io !== 'undefined') {
-      this.socket = io(window.location.origin);
+      this.socket = io('https://joyeria-marine-server.onrender.com');
       
       this.socket.on('connect', () => {
         const badge = document.getElementById('connection-status');
