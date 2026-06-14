@@ -178,11 +178,20 @@ router.post('/', async (req, res, next) => {
     // 4. Insert items and update stock
     for (const item of data.items) {
       await client.query(`
-        INSERT INTO detalle_ventas (venta_id, producto_id, cantidad, precio_unitario, descuento_item, subtotal_item)
-        VALUES ($1, $2, $3, $4, $5, $6)
-      `, [ventaId, item.producto_id, item.cantidad, item.precio_unitario, item.descuento_item || 0, item.subtotal_item]);
+        INSERT INTO detalle_ventas (venta_id, producto_id, variante_id, cantidad, precio_unitario, descuento_item, subtotal_item)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `, [ventaId, item.producto_id, item.variante_id || null, item.cantidad, item.precio_unitario, item.descuento_item || 0, item.subtotal_item]);
       
-      await client.query('UPDATE productos SET stock_actual = stock_actual - $1 WHERE id = $2', [item.cantidad, item.producto_id]);
+      if (item.variante_id) {
+        await client.query('UPDATE producto_variantes SET stock_actual = stock_actual - $1 WHERE id = $2', [item.cantidad, item.variante_id]);
+        await client.query(`
+          UPDATE productos 
+          SET stock_actual = (SELECT COALESCE(SUM(stock_actual), 0) FROM producto_variantes WHERE producto_id = $1 AND activo = true)
+          WHERE id = $1
+        `, [item.producto_id]);
+      } else {
+        await client.query('UPDATE productos SET stock_actual = stock_actual - $1 WHERE id = $2', [item.cantidad, item.producto_id]);
+      }
     }
 
     // 5. Register in caja
@@ -222,9 +231,18 @@ router.post('/:id/anular', async (req, res, next) => {
     if (saleRes.rows[0].estado === 'anulada') throw new Error('La venta ya fue anulada');
 
     // Restore stock
-    const itemsRes = await client.query('SELECT producto_id, cantidad FROM detalle_ventas WHERE venta_id = $1', [id]);
+    const itemsRes = await client.query('SELECT producto_id, variante_id, cantidad FROM detalle_ventas WHERE venta_id = $1', [id]);
     for (const item of itemsRes.rows) {
-      await client.query('UPDATE productos SET stock_actual = stock_actual + $1 WHERE id = $2', [item.cantidad, item.producto_id]);
+      if (item.variante_id) {
+        await client.query('UPDATE producto_variantes SET stock_actual = stock_actual + $1 WHERE id = $2', [item.cantidad, item.variante_id]);
+        await client.query(`
+          UPDATE productos 
+          SET stock_actual = (SELECT COALESCE(SUM(stock_actual), 0) FROM producto_variantes WHERE producto_id = $1 AND activo = true)
+          WHERE id = $1
+        `, [item.producto_id]);
+      } else {
+        await client.query('UPDATE productos SET stock_actual = stock_actual + $1 WHERE id = $2', [item.cantidad, item.producto_id]);
+      }
     }
 
     // Mark as voided

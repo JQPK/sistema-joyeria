@@ -70,6 +70,8 @@
     "sql.js": "^1.14.1"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
     "electron-builder": "^25.1.8",
     "fast-check": "^3.22.0",
     "jest": "^29.7.0"

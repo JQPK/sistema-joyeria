@@ -120,6 +120,21 @@ export default {
           </div>
         </div>
       </div>
+
+      <!-- Modal Variantes -->
+      <div id="modal-variantes" class="modal-overlay">
+        <div class="modal" style="max-width: 500px">
+          <div class="modal-header">
+            <h3 class="text-gold" id="pos-variant-title">Seleccionar Variante</h3>
+            <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-variantes')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div id="pos-variants-list" class="flex flex-col gap-2">
+              <div class="text-center text-muted">Cargando variantes...</div>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
 
     this.bindEvents();
@@ -181,17 +196,26 @@ export default {
     });
   },
 
-  handleScannedCode(code) {
-    // Find product by code (SKU)
-    const product = this.products.find(p => p.codigo && p.codigo.toLowerCase() === code.toLowerCase());
-    if (product) {
-      this.addToCart(product.id);
-      app.showToast(`Agregado: ${product.nombre}`, 'success');
-    } else {
-      // Try search
-      document.getElementById('pos-search').value = code;
-      this.filterProducts(code);
-      app.showToast(`Código "${code}" no encontrado como producto`, 'warning');
+  async handleScannedCode(code) {
+    document.getElementById('pos-search').value = '';
+    this.filterProducts('');
+    
+    try {
+      const res = await api.get(`/productos/sku/${code}`);
+      if (res.success) {
+        if (res.type === 'product' && res.data.tiene_variantes) {
+          // It's a base product that has variants, open variant selector
+          this.addToCart(res.data.id);
+        } else {
+          // Direct add (either simple product or specific variant)
+          this.addSpecificItemToCart(res.data, res.type);
+          app.showToast(`Agregado: ${res.data.nombre}`, 'success');
+        }
+      } else {
+        app.showToast(`Código "${code}" no encontrado`, 'warning');
+      }
+    } catch (err) {
+      app.showToast(`Código "${code}" no encontrado`, 'warning');
     }
   },
 
@@ -207,6 +231,7 @@ export default {
       if (prodRes.success) this.products = prodRes.data;
       if (cliRes.success) {
         const select = document.getElementById('checkout-cliente');
+        select.innerHTML = '<option value="">Cliente General</option>'; // reset
         cliRes.data.forEach(c => {
           select.innerHTML += `<option value="${c.id}">${c.nombre} ${c.dni_ruc ? `(${c.dni_ruc})` : ''}</option>`;
         });
@@ -267,6 +292,7 @@ export default {
     container.innerHTML = filtered.map(p => `
       <div class="product-card" onclick="window.posAddToCart(${p.id})">
         ${p.descuento_porcentaje > 0 ? `<div class="badge badge-danger" style="position:absolute; top:8px; right:8px; z-index:2">-${parseFloat(p.descuento_porcentaje)}%</div>` : ''}
+        ${p.tiene_variantes ? `<div class="badge badge-info" style="position:absolute; top:8px; left:8px; z-index:2">Variantes</div>` : ''}
         <div class="product-img">
           ${p.imagen_path ? `<img src="${p.imagen_path}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">` : 
             `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:40px;height:40px;margin-top:20px;color:var(--text-secondary)"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`}
@@ -278,46 +304,107 @@ export default {
     `).join('');
   },
 
-  addToCart(productId) {
+  async addToCart(productId) {
     const product = this.products.find(p => p.id === productId);
     if (!product) return;
 
-    const existing = this.cart.find(item => item.producto_id === productId);
+    if (product.tiene_variantes) {
+      // Show variants modal
+      document.getElementById('pos-variant-title').textContent = product.nombre;
+      const list = document.getElementById('pos-variants-list');
+      list.innerHTML = '<div class="text-center text-muted">Cargando...</div>';
+      app.openModal('modal-variantes');
+
+      try {
+        const res = await api.get(`/productos/${productId}`);
+        if (res.success && res.data.variantes) {
+          const vars = res.data.variantes.filter(v => v.stock_actual > 0);
+          if (vars.length === 0) {
+            list.innerHTML = '<div class="text-center text-danger">No hay stock disponible para ninguna variante.</div>';
+            return;
+          }
+          list.innerHTML = vars.map(v => {
+            const price = parseFloat(v.precio_venta || product.precio_venta).toFixed(2);
+            return `
+              <div class="card card-body flex justify-between items-center cursor-pointer hover:bg-secondary" 
+                   style="padding:0.75rem; border:1px solid var(--bg-secondary)"
+                   onclick="window.posSelectVariant(${product.id}, ${v.id}, '${v.nombre_variante.replace(/'/g, "\\'")}', ${price}, ${v.stock_actual})">
+                <div>
+                  <div class="fw-bold">${v.nombre_variante}</div>
+                  <div class="text-muted" style="font-size:0.8rem">SKU: ${v.sku} | Stock: ${v.stock_actual}</div>
+                </div>
+                <div class="fw-bold text-gold">S/ ${price}</div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        list.innerHTML = '<div class="text-center text-danger">Error cargando variantes</div>';
+      }
+      return;
+    }
+
+    // Direct add (no variants)
+    this.addSpecificItemToCart(product, 'product');
+  },
+
+  addSpecificItemToCart(item, type) {
+    // item is either a Product from this.products or a Variant structure
+    const cartId = type === 'variant' ? `VAR-${item.variant_id}` : `PROD-${item.id}`;
+    
+    const existing = this.cart.find(i => i.cart_id === cartId);
     
     if (existing) {
-      if (existing.cantidad < product.stock_actual) {
+      if (existing.cantidad < item.stock_actual) {
         existing.cantidad++;
-        existing.subtotal_item = existing.cantidad * existing.precio_unitario;
+        existing.subtotal_item = existing.cantidad * (existing.precio_unitario - existing.descuento_item);
       } else {
         app.showToast('Stock máximo alcanzado', 'warning');
       }
     } else {
-      const precio = parseFloat(product.precio_venta);
-      const desc = parseFloat(product.descuento_porcentaje || 0);
+      const precio = parseFloat(item.precio_venta);
+      const desc = parseFloat(item.descuento_porcentaje || 0);
       const descuentoItem = desc > 0 ? (precio * desc / 100) : 0;
       const precioFinal = precio - descuentoItem;
       
       this.cart.push({
-        producto_id: product.id,
-        nombre: product.nombre,
+        cart_id: cartId,
+        producto_id: item.id, // always base product ID for the DB
+        variante_id: type === 'variant' ? item.variant_id : null,
+        nombre: item.nombre,
         cantidad: 1,
         precio_unitario: precio,
         descuento_item: descuentoItem,
         subtotal_item: precioFinal,
-        stock_max: product.stock_actual
+        stock_max: item.stock_actual
       });
     }
     
     this.renderCart();
   },
 
-  updateQuantity(productId, delta) {
-    const item = this.cart.find(i => i.producto_id === productId);
+  selectVariant(productId, variantId, variantName, price, stock) {
+    const product = this.products.find(p => p.id === productId);
+    this.addSpecificItemToCart({
+      id: productId,
+      variant_id: variantId,
+      nombre: `${product.nombre} - ${variantName}`,
+      precio_venta: price,
+      stock_actual: stock,
+      descuento_porcentaje: product.descuento_porcentaje
+    }, 'variant');
+    
+    app.closeModal('modal-variantes');
+    app.showToast(`Agregado: ${variantName}`, 'success');
+  },
+
+  updateQuantity(cartId, delta) {
+    const item = this.cart.find(i => i.cart_id === cartId);
     if (!item) return;
 
     item.cantidad += delta;
     if (item.cantidad <= 0) {
-      this.cart = this.cart.filter(i => i.producto_id !== productId);
+      this.cart = this.cart.filter(i => i.cart_id !== cartId);
     } else if (item.cantidad > item.stock_max) {
       item.cantidad = item.stock_max;
       app.showToast('Stock máximo alcanzado', 'warning');
@@ -368,16 +455,16 @@ export default {
     container.innerHTML = this.cart.map(item => `
       <div class="cart-item">
         <div class="cart-item-info">
-          <div class="cart-item-title">${item.nombre}</div>
+          <div class="cart-item-title" title="${item.nombre}">${item.nombre}</div>
           <div class="text-muted" style="font-size: 0.8rem">S/ ${item.precio_unitario.toFixed(2)} c/u</div>
           ${item.descuento_item > 0 ? `<div class="badge badge-danger mt-1">Desc: S/ ${item.descuento_item.toFixed(2)}</div>` : ''}
         </div>
         <div class="flex-col items-center gap-2">
           <div class="cart-item-price">S/ ${item.subtotal_item.toFixed(2)}</div>
           <div class="cart-controls">
-            <button onclick="window.posUpdateQty(${item.producto_id}, -1)">-</button>
+            <button onclick="window.posUpdateQty('${item.cart_id}', -1)">-</button>
             <span style="min-width:20px;text-align:center">${item.cantidad}</span>
-            <button onclick="window.posUpdateQty(${item.producto_id}, 1)">+</button>
+            <button onclick="window.posUpdateQty('${item.cart_id}', 1)">+</button>
           </div>
         </div>
       </div>
@@ -395,6 +482,8 @@ export default {
     btn.textContent = 'Procesando...';
 
     try {
+      // The API endpoint needs to support variante_id if applicable, but we mapped it back to producto_id
+      // Let's pass the cart items directly.
       const payload = {
         cliente_id: document.getElementById('checkout-cliente').value || null,
         tipo_comprobante: document.getElementById('checkout-tipo').value,
@@ -402,7 +491,14 @@ export default {
         subtotal: this.getSubtotal(),
         descuento: this.getDescuentoTotal(),
         total: this.getTotal(),
-        items: this.cart
+        items: this.cart.map(i => ({
+          producto_id: i.producto_id,
+          variante_id: i.variante_id || null,
+          cantidad: i.cantidad,
+          precio_unitario: i.precio_unitario,
+          descuento_item: i.descuento_item,
+          subtotal_item: i.subtotal_item
+        }))
       };
 
       const res = await api.post('/ventas', payload);
@@ -437,8 +533,8 @@ export default {
   },
 
   load() {
-    // Attach globals for inline onclick handlers (temporary solution for Vanilla JS without bundler)
     window.posAddToCart = this.addToCart.bind(this);
+    window.posSelectVariant = this.selectVariant.bind(this);
     window.posUpdateQty = this.updateQuantity.bind(this);
   }
 };

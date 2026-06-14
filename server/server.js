@@ -32,18 +32,33 @@ io.on('connection', (socket) => {
 app.use(express.static(path.join(__dirname, '../client')));
 
 // Mount routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/productos', require('./routes/productos'));
-app.use('/api/categorias', require('./routes/categorias'));
-app.use('/api/materiales', require('./routes/materiales'));
-app.use('/api/ventas', require('./routes/ventas'));
-app.use('/api/clientes', require('./routes/clientes'));
-app.use('/api/usuarios', require('./routes/usuarios'));
-app.use('/api/inventario', require('./routes/inventario'));
-app.use('/api/caja', require('./routes/caja'));
-app.use('/api/config', require('./routes/config'));
-app.use('/api/actividad', require('./routes/actividad'));
-app.use('/api/licencias', require('./routes/licencias'));
+const authRoutes = require('./routes/auth');
+const productosRoutes = require('./routes/productos');
+const categoriasRoutes = require('./routes/categorias');
+const materialesRoutes = require('./routes/materiales');
+const ventasRoutes = require('./routes/ventas');
+const clientesRoutes = require('./routes/clientes');
+const usuariosRoutes = require('./routes/usuarios');
+const inventarioRoutes = require('./routes/inventario');
+const cajaRoutes = require('./routes/caja');
+const configRoutes = require('./routes/config');
+const actividadRoutes = require('./routes/actividad');
+const licenciasRoutes = require('./routes/licencias');
+const variantesRoutes = require('./routes/variantes');
+
+app.use('/api/auth', authRoutes);
+app.use('/api/productos', productosRoutes);
+app.use('/api/categorias', categoriasRoutes);
+app.use('/api/materiales', materialesRoutes);
+app.use('/api/ventas', ventasRoutes);
+app.use('/api/clientes', clientesRoutes);
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/inventario', inventarioRoutes);
+app.use('/api/caja', cajaRoutes);
+app.use('/api/config', configRoutes);
+app.use('/api/actividad', actividadRoutes);
+app.use('/api/licencias', licenciasRoutes);
+app.use('/api/variantes', variantesRoutes);
 
 // Handle SPA routing
 app.get('*', (req, res) => {

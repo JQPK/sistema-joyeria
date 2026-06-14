@@ -10,12 +10,23 @@ export default {
     this.container = container;
     this.container.innerHTML = `
       <div class="card">
-        <div class="card-header flex justify-between items-center">
-          <h2 class="text-gold">Productos</h2>
-          <button class="btn btn-primary" onclick="window.prodOpenModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Nuevo Producto
-          </button>
+        <div class="card-header flex justify-between items-center flex-wrap gap-2">
+          <h2 class="text-gold">Inventario de Productos</h2>
+          <div class="flex gap-2">
+            <button class="btn btn-secondary" onclick="window.prodDownloadTemplate()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Plantilla
+            </button>
+            <label class="btn btn-secondary cursor-pointer" style="margin: 0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Importar Excel
+              <input type="file" id="prod-import-file" accept=".xlsx, .xls" style="display:none" onchange="window.prodImportExcel(event)">
+            </label>
+            <button class="btn btn-primary" onclick="window.prodOpenModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Nuevo
+            </button>
+          </div>
         </div>
         
         <div class="card-body">
@@ -35,7 +46,7 @@ export default {
             <table class="data-table" id="prod-table">
               <thead>
                 <tr>
-                  <th>Código</th>
+                  <th>Código / Variantes</th>
                   <th>Nombre</th>
                   <th>Categoría</th>
                   <th>Stock</th>
@@ -53,7 +64,7 @@ export default {
 
       <!-- Modal Crear/Editar -->
       <div id="modal-producto" class="modal-overlay">
-        <div class="modal">
+        <div class="modal" style="max-width: 800px">
           <div class="modal-header">
             <h3 class="text-gold" id="prod-modal-title">Nuevo Producto</h3>
             <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-producto')">✕</button>
@@ -103,11 +114,54 @@ export default {
                 <label class="form-label">Descripción</label>
                 <textarea id="prod-desc" class="form-control" rows="2"></textarea>
               </div>
+
+              <div class="mt-4 pt-4 border-t" id="prod-variantes-section" style="display:none; border-top: 1px solid var(--bg-secondary)">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="text-gold">Variantes del Producto</h4>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.prodAddVariant()">+ Agregar Variante</button>
+                </div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>SKU</th>
+                        <th>Variante</th>
+                        <th>Stock</th>
+                        <th>Precio (Opcional)</th>
+                        <th>Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody id="prod-variantes-tbody">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </form>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="app.closeModal('modal-producto')">Cancelar</button>
             <button class="btn btn-primary" onclick="window.prodSave()">Guardar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Generar Código de Barras -->
+      <div id="modal-barcode" class="modal-overlay">
+        <div class="modal" style="max-width: 400px">
+          <div class="modal-header">
+            <h3 class="text-gold">Imprimir Etiqueta</h3>
+            <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-barcode')">✕</button>
+          </div>
+          <div class="modal-body text-center" id="barcode-print-area">
+            <div style="padding: 1rem; background: white; border-radius: 8px; display: inline-block; margin-top: 1rem;">
+              <svg id="barcode-svg"></svg>
+            </div>
+            <p class="text-muted mt-2" id="barcode-prod-name"></p>
+            <p class="text-gold fw-bold" id="barcode-prod-price"></p>
+          </div>
+          <div class="modal-footer flex-col gap-2">
+            <button class="btn btn-primary w-full" onclick="window.prodPrintBarcode()">🖨️ Imprimir</button>
           </div>
         </div>
       </div>
@@ -140,15 +194,19 @@ export default {
       if (catRes.success) {
         this.categorias = catRes.data;
         const opts = this.categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
-        document.getElementById('prod-filter-cat').innerHTML += opts;
-        document.getElementById('prod-categoria').innerHTML = '<option value="">-- Ninguna --</option>' + opts;
+        const filterCat = document.getElementById('prod-filter-cat');
+        const formCat = document.getElementById('prod-categoria');
+        if (filterCat.options.length === 1) filterCat.innerHTML += opts;
+        formCat.innerHTML = '<option value="">-- Ninguna --</option>' + opts;
       }
 
       if (matRes.success) {
         this.materiales = matRes.data;
         const opts = this.materiales.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
-        document.getElementById('prod-filter-mat').innerHTML += opts;
-        document.getElementById('prod-material').innerHTML = '<option value="">-- Ninguno --</option>' + opts;
+        const filterMat = document.getElementById('prod-filter-mat');
+        const formMat = document.getElementById('prod-material');
+        if (filterMat.options.length === 1) filterMat.innerHTML += opts;
+        formMat.innerHTML = '<option value="">-- Ninguno --</option>' + opts;
       }
 
       this.renderTable(this.productos);
@@ -179,47 +237,100 @@ export default {
       return;
     }
 
-    tbody.innerHTML = data.map(p => `
-      <tr>
-        <td class="text-muted">${p.codigo || '-'}</td>
-        <td class="fw-bold">${p.nombre}</td>
-        <td>${p.categoria_nombre || '-'}</td>
-        <td>
-          <span class="badge ${p.stock_actual <= p.stock_minimo ? 'badge-danger' : 'badge-success'}">
-            ${p.stock_actual}
-          </span>
-        </td>
-        <td class="fw-bold text-gold">S/ ${parseFloat(p.precio_venta).toFixed(2)}</td>
-        <td class="text-right">
-          <button class="btn-icon btn-secondary" onclick="window.prodEdit(${p.id})" title="Editar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-          </button>
-          <button class="btn-icon btn-danger" onclick="window.prodDelete(${p.id})" title="Eliminar" style="margin-left:0.5rem">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    tbody.innerHTML = data.map(p => {
+      const isVariants = p.tiene_variantes;
+      const codeHtml = isVariants 
+        ? `<span class="badge badge-info flex items-center gap-1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg> Variantes</span>` 
+        : (p.codigo || '-');
+      
+      const priceStr = parseFloat(p.precio_venta).toFixed(2);
+      
+      return `
+        <tr>
+          <td class="text-muted">${codeHtml}</td>
+          <td class="fw-bold">${p.nombre}</td>
+          <td>${p.categoria_nombre || '-'}</td>
+          <td>
+            <span class="badge ${p.stock_actual <= p.stock_minimo ? 'badge-danger' : 'badge-success'}">
+              ${p.stock_actual}
+            </span>
+          </td>
+          <td class="fw-bold text-gold">S/ ${priceStr}</td>
+          <td class="text-right flex justify-end gap-2">
+            ${!isVariants ? `
+            <button class="btn-icon btn-secondary" onclick="window.prodShowBarcode('${p.codigo || ''}', '${p.nombre.replace(/'/g, "\\'")}', ${p.precio_venta})" title="Imprimir Etiqueta">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M3 12h18M3 19h18"></path></svg>
+            </button>
+            ` : ''}
+            <button class="btn-icon btn-secondary" onclick="window.prodEdit(${p.id})" title="Editar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            </button>
+            <button class="btn-icon btn-danger" onclick="window.prodDelete(${p.id})" title="Eliminar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
   },
 
-  openModal(id = null) {
+  async openModal(id = null) {
     const isEdit = id !== null;
     document.getElementById('prod-modal-title').textContent = isEdit ? 'Editar Producto' : 'Nuevo Producto';
+    document.getElementById('prod-variantes-section').style.display = isEdit ? 'block' : 'none';
+    document.getElementById('prod-variantes-tbody').innerHTML = '';
     
     if (isEdit) {
-      const p = this.productos.find(x => x.id === id);
-      document.getElementById('prod-id').value = p.id;
-      document.getElementById('prod-codigo').value = p.codigo || '';
-      document.getElementById('prod-nombre').value = p.nombre;
-      document.getElementById('prod-categoria').value = p.categoria_id || '';
-      document.getElementById('prod-material').value = p.material_id || '';
-      document.getElementById('prod-precio').value = parseFloat(p.precio_venta).toFixed(2);
-      document.getElementById('prod-stock').value = p.stock_actual;
-      document.getElementById('prod-minimo').value = p.stock_minimo;
-      document.getElementById('prod-desc').value = p.descripcion || '';
+      try {
+        const res = await api.get(`/productos/${id}`);
+        const p = res.data;
+        document.getElementById('prod-id').value = p.id;
+        document.getElementById('prod-codigo').value = p.codigo || '';
+        document.getElementById('prod-nombre').value = p.nombre;
+        document.getElementById('prod-categoria').value = p.categoria_id || '';
+        document.getElementById('prod-material').value = p.material_id || '';
+        document.getElementById('prod-precio').value = parseFloat(p.precio_venta).toFixed(2);
+        document.getElementById('prod-stock').value = p.stock_actual;
+        document.getElementById('prod-minimo').value = p.stock_minimo;
+        document.getElementById('prod-desc').value = p.descripcion || '';
+        
+        // Block fields if it has variants
+        if (p.tiene_variantes) {
+          document.getElementById('prod-precio').disabled = true;
+          document.getElementById('prod-stock').disabled = true;
+          document.getElementById('prod-codigo').disabled = true;
+          
+          // Render variants
+          const tbody = document.getElementById('prod-variantes-tbody');
+          if (p.variantes) {
+            tbody.innerHTML = p.variantes.map(v => `
+              <tr>
+                <td>${v.sku}</td>
+                <td>${v.nombre_variante}</td>
+                <td>${v.stock_actual}</td>
+                <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
+                <td>
+                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodShowBarcode('${v.sku}', '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.precio_venta || p.precio_venta})" title="Imprimir">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M3 5h18M3 12h18M3 19h18"></path></svg>
+                  </button>
+                </td>
+              </tr>
+            `).join('');
+          }
+        } else {
+          document.getElementById('prod-precio').disabled = false;
+          document.getElementById('prod-stock').disabled = false;
+          document.getElementById('prod-codigo').disabled = false;
+        }
+      } catch (err) {
+        app.showToast('Error cargando producto', 'error');
+      }
     } else {
       document.getElementById('prod-form').reset();
       document.getElementById('prod-id').value = '';
+      document.getElementById('prod-precio').disabled = false;
+      document.getElementById('prod-stock').disabled = false;
+      document.getElementById('prod-codigo').disabled = false;
     }
 
     app.openModal('modal-producto');
@@ -270,10 +381,90 @@ export default {
     }
   },
 
+  downloadTemplate() {
+    window.location.href = '/plantillas/inventario_template.xlsx';
+  },
+
+  async importExcel(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    app.showToast('Importando...', 'info');
+    try {
+      const res = await api.post('/productos/import-excel', formData);
+      app.showToast(res.message || 'Importación exitosa', 'success');
+      this.loadData();
+    } catch (err) {
+      app.showToast(err.message || 'Error en importación', 'error');
+    }
+    e.target.value = ''; // reset
+  },
+
+  showBarcode(codigo, nombre, precio) {
+    if (!codigo) return app.showToast('Producto sin código', 'warning');
+    
+    document.getElementById('barcode-prod-name').textContent = nombre;
+    document.getElementById('barcode-prod-price').textContent = `S/ ${parseFloat(precio).toFixed(2)}`;
+    
+    // Generate barcode SVG
+    try {
+      JsBarcode("#barcode-svg", codigo, {
+        format: "CODE128",
+        lineColor: "#000",
+        width: 2,
+        height: 60,
+        displayValue: true
+      });
+      app.openModal('modal-barcode');
+    } catch (err) {
+      console.error(err);
+      app.showToast('Error generando código de barras', 'error');
+    }
+  },
+
+  printBarcode() {
+    const printArea = document.getElementById('barcode-print-area').innerHTML;
+    const printWindow = window.open('', '_blank', 'width=400,height=400');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Imprimir Etiqueta</title>
+          <style>
+            body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+            svg { max-width: 100%; height: auto; }
+            .price { font-size: 20px; font-weight: bold; margin-top: 10px; }
+            @media print {
+              @page { margin: 0; }
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          ${printArea}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  },
+
   load() {
     window.prodOpenModal = this.openModal.bind(this);
     window.prodSave = this.save.bind(this);
     window.prodEdit = this.openModal.bind(this);
     window.prodDelete = this.deleteProd.bind(this);
+    window.prodDownloadTemplate = this.downloadTemplate.bind(this);
+    window.prodImportExcel = this.importExcel.bind(this);
+    window.prodShowBarcode = this.showBarcode.bind(this);
+    window.prodPrintBarcode = this.printBarcode.bind(this);
+    // Temporary disabled add variant from UI, handled via Excel primarily for now
+    window.prodAddVariant = () => app.showToast('Para agregar variantes, usa la plantilla Excel por ahora.', 'info');
   }
 };
