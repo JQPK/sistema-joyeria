@@ -230,12 +230,33 @@ window.app = {
 
   openModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.classList.add('active');
+    if (!modal) return;
+
+    // Move modal to body so it escapes any overflow:hidden/auto ancestors
+    if (modal.parentElement !== document.body) {
+      modal._originalParent = modal.parentElement;
+      document.body.appendChild(modal);
+    }
+
+    // Use rAF to ensure the DOM move is rendered before adding the class
+    requestAnimationFrame(() => {
+      modal.classList.add('active');
+    });
   },
 
   closeModal(id) {
     const modal = document.getElementById(id);
-    if (modal) modal.classList.remove('active');
+    if (!modal) return;
+
+    modal.classList.remove('active');
+
+    // Return modal to its original parent after animation ends
+    setTimeout(() => {
+      if (modal._originalParent && document.body.contains(modal._originalParent)) {
+        modal._originalParent.appendChild(modal);
+        delete modal._originalParent;
+      }
+    }, 350);
 
     // If closing the scanner modal, stop the camera
     if (id === 'modal-scanner') {
