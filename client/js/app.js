@@ -236,6 +236,11 @@ window.app = {
   closeModal(id) {
     const modal = document.getElementById(id);
     if (modal) modal.classList.remove('active');
+
+    // If closing the scanner modal, stop the camera
+    if (id === 'modal-scanner') {
+      import('./scanner.js').then(m => m.scanner.close()).catch(() => {});
+    }
   }
 };
 

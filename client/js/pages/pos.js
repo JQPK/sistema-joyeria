@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { scanner } from '../scanner.js';
 
 export default {
   container: null,
@@ -135,6 +136,21 @@ export default {
       }, 300);
     });
 
+    // Camera scanner button
+    const scanBtn = document.getElementById('btn-pos-scan');
+    if (scanBtn) {
+      scanBtn.addEventListener('click', () => {
+        scanner.open((code) => {
+          this.handleScannedCode(code);
+        });
+      });
+    }
+
+    // Hardware barcode gun detection on search input
+    scanner.initGunDetection(searchInput, (code) => {
+      this.handleScannedCode(code);
+    });
+
     // Mobile cart toggle
     const toggleBtn = document.getElementById('btn-toggle-cart');
     const closeBtn = document.getElementById('btn-close-cart');
@@ -163,6 +179,20 @@ export default {
     document.getElementById('btn-confirm-checkout').addEventListener('click', async () => {
       await this.processSale();
     });
+  },
+
+  handleScannedCode(code) {
+    // Find product by code (SKU)
+    const product = this.products.find(p => p.codigo && p.codigo.toLowerCase() === code.toLowerCase());
+    if (product) {
+      this.addToCart(product.id);
+      app.showToast(`Agregado: ${product.nombre}`, 'success');
+    } else {
+      // Try search
+      document.getElementById('pos-search').value = code;
+      this.filterProducts(code);
+      app.showToast(`Código "${code}" no encontrado como producto`, 'warning');
+    }
   },
 
   async loadData() {

@@ -1,3 +1,7 @@
+/* ==========================================
+   COMPONENTS — Buttons, Cards, Forms, Modals
+   ========================================== */
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -12,6 +16,7 @@
   transition: all var(--transition-normal);
   min-height: var(--touch-target);
   font-family: var(--font-heading);
+  font-size: 0.95rem;
 }
 
 .btn-primary {
@@ -52,6 +57,12 @@
   width: var(--touch-target);
 }
 
+.btn-sm {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  min-height: 36px;
+}
+
 /* Cards */
 .card {
   background: var(--bg-card);
@@ -67,33 +78,36 @@
 }
 
 .card-header {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--bg-secondary);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .card-body {
-  padding: 1.5rem;
+  padding: 1.25rem;
 }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 .stat-card {
-  padding: 1.5rem;
+  padding: 1.25rem;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
   border-radius: 50%;
   background: var(--accent-gold-light);
   color: var(--accent-gold-dark);
@@ -102,30 +116,31 @@
   justify-content: center;
 }
 
-.stat-icon svg { width: 28px; height: 28px; }
+.stat-icon svg { width: 24px; height: 24px; }
 
 /* Forms */
 .form-group {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .form-label {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   font-weight: 500;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .form-control {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 0.85rem;
   border-radius: var(--border-radius-md);
   border: 1px solid var(--bg-tertiary);
   background: var(--bg-primary);
   color: var(--text-primary);
-  min-height: var(--touch-target);
+  min-height: 44px;
   transition: all var(--transition-fast);
+  font-size: 0.95rem;
 }
 
 .form-control:focus {
@@ -151,10 +166,11 @@
 .data-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.9rem;
 }
 
 .data-table th, .data-table td {
-  padding: 1rem;
+  padding: 0.75rem 0.85rem;
   text-align: left;
   border-bottom: 1px solid var(--bg-secondary);
 }
@@ -166,6 +182,9 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .data-table tbody tr {
@@ -179,9 +198,9 @@
 /* Badges */
 .badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
+  padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 
@@ -209,6 +228,7 @@
   white-space: nowrap;
   font-weight: 500;
   transition: all var(--transition-fast);
+  font-size: 0.9rem;
 }
 
 .filter-chip.active {
@@ -216,12 +236,14 @@
   color: white;
 }
 
-/* Modals */
+/* ==========================================
+   MODALS — Centered on ALL devices
+   ========================================== */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(61, 43, 31, 0.4);
-  backdrop-filter: blur(4px);
+  background: rgba(61, 43, 31, 0.5);
+  backdrop-filter: blur(6px);
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -230,6 +252,7 @@
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-normal);
+  overflow-y: auto;
 }
 
 .modal-overlay.active {
@@ -241,13 +264,14 @@
   background: var(--bg-card);
   border-radius: var(--border-radius-md);
   width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
+  max-width: 520px;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
   transform: translateY(20px) scale(0.95);
   transition: all var(--transition-normal);
   box-shadow: var(--shadow-lg);
+  margin: auto;
 }
 
 .modal-overlay.active .modal {
@@ -255,24 +279,28 @@
 }
 
 .modal-header {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--bg-secondary);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-footer {
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--bg-secondary);
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* Toasts */
@@ -284,19 +312,21 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  max-width: 360px;
 }
 
 .toast {
-  padding: 1rem 1.5rem;
+  padding: 0.85rem 1.25rem;
   border-radius: var(--border-radius-sm);
   background: white;
   box-shadow: var(--shadow-md);
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   transform: translateX(120%);
   transition: transform var(--transition-normal);
   border-left: 4px solid var(--accent-gold);
+  font-size: 0.9rem;
 }
 
 .toast.show {

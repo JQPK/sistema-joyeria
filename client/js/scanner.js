@@ -1,76 +1,108 @@
+/**
+ * Barcode Scanner Module
+ * Uses Html5Qrcode (loaded via CDN in index.html)
+ * Supports: Camera scanner + Hardware barcode gun
+ */
+
 export const scanner = {
-  html5QrcodeScanner: null,
+  html5Qrcode: null,
+  isScanning: false,
   
   async open(callback) {
+    // Open the scanner modal
     app.openModal('modal-scanner');
-    
-    // Clear previous instance if exists
-    if (this.html5QrcodeScanner) {
+
+    // Wait a tick for the modal to be visible (DOM needs to render)
+    await new Promise(r => setTimeout(r, 300));
+
+    // Clear previous instance
+    if (this.html5Qrcode) {
       try {
-        await this.html5QrcodeScanner.clear();
-      } catch(e) {}
+        if (this.isScanning) {
+          await this.html5Qrcode.stop();
+        }
+        this.html5Qrcode.clear();
+      } catch(e) {
+        console.warn('Scanner cleanup error:', e);
+      }
+      this.html5Qrcode = null;
     }
 
-    this.html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: {width: 250, height: 150} },
-      false
-    );
+    try {
+      // Use Html5Qrcode directly (not Html5QrcodeScanner) for better control
+      this.html5Qrcode = new Html5Qrcode("reader");
+      this.isScanning = true;
 
-    this.html5QrcodeScanner.render((decodedText, decodedResult) => {
-      // On success
+      await this.html5Qrcode.start(
+        { facingMode: "environment" }, // Use rear camera
+        {
+          fps: 10,
+          qrbox: { width: 250, height: 150 },
+          aspectRatio: 1.0
+        },
+        (decodedText) => {
+          // SUCCESS — code detected
+          this.close();
+          app.showToast(`Código: ${decodedText}`, 'success');
+          
+          if (typeof callback === 'function') {
+            callback(decodedText);
+          }
+        },
+        (errorMessage) => {
+          // Ignore continuous scan errors (normal behavior)
+        }
+      );
+    } catch (err) {
+      console.error('Camera error:', err);
+      this.isScanning = false;
+      app.showToast('No se pudo acceder a la cámara. Verifica los permisos.', 'error');
       app.closeModal('modal-scanner');
-      this.html5QrcodeScanner.clear();
-      app.showToast(`Código detectado: ${decodedText}`, 'success');
-      
-      if (typeof callback === 'function') {
-        callback(decodedText);
-      }
-    }, (error) => {
-      // ignore continuous errors
-    });
+    }
   },
 
-  close() {
-    if (this.html5QrcodeScanner) {
+  async close() {
+    if (this.html5Qrcode && this.isScanning) {
       try {
-        this.html5QrcodeScanner.clear();
-      } catch(e) {}
+        await this.html5Qrcode.stop();
+        this.html5Qrcode.clear();
+      } catch(e) {
+        console.warn('Scanner stop error:', e);
+      }
     }
+    this.isScanning = false;
+    this.html5Qrcode = null;
     app.closeModal('modal-scanner');
   },
 
-  // Detection for hardware barcode gun (rapid keystrokes)
+  /**
+   * Hardware barcode gun detection
+   * Barcode guns type very fast (< 50ms between keystrokes)
+   * and end with Enter key
+   */
   initGunDetection(inputElement, callback) {
     let barcode = '';
-    let reading = false;
     let timer = null;
 
-    inputElement.addEventListener('keypress', e => {
-      // Usually barcode scanners end with Enter (key code 13)
+    inputElement.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
+        e.preventDefault();
         if (barcode.length > 3) {
           callback(barcode);
         }
         barcode = '';
-        reading = false;
         clearTimeout(timer);
         return;
       }
 
-      if (e.key !== 'Shift') {
+      if (e.key.length === 1) { // printable character
         barcode += e.key;
-        reading = true;
         
         clearTimeout(timer);
         timer = setTimeout(() => {
-          reading = false;
           barcode = '';
-        }, 200); // If more than 200ms between keystrokes, it's manual typing
+        }, 150);
       }
     });
   }
 };
-
-// Bind to app for global access
-window.scanner = scanner;
