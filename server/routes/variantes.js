@@ -31,6 +31,8 @@ router.post('/', async (req, res, next) => {
       peso_gramos, imagen_path
     } = req.body;
 
+    const finalSku = sku || `JM-VAR-${Math.floor(100000 + Math.random() * 900000)}`;
+
     const result = await client.query(`
       INSERT INTO producto_variantes (
         producto_id, sku, nombre_variante,
@@ -40,7 +42,7 @@ router.post('/', async (req, res, next) => {
         peso_gramos, imagen_path
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id
     `, [
-      producto_id, sku, nombre_variante,
+      producto_id, finalSku, nombre_variante,
       atributo_1_nombre || '', atributo_1_valor || '',
       atributo_2_nombre || '', atributo_2_valor || '',
       precio_venta || null, precio_compra || null, stock_actual || 0, stock_minimo || 1,

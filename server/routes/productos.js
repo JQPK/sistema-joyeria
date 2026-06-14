@@ -167,6 +167,8 @@ router.post('/', async (req, res, next) => {
       descuento_porcentaje, imagen_path 
     } = req.body;
 
+    const finalCodigo = codigo || `JM-PRD-${Math.floor(100000 + Math.random() * 900000)}`;
+
     const result = await client.query(`
       INSERT INTO productos (
         codigo, nombre, descripcion, categoria_id, material_id,
@@ -174,7 +176,7 @@ router.post('/', async (req, res, next) => {
         descuento_porcentaje, imagen_path
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id
     `, [
-      codigo || null, nombre, descripcion || '', categoria_id || null, material_id || null,
+      finalCodigo, nombre, descripcion || '', categoria_id || null, material_id || null,
       peso_gramos || 0, precio_compra || 0, precio_venta, stock_actual || 0, stock_minimo || 1,
       descuento_porcentaje || 0, imagen_path || null
     ]);
@@ -339,7 +341,7 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
         const stock = parseInt(item['Stock']) || 0;
         const stock_min = parseInt(item['Stock Mínimo']) || 1;
         const peso = parseFloat(item['Peso (g)']) || 0;
-        let sku = item['SKU'] || null;
+        let sku = item['SKU'] || `JM-PRD-${Math.floor(100000 + Math.random() * 900000)}`;
 
         const prodRes = await client.query(`
           INSERT INTO productos (
@@ -351,10 +353,6 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
           peso, precio_compra, precio_venta, stock, stock_min
         ]);
         
-        if (!sku) {
-          sku = `PROD-${String(prodRes.rows[0].id).padStart(4, '0')}`;
-          await client.query('UPDATE productos SET codigo = $1 WHERE id = $2', [sku, prodRes.rows[0].id]);
-        }
         addedProducts++;
       } else {
         // Product with variants
@@ -382,9 +380,7 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
           const stock = parseInt(item['Stock']) || 0;
           const stock_min = parseInt(item['Stock Mínimo']) || 1;
           const peso = parseFloat(item['Peso (g)']) || 0;
-          let sku = item['SKU'] || null;
-          
-          if (!sku) sku = `VAR-${baseId}-${i+1}`;
+          let sku = item['SKU'] || `JM-VAR-${Math.floor(100000 + Math.random() * 900000)}`;
 
           await client.query(`
             INSERT INTO producto_variantes (
