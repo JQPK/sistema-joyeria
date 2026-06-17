@@ -298,8 +298,15 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
     // Group by 'Nombre Producto'
     const grouped = {};
     for (const row of records) {
-      const nombre = row['Nombre Producto'];
+      let nombre = row['Nombre Producto'];
       if (!nombre) continue;
+      
+      // Trim spaces to prevent grouping issues (e.g. "Anillo " vs "Anillo")
+      if (typeof nombre === 'string') {
+        nombre = nombre.trim();
+        row['Nombre Producto'] = nombre;
+      }
+      
       if (!grouped[nombre]) grouped[nombre] = [];
       grouped[nombre].push(row);
     }
