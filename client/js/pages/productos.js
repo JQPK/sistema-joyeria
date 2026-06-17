@@ -73,13 +73,22 @@ export default {
             <form id="prod-form">
               <input type="hidden" id="prod-id">
               
+              <div class="form-row flex gap-4" id="prod-padre-row">
+                <div class="form-group flex-1">
+                  <label class="form-label">¿Es variante de otro producto? (Opcional)</label>
+                  <select id="prod-padre" class="form-control">
+                    <option value="">No, es un producto nuevo</option>
+                  </select>
+                </div>
+              </div>
+
               <div class="form-row flex gap-4">
                 <div class="form-group flex-1">
-                  <label class="form-label">Código (Opcional)</label>
+                  <label class="form-label">Código / SKU (Opcional)</label>
                   <input type="text" id="prod-codigo" class="form-control" placeholder="Autogenerado si está vacío">
                 </div>
                 <div class="form-group flex-1">
-                  <label class="form-label">Nombre *</label>
+                  <label class="form-label" id="lbl-prod-nombre">Nombre del Producto *</label>
                   <input type="text" id="prod-nombre" class="form-control" required>
                 </div>
               </div>
@@ -207,6 +216,22 @@ export default {
     search.addEventListener('input', () => this.filterTable());
     cat.addEventListener('change', () => this.filterTable());
     mat.addEventListener('change', () => this.filterTable());
+    
+    const padreSelect = document.getElementById('prod-padre');
+    if (padreSelect) {
+      padreSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val) {
+          document.getElementById('lbl-prod-nombre').textContent = 'Nombre de la Variante (Ej: Talla 6) *';
+          document.getElementById('prod-categoria').disabled = true;
+          document.getElementById('prod-material').disabled = true;
+        } else {
+          document.getElementById('lbl-prod-nombre').textContent = 'Nombre del Producto *';
+          document.getElementById('prod-categoria').disabled = false;
+          document.getElementById('prod-material').disabled = false;
+        }
+      });
+    }
   },
 
   async loadData() {
@@ -309,6 +334,7 @@ export default {
     document.getElementById('prod-variantes-tbody').innerHTML = '';
     
     if (isEdit) {
+      document.getElementById('prod-padre-row').style.display = 'none';
       try {
         const res = await api.get(`/productos/${id}`);
         const p = res.data;
@@ -362,6 +388,16 @@ export default {
       document.getElementById('prod-precio').disabled = false;
       document.getElementById('prod-stock').disabled = false;
       document.getElementById('prod-codigo').disabled = false;
+      
+      document.getElementById('prod-padre-row').style.display = 'flex';
+      const padreSelect = document.getElementById('prod-padre');
+      padreSelect.innerHTML = '<option value="">No, es un producto nuevo</option>' + 
+        (this.productos || []).map(p => `<option value="${p.id}">${p.nombre}</option>`).join('');
+        
+      // Reset labels and states
+      document.getElementById('lbl-prod-nombre').textContent = 'Nombre del Producto *';
+      document.getElementById('prod-categoria').disabled = false;
+      document.getElementById('prod-material').disabled = false;
     }
 
     app.openModal('modal-producto');
@@ -391,8 +427,24 @@ export default {
         await api.put(`/productos/${id}`, payload);
         app.showToast('Producto actualizado', 'success');
       } else {
-        await api.post('/productos', payload);
-        app.showToast('Producto creado', 'success');
+        const padreId = document.getElementById('prod-padre').value;
+        if (padreId) {
+          // It's a new variant
+          const varPayload = {
+            producto_id: padreId,
+            sku: payload.codigo,
+            nombre_variante: payload.nombre,
+            precio_venta: payload.precio_venta,
+            stock_actual: payload.stock_actual,
+            stock_minimo: payload.stock_minimo
+          };
+          await api.post('/variantes', varPayload);
+          app.showToast('Variante agregada', 'success');
+        } else {
+          // It's a new product
+          await api.post('/productos', payload);
+          app.showToast('Producto creado', 'success');
+        }
       }
       app.closeModal('modal-producto');
       this.loadData();
@@ -533,7 +585,17 @@ export default {
     window.prodPrintBarcode = this.printBarcode.bind(this);
     window.prodEditVariant = this.editVariant.bind(this);
     window.prodSaveVariant = this.saveVariant.bind(this);
-    // Temporary disabled add variant from UI, handled via Excel primarily for now
-    window.prodAddVariant = () => app.showToast('Para agregar variantes, usa la plantilla Excel por ahora.', 'info');
+    window.prodAddVariant = () => {
+      const currentParentId = document.getElementById('prod-id').value;
+      app.closeModal('modal-producto');
+      this.openModal(null); // Open as new
+      setTimeout(() => {
+        const padreSelect = document.getElementById('prod-padre');
+        if (padreSelect) {
+          padreSelect.value = currentParentId;
+          padreSelect.dispatchEvent(new Event('change'));
+        }
+      }, 100);
+    };
   }
 };
