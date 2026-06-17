@@ -380,4 +380,111 @@ router.get('/:id/ticket', async (req, res, next) => {
   }
 });
 
+// GET ticket PDF
+router.get('/:id/pdf', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Fetch sale
+    const ventaRes = await db.query(`
+      SELECT v.*, c.nombre as cliente_nombre, c.dni_ruc, u.nombre as cajero
+      FROM ventas v
+      LEFT JOIN clientes c ON v.cliente_id = c.id
+      LEFT JOIN usuarios u ON v.usuario_id = u.id
+      WHERE v.id = $1
+    `, [id]);
+    
+    if (ventaRes.rows.length === 0) {
+      return res.status(404).send('Venta no encontrada');
+    }
+    const venta = ventaRes.rows[0];
+
+    // Fetch items
+    const itemsRes = await db.query(`
+      SELECT d.*, p.nombre as producto_nombre, pv.nombre_variante 
+      FROM detalle_ventas d
+      JOIN productos p ON d.producto_id = p.id
+      LEFT JOIN producto_variantes pv ON d.variante_id = pv.id
+      WHERE d.venta_id = $1
+    `, [id]);
+    const items = itemsRes.rows;
+
+    // Fetch config
+    const confRes = await db.query('SELECT * FROM config_empresa WHERE id = 1');
+    const config = confRes.rows[0] || {};
+
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 30, size: [250, 600] });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="Boleta_${venta.numero_comprobante}.pdf"`);
+
+    doc.pipe(res);
+
+    // Header
+    doc.fontSize(14).font('Helvetica-Bold').text(config.nombre_empresa || 'Joyería Mariné', { align: 'center' });
+    doc.fontSize(10).font('Helvetica');
+    if (config.ruc) doc.text(`RUC: ${config.ruc}`, { align: 'center' });
+    if (config.direccion) doc.text(config.direccion, { align: 'center' });
+    if (config.telefono) doc.text(config.telefono, { align: 'center' });
+    
+    doc.moveDown();
+    doc.font('Helvetica-Bold').text('COMPROBANTE DE PAGO', { align: 'center' });
+    doc.text(venta.numero_comprobante, { align: 'center' });
+    doc.font('Helvetica').moveDown();
+
+    doc.text(`Fecha: ${new Date(venta.fecha).toLocaleString('es-PE')}`);
+    doc.text(`Cajero: ${venta.cajero || 'Admin'}`);
+    if (venta.cliente_nombre) doc.text(`Cliente: ${venta.cliente_nombre}`);
+    
+    doc.moveDown();
+    
+    // Items table header
+    doc.font('Helvetica-Bold');
+    doc.text('Cant/Prod', 30, doc.y, { continued: true });
+    doc.text('Importe', { align: 'right' });
+    doc.moveTo(30, doc.y).lineTo(220, doc.y).stroke();
+    doc.moveDown(0.5);
+
+    // Items
+    doc.font('Helvetica');
+    items.forEach(item => {
+      const name = `${item.cantidad}x ${item.producto_nombre} ${item.nombre_variante ? `(${item.nombre_variante})` : ''}`;
+      const amount = `S/ ${parseFloat(item.subtotal_item).toFixed(2)}`;
+      
+      const currentY = doc.y;
+      doc.text(name, 30, currentY, { width: 130 });
+      doc.text(amount, 160, currentY, { width: 60, align: 'right' });
+      doc.moveDown(0.5);
+    });
+
+    doc.moveTo(30, doc.y).lineTo(220, doc.y).stroke();
+    doc.moveDown();
+
+    // Totals
+    const subtotal = `S/ ${parseFloat(venta.subtotal).toFixed(2)}`;
+    doc.text('Subtotal:', 100, doc.y, { continued: true });
+    doc.text(subtotal, { align: 'right' });
+    
+    if (venta.descuento > 0) {
+      const desc = `- S/ ${parseFloat(venta.descuento).toFixed(2)}`;
+      doc.text('Desc:', 100, doc.y, { continued: true });
+      doc.text(desc, { align: 'right' });
+    }
+
+    const total = `S/ ${parseFloat(venta.total).toFixed(2)}`;
+    doc.font('Helvetica-Bold');
+    doc.text('Total:', 100, doc.y, { continued: true });
+    doc.text(total, { align: 'right' });
+    
+    doc.moveDown(2);
+    doc.font('Helvetica').fontSize(9).text(config.mensaje_ticket || '¡Gracias por su compra!', { align: 'center' });
+
+    doc.end();
+
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

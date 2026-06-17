@@ -562,18 +562,63 @@ export default {
         const token = localStorage.getItem('token');
         document.getElementById('btn-print-ticket').onclick = () => window.open(`/api/ventas/${res.venta_id || res.id}/ticket?token=${token}`, '_blank');
         
-        document.getElementById('btn-whatsapp-ticket').onclick = () => {
+        document.getElementById('btn-whatsapp-ticket').onclick = async () => {
           const phoneInput = document.getElementById('wa-phone-input');
           const phone = phoneInput ? phoneInput.value.trim() : '';
           if (!phone) {
             return app.showToast('Por favor ingrese un número de WhatsApp', 'warning');
           }
           
-          // Generate PDF download URL to include in the message
-          // The public URL must be absolute. Assuming the current origin is the public address.
-          const ticketUrl = `${window.location.origin}/api/ventas/${res.venta_id || res.id}/ticket?token=${token}`;
-          const text = encodeURIComponent(`¡Hola! Gracias por su compra en Joyería Mariné. Puede descargar su comprobante (${res.numero_comprobante}) aquí: ${ticketUrl}`);
-          window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+          const textMsg = `¡Hola! Gracias por su compra en Joyería Mariné. Adjunto su comprobante (${res.numero_comprobante}).`;
+          const pdfUrl = `/api/ventas/${res.venta_id || res.id}/pdf?token=${token}`;
+          
+          const btnWa = document.getElementById('btn-whatsapp-ticket');
+          btnWa.disabled = true;
+          
+          try {
+            app.showToast('Generando boleta PDF...', 'info');
+            const response = await fetch(pdfUrl);
+            if (!response.ok) throw new Error('Error al generar PDF');
+            const blob = await response.blob();
+            const file = new File([blob], `Boleta_${res.numero_comprobante}.pdf`, { type: 'application/pdf' });
+            
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              // Works on Android/iOS/Mac Safari
+              await navigator.share({
+                files: [file],
+                title: `Comprobante ${res.numero_comprobante}`,
+                text: textMsg
+              });
+            } else {
+              // Fallback for Windows PC
+              // Download PDF
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = file.name;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              window.URL.revokeObjectURL(url);
+              
+              // Copy text and open WA
+              try {
+                await navigator.clipboard.writeText(textMsg);
+                app.showToast('Se descargó el PDF y se copió el mensaje. Adjunta el archivo en el chat.', 'success');
+              } catch (e) {
+                app.showToast('PDF descargado. Puedes adjuntarlo en WhatsApp.', 'success');
+              }
+              
+              setTimeout(() => {
+                window.open(`https://wa.me/${phone}`, '_blank');
+              }, 1000);
+            }
+          } catch (err) {
+            console.error(err);
+            app.showToast('Error al preparar envío por WhatsApp', 'error');
+          } finally {
+            btnWa.disabled = false;
+          }
         };
         app.openModal('modal-venta-exitosa');
       }
