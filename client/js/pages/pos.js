@@ -107,6 +107,10 @@ export default {
                 </select>
               </div>
             </div>
+            <div class="form-group" style="margin-top: 1rem;">
+              <label class="form-label">Descuento Global Adicional (S/)</label>
+              <input type="number" id="checkout-descuento-manual" class="form-control" placeholder="Ej. 6.00" min="0" step="0.10" value="0.00" oninput="window.posUpdateTotalCheckout()">
+            </div>
             <div class="card" style="background: var(--bg-secondary); margin-top: 1rem">
               <div class="card-body flex justify-between items-center">
                 <span style="font-size: 1.2rem; font-weight: 600">Total a Cobrar:</span>
@@ -131,6 +135,34 @@ export default {
           <div class="modal-body">
             <div id="pos-variants-list" class="flex flex-col gap-2">
               <div class="text-center text-muted">Cargando variantes...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Venta Exitosa -->
+      <div id="modal-venta-exitosa" class="modal-overlay">
+        <div class="modal" style="max-width: 400px; text-align: center">
+          <div class="modal-header" style="justify-content: center; border-bottom: none">
+            <h3 class="text-success" style="font-size: 1.5rem">¡Venta Exitosa!</h3>
+          </div>
+          <div class="modal-body">
+            <div style="margin-bottom: 1.5rem">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2" style="width: 64px; height: 64px; margin: 0 auto"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <p id="venta-exitosa-nro" class="text-muted mb-4"></p>
+            <div class="flex-col gap-2">
+              <button class="btn btn-primary w-full" id="btn-print-ticket">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" style="vertical-align: middle; margin-right: 8px"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Imprimir Ticket
+              </button>
+              <button class="btn btn-secondary w-full" id="btn-whatsapp-ticket" style="color: #25D366; border-color: #25D366">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" style="vertical-align: middle; margin-right: 8px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                Enviar por WhatsApp
+              </button>
+              <button class="btn btn-secondary w-full" style="margin-top: 1rem" onclick="window.posNewSale()">
+                Nueva Venta
+              </button>
             </div>
           </div>
         </div>
@@ -186,6 +218,7 @@ export default {
 
     // Checkout
     document.getElementById('btn-checkout').addEventListener('click', () => {
+      document.getElementById('checkout-descuento-manual').value = '0.00';
       document.getElementById('checkout-total-display').textContent = `S/ ${this.getTotal().toFixed(2)}`;
       app.openModal('modal-checkout');
     });
@@ -278,10 +311,17 @@ export default {
     }
     
     if (searchTerm) {
-      filtered = filtered.filter(p => 
-        p.nombre.toLowerCase().includes(searchTerm) || 
-        (p.codigo && p.codigo.toLowerCase().includes(searchTerm))
-      );
+      filtered = filtered.filter(p => {
+        const matchBase = p.nombre.toLowerCase().includes(searchTerm) || (p.codigo && p.codigo.toLowerCase().includes(searchTerm));
+        let matchVar = false;
+        if (p.tiene_variantes && p.variantes) {
+          matchVar = p.variantes.some(v => 
+            v.sku.toLowerCase().includes(searchTerm) || 
+            v.nombre_variante.toLowerCase().includes(searchTerm)
+          );
+        }
+        return matchBase || matchVar;
+      });
     }
 
     if (filtered.length === 0) {
@@ -484,13 +524,16 @@ export default {
     try {
       // The API endpoint needs to support variante_id if applicable, but we mapped it back to producto_id
       // Let's pass the cart items directly.
+      const descManualInput = document.getElementById('checkout-descuento-manual');
+      const descManual = parseFloat(descManualInput.value) || 0;
+      
       const payload = {
         cliente_id: document.getElementById('checkout-cliente').value || null,
         tipo_comprobante: document.getElementById('checkout-tipo').value,
         metodo_pago: document.getElementById('checkout-pago').value,
         subtotal: this.getSubtotal(),
-        descuento: this.getDescuentoTotal(),
-        total: this.getTotal(),
+        descuento: this.getDescuentoTotal() + descManual,
+        total: Math.max(0, this.getTotal() - descManual),
         items: this.cart.map(i => ({
           producto_id: i.producto_id,
           variante_id: i.variante_id || null,
@@ -505,18 +548,15 @@ export default {
       
       if (res.success) {
         app.closeModal('modal-checkout');
-        app.showToast(`Venta exitosa: ${res.numero_comprobante}`, 'success');
         
-        // Clear cart
-        this.cart = [];
-        this.renderCart();
-        
-        // Hide mobile cart if open
-        const cartPanel = document.getElementById('pos-cart-panel');
-        if (cartPanel) cartPanel.classList.remove('active');
-        
-        // Realtime will update products, but we can do it manually to be fast
-        await this.loadData();
+        // Setup post-sale modal
+        document.getElementById('venta-exitosa-nro').textContent = `Comprobante: ${res.numero_comprobante}`;
+        document.getElementById('btn-print-ticket').onclick = () => window.open(`/api/ventas/${res.venta_id || res.id}/ticket`, '_blank');
+        document.getElementById('btn-whatsapp-ticket').onclick = () => {
+          const text = encodeURIComponent(`¡Hola! Tu comprobante ${res.numero_comprobante} de Joyería Mariné ha sido generado con éxito. ¡Gracias por tu compra!`);
+          window.open(`https://wa.me/?text=${text}`, '_blank');
+        };
+        app.openModal('modal-venta-exitosa');
       }
     } catch (err) {
       app.showToast(err.message, 'error');
@@ -532,9 +572,30 @@ export default {
     }
   },
 
+  updateTotalCheckout() {
+    const descManualInput = document.getElementById('checkout-descuento-manual');
+    const descManual = parseFloat(descManualInput.value) || 0;
+    const finalTotal = Math.max(0, this.getTotal() - descManual);
+    document.getElementById('checkout-total-display').textContent = `S/ ${finalTotal.toFixed(2)}`;
+  },
+
+  newSale() {
+    app.closeModal('modal-venta-exitosa');
+    this.cart = [];
+    this.renderCart();
+    
+    // Hide mobile cart if open
+    const cartPanel = document.getElementById('pos-cart-panel');
+    if (cartPanel) cartPanel.classList.remove('active');
+    
+    this.loadData();
+  },
+
   load() {
     window.posAddToCart = this.addToCart.bind(this);
     window.posSelectVariant = this.selectVariant.bind(this);
     window.posUpdateQty = this.updateQuantity.bind(this);
+    window.posUpdateTotalCheckout = this.updateTotalCheckout.bind(this);
+    window.posNewSale = this.newSale.bind(this);
   }
 };

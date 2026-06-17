@@ -74,7 +74,8 @@ export default {
     if (this.chartBar) this.chartBar.destroy();
 
     const labels = data.map(d => {
-      const date = new Date(d.dia + 'T00:00:00');
+      const date = new Date(d.dia);
+      date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
       return date.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' });
     });
     

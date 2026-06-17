@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { auth } from '../auth.js';
 
 export default {
   container: null,
@@ -67,9 +68,9 @@ export default {
     this.bindEvents();
     
     // Set default dates to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('comp-fecha-inicio').value = today;
-    document.getElementById('comp-fecha-fin').value = today;
+    // Default to empty dates to show recent ones
+    document.getElementById('comp-fecha-inicio').value = '';
+    document.getElementById('comp-fecha-fin').value = '';
 
     await this.loadData();
   },
@@ -87,7 +88,7 @@ export default {
       const fechaInicio = document.getElementById('comp-fecha-inicio').value;
       const fechaFin = document.getElementById('comp-fecha-fin').value;
 
-      const res = await api.get('/ventas', { fecha_inicio: fechaInicio, fecha_fin: fechaFin, limit: false });
+      const res = await api.get('/ventas', { fecha_inicio: fechaInicio, fecha_fin: fechaFin });
       if (res.success) {
         this.ventas = res.data;
         this.renderTable(this.ventas);

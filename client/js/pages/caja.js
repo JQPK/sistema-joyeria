@@ -49,9 +49,15 @@ export default {
             </div>
           </div>
 
-          <div class="flex flex-wrap gap-4" style="margin-bottom: 1.5rem">
-            <input type="date" id="caja-fecha" class="form-control" style="width:auto">
-            <button class="btn btn-secondary" onclick="window.cajaLoad()">Filtrar Día</button>
+          <div class="flex flex-wrap gap-4" style="margin-bottom: 1.5rem; justify-content: space-between;">
+            <div class="flex gap-2">
+              <input type="date" id="caja-fecha" class="form-control" style="width:auto">
+              <button class="btn btn-secondary" onclick="window.cajaLoad()">Filtrar Día</button>
+            </div>
+            <button class="btn btn-secondary flex items-center gap-2" onclick="window.cajaExport()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Exportar Excel
+            </button>
           </div>
 
           <div class="table-container">
@@ -190,9 +196,32 @@ export default {
     }
   },
 
+  exportExcel() {
+    if (!this.movimientos || this.movimientos.length === 0) {
+      return app.showToast('No hay datos para exportar', 'warning');
+    }
+
+    const data = this.movimientos.map(m => ({
+      'Fecha y Hora': new Date(m.fecha).toLocaleString('es-PE'),
+      'Tipo': m.tipo.toUpperCase(),
+      'Concepto': m.concepto,
+      'Usuario': m.usuario_nombre,
+      'Monto (S/)': parseFloat(m.monto).toFixed(2),
+      'Notas': m.notas || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reporte_Caja");
+
+    const dateStr = document.getElementById('caja-fecha').value || new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Reporte_Caja_${dateStr}.xlsx`);
+  },
+
   load() {
     window.cajaLoad = this.loadData.bind(this);
     window.cajaOpenModal = this.openModal.bind(this);
     window.cajaSave = this.save.bind(this);
+    window.cajaExport = this.exportExcel.bind(this);
   }
 };

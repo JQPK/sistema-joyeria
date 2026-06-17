@@ -57,7 +57,7 @@ export default {
           <div class="card">
             <div class="card-header">
               <h3 style="font-size: 1.1rem">Últimas Ventas</h3>
-              <a href="#ventas" class="text-gold" style="font-size: 0.9rem">Ver todo</a>
+              <a href="#comprobantes" class="text-gold" style="font-size: 0.9rem">Ver todo</a>
             </div>
             <div class="card-body" style="padding: 0">
               <div class="table-container">
@@ -109,7 +109,9 @@ export default {
     if (this.chart) this.chart.destroy();
 
     const labels = data.map(d => {
-      const date = new Date(d.dia + 'T00:00:00');
+      const date = new Date(d.dia);
+      // Correct timezone offset issue if it's treated as UTC
+      date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
       return date.toLocaleDateString('es-PE', { weekday: 'short', day: 'numeric' });
     });
     

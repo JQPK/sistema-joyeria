@@ -196,7 +196,7 @@ export default {
         const opts = this.categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
         const filterCat = document.getElementById('prod-filter-cat');
         const formCat = document.getElementById('prod-categoria');
-        if (filterCat.options.length === 1) filterCat.innerHTML += opts;
+        filterCat.innerHTML = '<option value="">Todas las Categorías</option>' + opts;
         formCat.innerHTML = '<option value="">-- Ninguna --</option>' + opts;
       }
 
@@ -205,7 +205,7 @@ export default {
         const opts = this.materiales.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
         const filterMat = document.getElementById('prod-filter-mat');
         const formMat = document.getElementById('prod-material');
-        if (filterMat.options.length === 1) filterMat.innerHTML += opts;
+        filterMat.innerHTML = '<option value="">Todos los Materiales</option>' + opts;
         formMat.innerHTML = '<option value="">-- Ninguno --</option>' + opts;
       }
 
@@ -309,8 +309,11 @@ export default {
                 <td>${v.nombre_variante}</td>
                 <td>${v.stock_actual}</td>
                 <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
-                <td>
-                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodShowBarcode('${v.sku}', '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.precio_venta || p.precio_venta})" title="Imprimir">
+                <td style="display: flex; gap: 0.25rem;">
+                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodEditVariant(${v.id}, ${v.stock_actual}, ${v.precio_venta || p.precio_venta})" title="Editar Variante">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                  </button>
+                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodShowBarcode('${v.sku}', '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.precio_venta || p.precio_venta})" title="Imprimir Código">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M3 5h18M3 12h18M3 19h18"></path></svg>
                   </button>
                 </td>
@@ -371,13 +374,37 @@ export default {
   },
 
   async deleteProd(id) {
-    if (!confirm('¿Seguro que deseas eliminar este producto?')) return;
+    if (!confirm('¿Estás seguro de eliminar este producto?')) return;
     try {
-      await api.del(`/productos/${id}`);
+      await api.delete(`/productos/${id}`);
       app.showToast('Producto eliminado', 'success');
       this.loadData();
     } catch (err) {
       app.showToast(err.message, 'error');
+    }
+  },
+
+  async editVariant(id, currentStock, currentPrice) {
+    const newStock = prompt('Ingresa el nuevo stock para la variante:', currentStock);
+    if (newStock === null) return;
+    const newPrice = prompt('Ingresa el nuevo precio para la variante:', currentPrice);
+    if (newPrice === null) return;
+
+    try {
+      await api.put(`/variantes/${id}`, {
+        stock_actual: parseInt(newStock) || 0,
+        precio_venta: parseFloat(newPrice) || 0
+      });
+      app.showToast('Variante actualizada correctamente', 'success');
+      // Reload products list to reflect changes
+      this.loadData();
+      // Re-open the modal with updated data
+      const prodId = document.getElementById('prod-id').value;
+      if (prodId) {
+        this.openModal(prodId);
+      }
+    } catch (err) {
+      app.showToast(err.message || 'Error al actualizar', 'error');
     }
   },
 
@@ -464,6 +491,7 @@ export default {
     window.prodImportExcel = this.importExcel.bind(this);
     window.prodShowBarcode = this.showBarcode.bind(this);
     window.prodPrintBarcode = this.printBarcode.bind(this);
+    window.prodEditVariant = this.editVariant.bind(this);
     // Temporary disabled add variant from UI, handled via Excel primarily for now
     window.prodAddVariant = () => app.showToast('Para agregar variantes, usa la plantilla Excel por ahora.', 'info');
   }

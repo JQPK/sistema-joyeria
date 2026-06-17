@@ -86,6 +86,33 @@ export default {
             </div>
           </div>
         </div>
+
+        <div class="card" style="margin-top: 1.5rem">
+          <div class="card-header">
+            <h3 style="font-size: 1.1rem">Detalle de Inventario</h3>
+            <div class="form-control flex items-center" style="min-width: 200px; padding:0; width:auto">
+              <input type="text" id="inv-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar producto...">
+            </div>
+          </div>
+          <div class="card-body" style="padding: 0">
+            <div class="table-container">
+              <table class="data-table" id="inv-full-table">
+                <thead>
+                  <tr>
+                    <th>Código/SKU</th>
+                    <th>Producto/Variante</th>
+                    <th>Stock Actual</th>
+                    <th>Precio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
       </div>
     `;
 
@@ -142,12 +169,79 @@ export default {
         }
       }
 
+      // Load Full Inventory List
+      const fullRes = await api.get('/productos', { estado: 'activo' });
+      if (fullRes.success) {
+        this.productos = fullRes.data;
+        this.renderFullTable(this.productos);
+      }
+
     } catch (err) {
       app.showToast('Error cargando datos de inventario', 'error');
     }
   },
 
+  renderFullTable(data) {
+    const tbody = document.querySelector('#inv-full-table tbody');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay productos en inventario</td></tr>';
+      return;
+    }
+
+    let html = '';
+    data.forEach((p, idx) => {
+      const isVariants = p.tiene_variantes && p.variantes && p.variantes.length > 0;
+      const codeHtml = isVariants ? `<button class="btn-icon btn-secondary" onclick="document.getElementById('vars-${p.id}').classList.toggle('hidden')" style="padding:2px 8px; font-size:12px; margin-right:5px">+</button> -` : (p.codigo || '-');
+      
+      html += `
+        <tr style="${isVariants ? 'background: var(--bg-secondary); font-weight: bold;' : ''}">
+          <td>${codeHtml}</td>
+          <td>${p.nombre}</td>
+          <td>${p.stock_actual}</td>
+          <td>S/ ${parseFloat(p.precio_venta).toFixed(2)}</td>
+        </tr>
+      `;
+
+      if (isVariants) {
+        html += `<tr id="vars-${p.id}" class="hidden"><td colspan="4" style="padding:0"><table style="width:100%; background: rgba(0,0,0,0.02)"><tbody>`;
+        p.variantes.forEach(v => {
+          html += `
+            <tr style="border-bottom: 1px dashed var(--border-color)">
+              <td style="padding-left: 3rem; color: var(--text-muted)">${v.sku}</td>
+              <td style="color: var(--text-muted)">↳ ${v.nombre_variante}</td>
+              <td style="color: var(--text-muted)">${v.stock_actual}</td>
+              <td style="color: var(--text-muted)">S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
+            </tr>
+          `;
+        });
+        html += `</tbody></table></td></tr>`;
+      }
+    });
+
+    tbody.innerHTML = html;
+  },
+
+  bindEvents() {
+    const search = document.getElementById('inv-search');
+    if (search) {
+      search.addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        if (!this.productos) return;
+        const filtered = this.productos.filter(p => {
+          const matchP = p.nombre.toLowerCase().includes(term) || (p.codigo && p.codigo.toLowerCase().includes(term));
+          let matchV = false;
+          if (p.tiene_variantes && p.variantes) {
+            matchV = p.variantes.some(v => v.sku.toLowerCase().includes(term) || v.nombre_variante.toLowerCase().includes(term));
+          }
+          return matchP || matchV;
+        });
+        this.renderFullTable(filtered);
+      });
+    }
+  },
+
   load() {
+    this.bindEvents();
     this.loadData();
   }
 };
