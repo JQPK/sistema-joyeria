@@ -44,19 +44,27 @@ export const api = {
   },
 
   async post(endpoint, body = {}) {
+    const isFormData = body instanceof FormData;
+    const headers = getHeaders();
+    if (isFormData) delete headers['Content-Type'];
+
     const res = await fetch(API_URL + endpoint, {
       method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(body)
+      headers: headers,
+      body: isFormData ? body : JSON.stringify(body)
     });
     return handleResponse(res);
   },
 
   async put(endpoint, body = {}) {
+    const isFormData = body instanceof FormData;
+    const headers = getHeaders();
+    if (isFormData) delete headers['Content-Type'];
+
     const res = await fetch(API_URL + endpoint, {
       method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(body)
+      headers: headers,
+      body: isFormData ? body : JSON.stringify(body)
     });
     return handleResponse(res);
   },
