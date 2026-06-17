@@ -582,37 +582,28 @@ export default {
             const blob = await response.blob();
             const file = new File([blob], `Boleta_${res.numero_comprobante}.pdf`, { type: 'application/pdf' });
             
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              // Works on Android/iOS/Mac Safari
-              await navigator.share({
-                files: [file],
-                title: `Comprobante ${res.numero_comprobante}`,
-                text: textMsg
-              });
-            } else {
-              // Fallback for Windows PC
-              // Download PDF
-              const url = window.URL.createObjectURL(blob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.download = file.name;
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-              window.URL.revokeObjectURL(url);
-              
-              // Copy text and open WA
-              try {
-                await navigator.clipboard.writeText(textMsg);
-                app.showToast('Se descargó el PDF y se copió el mensaje. Adjunta el archivo en el chat.', 'success');
-              } catch (e) {
-                app.showToast('PDF descargado. Puedes adjuntarlo en WhatsApp.', 'success');
-              }
-              
-              setTimeout(() => {
-                window.open(`https://wa.me/${phone}`, '_blank');
-              }, 1000);
+            // Download PDF directly (forces standard download on PC and mobile)
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            
+            // Copy text and open WA with the specific phone number
+            try {
+              await navigator.clipboard.writeText(textMsg);
+              app.showToast('PDF descargado y mensaje copiado. Adjunta el archivo en WhatsApp.', 'success');
+            } catch (e) {
+              app.showToast('PDF descargado. Puedes adjuntarlo en WhatsApp.', 'success');
             }
+            
+            setTimeout(() => {
+              window.open(`https://wa.me/${phone}`, '_blank');
+            }, 500);
+            
           } catch (err) {
             console.error(err);
             app.showToast('Error al preparar envío por WhatsApp', 'error');

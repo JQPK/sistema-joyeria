@@ -50,7 +50,28 @@ router.get('/', async (req, res, next) => {
 
     query += ' ORDER BY p.nombre ASC';
     const result = await db.query(query, params);
-    res.json({ success: true, data: result.rows });
+    const productos = result.rows;
+
+    // Fetch variants for products that have them
+    const prodIdsWithVariants = productos.filter(p => p.tiene_variantes).map(p => p.id);
+    if (prodIdsWithVariants.length > 0) {
+      const varRes = await db.query(
+        'SELECT * FROM producto_variantes WHERE producto_id = ANY($1) AND activo = true ORDER BY nombre_variante ASC',
+        [prodIdsWithVariants]
+      );
+      const variantesMap = {};
+      varRes.rows.forEach(v => {
+        if (!variantesMap[v.producto_id]) variantesMap[v.producto_id] = [];
+        variantesMap[v.producto_id].push(v);
+      });
+      productos.forEach(p => {
+        if (p.tiene_variantes) {
+          p.variantes = variantesMap[p.id] || [];
+        }
+      });
+    }
+
+    res.json({ success: true, data: productos });
   } catch (err) {
     next(err);
   }
