@@ -195,32 +195,30 @@ export default {
     }
 
     let html = '';
-    data.forEach((p, idx) => {
+    data.forEach(p => {
       const isVariants = p.tiene_variantes && p.variantes && p.variantes.length > 0;
-      const codeHtml = isVariants ? `<button class="btn-icon btn-secondary" onclick="document.getElementById('vars-${p.id}').classList.toggle('hidden')" style="padding:2px 8px; font-size:12px; margin-right:5px">+</button> -` : (p.codigo || '-');
       
-      html += `
-        <tr style="${isVariants ? 'background: var(--bg-secondary); font-weight: bold;' : ''}">
-          <td>${codeHtml}</td>
-          <td>${p.nombre}</td>
-          <td>${p.stock_actual}</td>
-          <td>S/ ${parseFloat(p.precio_venta).toFixed(2)}</td>
-        </tr>
-      `;
-
       if (isVariants) {
-        html += `<tr id="vars-${p.id}" class="hidden"><td colspan="4" style="padding:0"><table style="width:100%; background: rgba(0,0,0,0.02)"><tbody>`;
+        // Render each variant as its own row
         p.variantes.forEach(v => {
           html += `
-            <tr style="border-bottom: 1px dashed var(--border-color)">
-              <td style="padding-left: 3rem; color: var(--text-muted)">${v.sku}</td>
-              <td style="color: var(--text-muted)">↳ ${v.nombre_variante}</td>
-              <td style="color: var(--text-muted)">${v.stock_actual}</td>
-              <td style="color: var(--text-muted)">S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
+            <tr>
+              <td>${v.sku}</td>
+              <td>${p.nombre} - ${v.nombre_variante}</td>
+              <td>${v.stock_actual}</td>
+              <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
             </tr>
           `;
         });
-        html += `</tbody></table></td></tr>`;
+      } else {
+        html += `
+          <tr>
+            <td>${p.codigo || '-'}</td>
+            <td>${p.nombre}</td>
+            <td>${p.stock_actual}</td>
+            <td>S/ ${parseFloat(p.precio_venta).toFixed(2)}</td>
+          </tr>
+        `;
       }
     });
 

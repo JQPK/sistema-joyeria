@@ -265,4 +265,119 @@ router.post('/:id/anular', async (req, res, next) => {
   }
 });
 
+// GET ticket HTML
+router.get('/:id/ticket', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    
+    // Fetch sale
+    const ventaRes = await db.query(`
+      SELECT v.*, c.nombre as cliente_nombre, c.dni_ruc, u.nombre as cajero
+      FROM ventas v
+      LEFT JOIN clientes c ON v.cliente_id = c.id
+      LEFT JOIN usuarios u ON v.usuario_id = u.id
+      WHERE v.id = $1
+    `, [id]);
+    
+    if (ventaRes.rows.length === 0) {
+      return res.status(404).send('Venta no encontrada');
+    }
+    const venta = ventaRes.rows[0];
+
+    // Fetch items
+    const itemsRes = await db.query(`
+      SELECT d.*, p.nombre as producto_nombre, pv.nombre_variante 
+      FROM detalle_ventas d
+      JOIN productos p ON d.producto_id = p.id
+      LEFT JOIN producto_variantes pv ON d.variante_id = pv.id
+      WHERE d.venta_id = $1
+    `, [id]);
+    const items = itemsRes.rows;
+
+    // Fetch config
+    const confRes = await db.query('SELECT * FROM config_empresa WHERE id = 1');
+    const config = confRes.rows[0] || {};
+
+    const itemsHtml = items.map(item => `
+      <tr>
+        <td style="padding: 4px 0; border-bottom: 1px dashed #ccc;">${item.cantidad}x ${item.producto_nombre} ${item.nombre_variante ? `(${item.nombre_variante})` : ''}</td>
+        <td style="padding: 4px 0; border-bottom: 1px dashed #ccc; text-align: right;">S/ ${parseFloat(item.subtotal_item).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Ticket ${venta.numero_comprobante}</title>
+        <style>
+          body { font-family: 'Courier New', Courier, monospace; font-size: 14px; margin: 0; padding: 20px; color: #000; background: #fff; }
+          .ticket { max-width: 300px; margin: 0 auto; }
+          .text-center { text-align: center; }
+          .text-right { text-align: right; }
+          .bold { font-weight: bold; }
+          .mb { margin-bottom: 10px; }
+          table { width: 100%; border-collapse: collapse; }
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="ticket">
+          <div class="text-center mb">
+            <h2 style="margin:0">${config.nombre_empresa || 'Joyería Mariné'}</h2>
+            <div>${config.ruc ? `RUC: ${config.ruc}` : ''}</div>
+            <div>${config.direccion || ''}</div>
+            <div>${config.telefono || ''}</div>
+          </div>
+          <div class="text-center mb" style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 5px 0;">
+            <div class="bold">COMPROBANTE DE PAGO</div>
+            <div>${venta.numero_comprobante}</div>
+          </div>
+          <div class="mb">
+            <div>Fecha: ${new Date(venta.fecha).toLocaleString('es-PE')}</div>
+            <div>Cajero: ${venta.cajero || 'Admin'}</div>
+            ${venta.cliente_nombre ? `<div>Cliente: ${venta.cliente_nombre}</div>` : ''}
+          </div>
+          <table class="mb">
+            <thead>
+              <tr>
+                <th style="text-align: left; border-bottom: 1px solid #000;">Cant/Prod</th>
+                <th style="text-align: right; border-bottom: 1px solid #000;">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          <table class="mb" style="margin-left: auto; width: 60%;">
+            <tr><td>Subtotal:</td><td class="text-right">S/ ${parseFloat(venta.subtotal).toFixed(2)}</td></tr>
+            ${venta.descuento > 0 ? `<tr><td>Desc:</td><td class="text-right">- S/ ${parseFloat(venta.descuento).toFixed(2)}</td></tr>` : ''}
+            <tr class="bold"><td>Total:</td><td class="text-right">S/ ${parseFloat(venta.total).toFixed(2)}</td></tr>
+          </table>
+          <div class="text-center mb" style="font-size: 0.9em;">
+            ${config.mensaje_ticket || '¡Gracias por su compra!'}
+          </div>
+          <div class="no-print text-center" style="margin-top: 30px;">
+            <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Imprimir Ticket</button>
+          </div>
+        </div>
+        <script>
+          if (new URLSearchParams(window.location.search).get('print') === 'true') {
+            window.onload = () => window.print();
+          }
+        </script>
+      </body>
+      </html>
+    `;
+
+    res.send(html);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
