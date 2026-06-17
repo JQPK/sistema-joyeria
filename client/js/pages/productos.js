@@ -164,6 +164,34 @@ export default {
             <button class="btn btn-primary w-full" onclick="window.prodPrintBarcode()">🖨️ Imprimir</button>
           </div>
         </div>
+      <div id="modal-edit-variant" class="modal-overlay">
+        <div class="modal" style="max-width: 400px">
+          <div class="modal-header">
+            <h3 class="text-gold">Editar Variante</h3>
+            <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-edit-variant')">✕</button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="edit-var-id">
+            <div class="form-group">
+              <label class="form-label">Nombre de Variante</label>
+              <input type="text" id="edit-var-nombre" class="form-control">
+            </div>
+            <div class="form-row flex gap-4">
+              <div class="form-group flex-1">
+                <label class="form-label">Stock Actual</label>
+                <input type="number" id="edit-var-stock" class="form-control" min="0">
+              </div>
+              <div class="form-group flex-1">
+                <label class="form-label">Precio (S/)</label>
+                <input type="number" id="edit-var-precio" class="form-control" step="0.10" min="0">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="app.closeModal('modal-edit-variant')">Cancelar</button>
+            <button class="btn btn-primary" onclick="window.prodSaveVariant()">Guardar Variante</button>
+          </div>
+        </div>
       </div>
     `;
 
@@ -310,7 +338,7 @@ export default {
                 <td>${v.stock_actual}</td>
                 <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
                 <td style="display: flex; gap: 0.25rem;">
-                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodEditVariant(${v.id}, ${v.stock_actual}, ${v.precio_venta || p.precio_venta})" title="Editar Variante">
+                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodEditVariant(${v.id}, '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.stock_actual}, ${v.precio_venta || p.precio_venta})" title="Editar Variante">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                   </button>
                   <button type="button" class="btn-icon btn-secondary" onclick="window.prodShowBarcode('${v.sku}', '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.precio_venta || p.precio_venta})" title="Imprimir Código">
@@ -384,18 +412,30 @@ export default {
     }
   },
 
-  async editVariant(id, currentStock, currentPrice) {
-    const newStock = prompt('Ingresa el nuevo stock para la variante:', currentStock);
-    if (newStock === null) return;
-    const newPrice = prompt('Ingresa el nuevo precio para la variante:', currentPrice);
-    if (newPrice === null) return;
+  editVariant(id, currentName, currentStock, currentPrice) {
+    document.getElementById('edit-var-id').value = id;
+    document.getElementById('edit-var-nombre').value = currentName;
+    document.getElementById('edit-var-stock').value = currentStock;
+    document.getElementById('edit-var-precio').value = currentPrice;
+    app.openModal('modal-edit-variant');
+  },
+
+  async saveVariant() {
+    const id = document.getElementById('edit-var-id').value;
+    const nombre = document.getElementById('edit-var-nombre').value;
+    const stock = document.getElementById('edit-var-stock').value;
+    const precio = document.getElementById('edit-var-precio').value;
+
+    if (!nombre) return app.showToast('El nombre de la variante es requerido', 'warning');
 
     try {
       await api.put(`/variantes/${id}`, {
-        stock_actual: parseInt(newStock) || 0,
-        precio_venta: parseFloat(newPrice) || 0
+        nombre_variante: nombre,
+        stock_actual: parseInt(stock) || 0,
+        precio_venta: parseFloat(precio) || 0
       });
       app.showToast('Variante actualizada correctamente', 'success');
+      app.closeModal('modal-edit-variant');
       // Reload products list to reflect changes
       this.loadData();
       // Re-open the modal with updated data
@@ -492,6 +532,7 @@ export default {
     window.prodShowBarcode = this.showBarcode.bind(this);
     window.prodPrintBarcode = this.printBarcode.bind(this);
     window.prodEditVariant = this.editVariant.bind(this);
+    window.prodSaveVariant = this.saveVariant.bind(this);
     // Temporary disabled add variant from UI, handled via Excel primarily for now
     window.prodAddVariant = () => app.showToast('Para agregar variantes, usa la plantilla Excel por ahora.', 'info');
   }

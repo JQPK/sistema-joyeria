@@ -88,10 +88,16 @@ export default {
         </div>
 
         <div class="card" style="margin-top: 1.5rem">
-          <div class="card-header">
+          <div class="card-header flex justify-between items-center flex-wrap gap-2">
             <h3 style="font-size: 1.1rem">Detalle de Inventario</h3>
-            <div class="form-control flex items-center" style="min-width: 200px; padding:0; width:auto">
-              <input type="text" id="inv-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar producto...">
+            <div class="flex gap-2">
+              <div class="form-control flex items-center" style="min-width: 200px; padding:0; width:auto">
+                <input type="text" id="inv-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar producto...">
+              </div>
+              <button class="btn btn-secondary flex items-center gap-2" onclick="window.invExportExcel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Exportar Excel
+              </button>
             </div>
           </div>
           <div class="card-body" style="padding: 0">
@@ -240,8 +246,49 @@ export default {
     }
   },
 
+  exportExcel() {
+    if (!this.productos || this.productos.length === 0) {
+      return app.showToast('No hay datos de inventario para exportar', 'warning');
+    }
+
+    const data = [];
+    this.productos.forEach(p => {
+      if (p.tiene_variantes && p.variantes) {
+        p.variantes.forEach(v => {
+          data.push({
+            'Código Padre': p.codigo || '-',
+            'Producto': p.nombre,
+            'SKU Variante': v.sku,
+            'Variante': v.nombre_variante,
+            'Stock': v.stock_actual,
+            'Stock Mínimo': v.stock_minimo,
+            'Precio Venta (S/)': parseFloat(v.precio_venta || p.precio_venta).toFixed(2)
+          });
+        });
+      } else {
+        data.push({
+          'Código Padre': p.codigo || '-',
+          'Producto': p.nombre,
+          'SKU Variante': '-',
+          'Variante': '-',
+          'Stock': p.stock_actual,
+          'Stock Mínimo': p.stock_minimo,
+          'Precio Venta (S/)': parseFloat(p.precio_venta).toFixed(2)
+        });
+      }
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+    
+    const dateStr = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Reporte_Inventario_${dateStr}.xlsx`);
+  },
+
   load() {
     this.bindEvents();
     this.loadData();
+    window.invExportExcel = this.exportExcel.bind(this);
   }
 };

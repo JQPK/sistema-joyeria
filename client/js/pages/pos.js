@@ -156,11 +156,19 @@ export default {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" style="vertical-align: middle; margin-right: 8px"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
                 Imprimir Ticket
               </button>
-              <button class="btn btn-secondary w-full" id="btn-whatsapp-ticket" style="color: #25D366; border-color: #25D366">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" style="vertical-align: middle; margin-right: 8px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-                Enviar por WhatsApp
-              </button>
-              <button class="btn btn-secondary w-full" style="margin-top: 1rem" onclick="window.posNewSale()">
+              
+              <div style="margin-top: 1rem; text-align: left">
+                <label class="form-label" style="font-size: 0.85rem">Enviar por WhatsApp al Número:</label>
+                <div class="flex gap-2">
+                  <input type="text" id="wa-phone-input" class="form-control" placeholder="Ej. 987654321" style="flex: 1">
+                  <button class="btn btn-secondary" id="btn-whatsapp-ticket" style="color: #25D366; border-color: #25D366; white-space: nowrap;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" style="vertical-align: middle; margin-right: 4px"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    Enviar
+                  </button>
+                </div>
+              </div>
+
+              <button class="btn btn-secondary w-full" style="margin-top: 1.5rem" onclick="window.posNewSale()">
                 Nueva Venta
               </button>
             </div>
@@ -551,10 +559,21 @@ export default {
         
         // Setup post-sale modal
         document.getElementById('venta-exitosa-nro').textContent = `Comprobante: ${res.numero_comprobante}`;
-        document.getElementById('btn-print-ticket').onclick = () => window.open(`/api/ventas/${res.venta_id || res.id}/ticket`, '_blank');
+        const token = localStorage.getItem('token');
+        document.getElementById('btn-print-ticket').onclick = () => window.open(`/api/ventas/${res.venta_id || res.id}/ticket?token=${token}`, '_blank');
+        
         document.getElementById('btn-whatsapp-ticket').onclick = () => {
-          const text = encodeURIComponent(`¡Hola! Tu comprobante ${res.numero_comprobante} de Joyería Mariné ha sido generado con éxito. ¡Gracias por tu compra!`);
-          window.open(`https://wa.me/?text=${text}`, '_blank');
+          const phoneInput = document.getElementById('wa-phone-input');
+          const phone = phoneInput ? phoneInput.value.trim() : '';
+          if (!phone) {
+            return app.showToast('Por favor ingrese un número de WhatsApp', 'warning');
+          }
+          
+          // Generate PDF download URL to include in the message
+          // The public URL must be absolute. Assuming the current origin is the public address.
+          const ticketUrl = `${window.location.origin}/api/ventas/${res.venta_id || res.id}/ticket?token=${token}`;
+          const text = encodeURIComponent(`¡Hola! Gracias por su compra en Joyería Mariné. Puede descargar su comprobante (${res.numero_comprobante}) aquí: ${ticketUrl}`);
+          window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
         };
         app.openModal('modal-venta-exitosa');
       }
