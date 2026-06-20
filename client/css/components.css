@@ -163,6 +163,19 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile filter row: flex-wrap grid that stacks on small screens */
+.mobile-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;

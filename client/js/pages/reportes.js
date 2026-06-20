@@ -19,7 +19,7 @@ export default {
           <h2 class="text-gold">Reporte de Ventas</h2>
         </div>
         <div class="card-body">
-          <div class="flex flex-wrap gap-4" style="margin-bottom: 2rem">
+          <div class="mobile-filter-row" style="margin-bottom: 1.5rem">
             <div class="form-group mb-0">
               <label class="form-label">Desde</label>
               <input type="date" id="rep-fecha-inicio" class="form-control" value="${firstDay}">
@@ -29,11 +29,11 @@ export default {
               <input type="date" id="rep-fecha-fin" class="form-control" value="${lastDay}">
             </div>
             <div class="form-group mb-0" style="display:flex; align-items:flex-end">
-              <button class="btn btn-primary" onclick="window.repLoad()">Generar Reporte</button>
+              <button class="btn btn-primary w-full" onclick="window.repLoad()">Generar Reporte</button>
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem">
             <div class="card" style="box-shadow:none; border:1px solid var(--bg-secondary)">
               <div class="card-header"><h3 style="font-size: 1rem">Evolución de Ingresos</h3></div>
               <div class="card-body"><div class="chart-container"><canvas id="rep-chart-line"></canvas></div></div>

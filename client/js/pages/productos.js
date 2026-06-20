@@ -12,37 +12,37 @@ export default {
       <div class="card">
         <div class="card-header flex justify-between items-center flex-wrap gap-2">
           <h2 class="text-gold">Inventario de Productos</h2>
-          <div class="flex gap-2">
-            <button class="btn btn-secondary" onclick="window.prodDownloadTemplate()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <div class="flex gap-2 flex-wrap">
+            <button class="btn btn-secondary btn-sm" onclick="window.prodDownloadTemplate()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               Plantilla
             </button>
-            <label class="btn btn-secondary cursor-pointer" style="margin: 0">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-              Importar Excel
+            <label class="btn btn-secondary btn-sm cursor-pointer" style="margin: 0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+              Importar
               <input type="file" id="prod-import-file" accept=".xlsx, .xls" style="display:none" onchange="window.prodImportExcel(event)">
             </label>
-            <button class="btn btn-primary" onclick="window.prodOpenModal()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <button class="btn btn-primary btn-sm" onclick="window.prodOpenModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               Nuevo
             </button>
           </div>
         </div>
         
         <div class="card-body">
-          <div class="flex flex-wrap gap-4" style="margin-bottom: 1.5rem">
-            <div class="form-control flex items-center flex-1" style="min-width: 200px; padding:0">
+          <div class="mobile-filter-row" style="margin-bottom: 1rem">
+            <div class="form-control flex items-center" style="padding:0; min-width:0">
               <input type="text" id="prod-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar por código o nombre...">
             </div>
-            <select id="prod-filter-cat" class="form-control" style="width:auto">
+            <select id="prod-filter-cat" class="form-control">
               <option value="">Todas las Categorías</option>
             </select>
-            <select id="prod-filter-mat" class="form-control" style="width:auto">
+            <select id="prod-filter-mat" class="form-control">
               <option value="">Todos los Materiales</option>
             </select>
           </div>
 
-          <div class="table-container">
+          <div class="table-responsive">
             <table class="data-table" id="prod-table">
               <thead>
                 <tr>

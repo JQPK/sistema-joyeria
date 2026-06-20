@@ -42,7 +42,7 @@ export default {
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem">
           <div class="card">
             <div class="card-header">
               <h3 style="font-size: 1.1rem">Ventas (Últimos 7 días)</h3>
@@ -60,7 +60,7 @@ export default {
               <a href="#comprobantes" class="text-gold" style="font-size: 0.9rem">Ver todo</a>
             </div>
             <div class="card-body" style="padding: 0">
-              <div class="table-container">
+              <div class="table-responsive">
                 <table class="data-table" id="dash-recent-table">
                   <tbody>
                     <tr><td colspan="4" class="text-center text-muted">Cargando...</td></tr>

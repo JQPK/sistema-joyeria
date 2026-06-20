@@ -9,22 +9,22 @@ export default {
     this.container = container;
     this.container.innerHTML = `
       <div class="card">
-        <div class="card-header flex justify-between items-center">
+        <div class="card-header flex justify-between items-center flex-wrap gap-2">
           <h2 class="text-gold">Caja Chica</h2>
-          <button class="btn btn-danger" onclick="window.cajaOpenModal('egreso')">
-            Registrar Gasto (Egreso)
+          <button class="btn btn-danger btn-sm" onclick="window.cajaOpenModal('egreso')">
+            Registrar Gasto
           </button>
         </div>
         
         <div class="card-body">
-          <div class="stats-grid" style="margin-bottom: 2rem">
+          <div class="stats-grid" style="margin-bottom: 1.5rem">
             <div class="card stat-card" style="border-left: 4px solid var(--color-success)">
               <div class="stat-icon" style="background: rgba(129, 178, 154, 0.1); color: var(--color-success)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
               </div>
               <div>
-                <div class="text-muted" style="font-size: 0.9rem">Ingresos</div>
-                <div class="fw-bold text-success" style="font-size: 1.5rem" id="caja-ingresos">S/ 0.00</div>
+                <div class="text-muted" style="font-size: 0.85rem">Ingresos</div>
+                <div class="fw-bold text-success" style="font-size: 1.3rem" id="caja-ingresos">S/ 0.00</div>
               </div>
             </div>
             
@@ -33,8 +33,8 @@ export default {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
               </div>
               <div>
-                <div class="text-muted" style="font-size: 0.9rem">Egresos</div>
-                <div class="fw-bold text-danger" style="font-size: 1.5rem" id="caja-egresos">S/ 0.00</div>
+                <div class="text-muted" style="font-size: 0.85rem">Egresos</div>
+                <div class="fw-bold text-danger" style="font-size: 1.3rem" id="caja-egresos">S/ 0.00</div>
               </div>
             </div>
 
@@ -43,24 +43,22 @@ export default {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path></svg>
               </div>
               <div>
-                <div class="text-muted" style="font-size: 0.9rem">Saldo Neto</div>
-                <div class="fw-bold text-gold" style="font-size: 1.5rem" id="caja-saldo">S/ 0.00</div>
+                <div class="text-muted" style="font-size: 0.85rem">Saldo Neto</div>
+                <div class="fw-bold text-gold" style="font-size: 1.3rem" id="caja-saldo">S/ 0.00</div>
               </div>
             </div>
           </div>
 
-          <div class="flex flex-wrap gap-4" style="margin-bottom: 1.5rem; justify-content: space-between;">
-            <div class="flex gap-2">
-              <input type="date" id="caja-fecha" class="form-control" style="width:auto">
-              <button class="btn btn-secondary" onclick="window.cajaLoad()">Filtrar Día</button>
-            </div>
+          <div class="mobile-filter-row" style="margin-bottom: 1rem">
+            <input type="date" id="caja-fecha" class="form-control">
+            <button class="btn btn-secondary" onclick="window.cajaLoad()">Filtrar Día</button>
             <button class="btn btn-secondary flex items-center gap-2" onclick="window.cajaExport()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              Exportar Excel
+              Exportar
             </button>
           </div>
 
-          <div class="table-container">
+          <div class="table-responsive">
             <table class="data-table" id="caja-table">
               <thead>
                 <tr>

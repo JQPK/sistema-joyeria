@@ -41,13 +41,13 @@ export default {
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem">
           <div class="card">
             <div class="card-header">
               <h3 style="font-size: 1.1rem">Top 10 Más Vendidos</h3>
             </div>
             <div class="card-body" style="padding: 0">
-              <div class="table-container">
+              <div class="table-responsive">
                 <table class="data-table" id="inv-top-table">
                   <thead>
                     <tr>
@@ -69,7 +69,7 @@ export default {
               <h3 style="font-size: 1.1rem">Top 10 Menos Rotación (Últ. 90 días)</h3>
             </div>
             <div class="card-body" style="padding: 0">
-              <div class="table-container">
+              <div class="table-responsive">
                 <table class="data-table" id="inv-low-table">
                   <thead>
                     <tr>
@@ -90,18 +90,18 @@ export default {
         <div class="card" style="margin-top: 1.5rem">
           <div class="card-header flex justify-between items-center flex-wrap gap-2">
             <h3 style="font-size: 1.1rem">Detalle de Inventario</h3>
-            <div class="flex gap-2">
-              <div class="form-control flex items-center" style="min-width: 200px; padding:0; width:auto">
+            <div class="mobile-filter-row">
+              <div class="form-control flex items-center" style="padding:0; min-width:0">
                 <input type="text" id="inv-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar producto...">
               </div>
-              <button class="btn btn-secondary flex items-center gap-2" onclick="window.invExportExcel()">
+              <button class="btn btn-secondary btn-sm flex items-center gap-2" onclick="window.invExportExcel()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                Exportar Excel
+                Exportar
               </button>
             </div>
           </div>
           <div class="card-body" style="padding: 0">
-            <div class="table-container">
+            <div class="table-responsive">
               <table class="data-table" id="inv-full-table">
                 <thead>
                   <tr>

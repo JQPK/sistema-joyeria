@@ -8,11 +8,11 @@ export default {
     this.container = container;
     this.container.innerHTML = `
       <div class="card">
-        <div class="card-header flex justify-between items-center">
+        <div class="card-header flex justify-between items-center flex-wrap gap-2">
           <h2 class="text-gold">Clientes</h2>
-          <button class="btn btn-primary" onclick="window.cliOpenModal()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
-            Nuevo Cliente
+          <button class="btn btn-primary btn-sm" onclick="window.cliOpenModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+            Nuevo
           </button>
         </div>
         
@@ -21,7 +21,7 @@ export default {
             <input type="text" id="cli-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar por DNI, RUC o Nombre...">
           </div>
 
-          <div class="table-container">
+          <div class="table-responsive">
             <table class="data-table" id="cli-table">
               <thead>
                 <tr>

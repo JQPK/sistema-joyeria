@@ -14,21 +14,21 @@ export default {
         </div>
         
         <div class="card-body">
-          <div class="flex flex-wrap gap-4" style="margin-bottom: 1.5rem">
-            <div class="form-control flex items-center flex-1" style="min-width: 200px; padding:0">
-              <input type="text" id="comp-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar por comprobante o cliente...">
+          <div class="mobile-filter-row" style="margin-bottom: 1rem">
+            <div class="form-control flex items-center" style="padding:0; min-width:0">
+              <input type="text" id="comp-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar comprobante...">
             </div>
-            <select id="comp-filter-estado" class="form-control" style="width:auto">
+            <select id="comp-filter-estado" class="form-control">
               <option value="">Todos los Estados</option>
               <option value="completada">Completada</option>
               <option value="anulada">Anulada</option>
             </select>
-            <input type="date" id="comp-fecha-inicio" class="form-control" style="width:auto">
-            <input type="date" id="comp-fecha-fin" class="form-control" style="width:auto">
-            <button class="btn btn-secondary" onclick="window.compLoad()">Filtrar</button>
+            <input type="date" id="comp-fecha-inicio" class="form-control">
+            <input type="date" id="comp-fecha-fin" class="form-control">
+            <button class="btn btn-secondary w-full" onclick="window.compLoad()">Filtrar</button>
           </div>
 
-          <div class="table-container">
+          <div class="table-responsive">
             <table class="data-table" id="comp-table">
               <thead>
                 <tr>
