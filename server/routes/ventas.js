@@ -312,15 +312,16 @@ router.get('/:id/ticket', async (req, res, next) => {
         <meta charset="utf-8">
         <title>Ticket ${venta.numero_comprobante}</title>
         <style>
-          body { font-family: 'Courier New', Courier, monospace; font-size: 14px; margin: 0; padding: 20px; color: #000; background: #fff; }
-          .ticket { max-width: 300px; margin: 0 auto; }
+          body { font-family: 'Courier New', Courier, monospace; font-size: 12px; margin: 0; padding: 10px; color: #000; background: #fff; }
+          .ticket { width: 100%; max-width: 300px; margin: 0 auto; }
           .text-center { text-align: center; }
           .text-right { text-align: right; }
           .bold { font-weight: bold; }
-          .mb { margin-bottom: 10px; }
-          table { width: 100%; border-collapse: collapse; }
+          .mb { margin-bottom: 8px; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
           @media print {
-            body { padding: 0; }
+            @page { margin: 0; }
+            body { padding: 0; margin: 0; }
             .no-print { display: none; }
           }
         </style>
