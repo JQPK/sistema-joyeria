@@ -265,51 +265,76 @@ window.app = {
   },
 
   printHtml(htmlContent) {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0px';
-    iframe.style.height = '0px';
-    iframe.style.border = 'none';
-    document.body.appendChild(iframe);
+    // Avoid cross-origin and DOMException iframe issues on Capacitor
+    // by injecting the content into a dedicated print div and using window.print()
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    
+    let styles = '';
+    doc.querySelectorAll('style').forEach(s => styles += s.innerHTML);
+    const bodyContent = doc.body.innerHTML;
 
-    const doc = iframe.contentWindow.document;
-    doc.open();
-    doc.write(htmlContent);
-    doc.close();
-
-    // Wait for content to render, then print
-    setTimeout(() => {
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-      // Clean up after print dialog closes
-      setTimeout(() => {
-        if (document.body.contains(iframe)) {
-          document.body.removeChild(iframe);
+    let printDiv = document.getElementById('global-print-area');
+    if (!printDiv) {
+      printDiv = document.createElement('div');
+      printDiv.id = 'global-print-area';
+      document.body.appendChild(printDiv);
+    }
+    
+    // Inject styles and body content
+    printDiv.innerHTML = `<style>${styles}</style>` + bodyContent;
+    
+    // Add global CSS overrides to hide everything else during print
+    let printOverrides = document.getElementById('global-print-overrides');
+    if (!printOverrides) {
+      printOverrides = document.createElement('style');
+      printOverrides.id = 'global-print-overrides';
+      printOverrides.innerHTML = `
+        @media print {
+          body > *:not(#global-print-area):not(#global-print-overrides) {
+            display: none !important;
+          }
+          #global-print-area {
+            display: block !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: white;
+            color: black;
+            z-index: 999999;
+          }
         }
-      }, 5000);
-    }, 500);
+        @media screen {
+          #global-print-area {
+            display: none !important;
+          }
+        }
+      `;
+      document.head.appendChild(printOverrides);
+    }
+
+    setTimeout(() => {
+      window.print();
+      // Clean up after the print dialog resolves
+      setTimeout(() => {
+        printDiv.innerHTML = '';
+      }, 1000);
+    }, 300);
   },
 
-  printUrl(url) {
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0px';
-    iframe.style.height = '0px';
-    iframe.style.border = 'none';
-    iframe.src = url;
-    document.body.appendChild(iframe);
-
-    iframe.onload = () => {
-      setTimeout(() => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe);
-          }
-        }, 5000);
-      }, 500);
-    };
+  async printUrl(url) {
+    try {
+      this.showToast('Preparando impresión...', 'info');
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Error al obtener el documento');
+      const htmlContent = await response.text();
+      this.printHtml(htmlContent);
+    } catch (err) {
+      this.showToast('Error de impresión: ' + err.message, 'error');
+    }
   }
 };
 
