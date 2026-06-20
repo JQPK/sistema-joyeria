@@ -14,18 +14,31 @@ export default {
         </div>
         
         <div class="card-body">
-          <div class="mobile-filter-row" style="margin-bottom: 1rem">
-            <div class="form-control flex items-center" style="padding:0; min-width:0">
-              <input type="text" id="comp-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar comprobante...">
+          <div class="form-group" style="margin-bottom: 0.75rem">
+            <div class="form-control flex items-center" style="padding:0">
+              <input type="text" id="comp-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar por comprobante o cliente...">
             </div>
-            <select id="comp-filter-estado" class="form-control">
-              <option value="">Todos los Estados</option>
-              <option value="completada">Completada</option>
-              <option value="anulada">Anulada</option>
-            </select>
-            <input type="date" id="comp-fecha-inicio" class="form-control">
-            <input type="date" id="comp-fecha-fin" class="form-control">
-            <button class="btn btn-secondary w-full" onclick="window.compLoad()">Filtrar</button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem">
+            <div class="form-group mb-0">
+              <label class="form-label">Estado</label>
+              <select id="comp-filter-estado" class="form-control">
+                <option value="">Todos</option>
+                <option value="completada">Completada</option>
+                <option value="anulada">Anulada</option>
+              </select>
+            </div>
+            <div class="form-group mb-0">
+              <label class="form-label">Desde</label>
+              <input type="date" id="comp-fecha-inicio" class="form-control">
+            </div>
+            <div class="form-group mb-0">
+              <label class="form-label">Hasta</label>
+              <input type="date" id="comp-fecha-fin" class="form-control">
+            </div>
+            <div class="form-group mb-0" style="display:flex; align-items:flex-end">
+              <button class="btn btn-primary w-full" onclick="window.compLoad()">Filtrar</button>
+            </div>
           </div>
 
           <div class="table-responsive">

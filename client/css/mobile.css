@@ -46,8 +46,9 @@
     gap: 0.5rem;
   }
   
-  /* Cart Panel: Full-screen slide-up overlay */
+  /* Cart Panel: Completely hidden, fullscreen overlay when active */
   .pos-cart {
+    display: none;
     position: fixed;
     top: var(--topbar-height);
     bottom: var(--bottom-nav-height);
@@ -55,15 +56,14 @@
     right: 0;
     z-index: 150;
     border-radius: 0;
-    transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     background: var(--bg-card);
     border: none;
     box-shadow: none;
+    flex-direction: column;
   }
 
   .pos-cart.active {
-    transform: translateY(0);
+    display: flex;
     box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
   }
 
