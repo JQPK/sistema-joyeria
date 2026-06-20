@@ -560,7 +560,7 @@ export default {
         // Setup post-sale modal
         document.getElementById('venta-exitosa-nro').textContent = `Comprobante: ${res.numero_comprobante}`;
         const token = localStorage.getItem('token');
-        document.getElementById('btn-print-ticket').onclick = () => window.open(`${API_URL}/ventas/${res.venta_id || res.id}/ticket?token=${token}`, '_blank');
+        document.getElementById('btn-print-ticket').onclick = () => app.printUrl(`${API_URL}/ventas/${res.venta_id || res.id}/ticket?token=${token}`);
         
         document.getElementById('btn-whatsapp-ticket').onclick = async () => {
           const phoneInput = document.getElementById('wa-phone-input');

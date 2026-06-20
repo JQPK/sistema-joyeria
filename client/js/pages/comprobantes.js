@@ -214,7 +214,7 @@ export default {
         let footerHtml = `
           <div style="display:flex; flex-wrap:wrap; gap: 0.5rem; justify-content: space-between; width: 100%">
             <div style="display:flex; gap: 0.5rem">
-              <button class="btn btn-primary" onclick="window.open('${API_URL}/ventas/${v.id}/ticket?token=${localStorage.getItem('token')}', '_blank')">Imprimir</button>
+              <button class="btn btn-primary" onclick="app.printUrl('${API_URL}/ventas/${v.id}/ticket?token=${localStorage.getItem('token')}')">Imprimir</button>
               <button class="btn btn-secondary" onclick="window.open('${API_URL}/ventas/${v.id}/pdf?token=${localStorage.getItem('token')}', '_blank')">PDF</button>
             </div>
             <div style="display:flex; gap: 0.5rem">

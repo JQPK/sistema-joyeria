@@ -546,8 +546,7 @@ export default {
 
   printBarcode() {
     const printArea = document.getElementById('barcode-print-area').innerHTML;
-    const printWindow = window.open('', '_blank', 'width=400,height=400');
-    printWindow.document.write(`
+    const htmlContent = `
       <html>
         <head>
           <title>Imprimir Etiqueta</title>
@@ -565,13 +564,8 @@ export default {
           ${printArea}
         </body>
       </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 250);
+    `;
+    app.printHtml(htmlContent);
   },
 
   load() {
