@@ -264,8 +264,22 @@ window.app = {
     }
   },
 
-  printHtml(htmlContent) {
-    // Avoid cross-origin and DOMException iframe issues on Capacitor
+  async printHtml(htmlContent) {
+    // Check if running natively via Capacitor and if Printer plugin is available
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      try {
+        if (window.Capacitor.Plugins && window.Capacitor.Plugins.Printer) {
+          await window.Capacitor.Plugins.Printer.print({ content: htmlContent, name: 'Ticket' });
+          return;
+        } else {
+          console.warn('Printer plugin not found, falling back to window.print()');
+        }
+      } catch (err) {
+        console.error('Error with native printer:', err);
+      }
+    }
+
+    // Avoid cross-origin and DOMException iframe issues on Web
     // by injecting the content into a dedicated print div and using window.print()
     const parser = new DOMParser();
     const doc = parser.parseFromString(htmlContent, 'text/html');
