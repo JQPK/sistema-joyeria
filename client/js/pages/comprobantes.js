@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, API_URL } from '../api.js';
 import { auth } from '../auth.js';
 
 export default {
@@ -211,10 +211,18 @@ export default {
         `;
         document.getElementById('comp-detalle-content').innerHTML = html;
 
-        let footerHtml = `<button class="btn btn-secondary" onclick="app.closeModal('modal-detalle-venta')">Cerrar</button>`;
-        if (v.estado === 'completada' && auth.isAdmin()) {
-          footerHtml = `<button class="btn btn-danger" onclick="window.compVoid(${v.id})">Anular Venta</button>` + footerHtml;
-        }
+        let footerHtml = `
+          <div style="display:flex; flex-wrap:wrap; gap: 0.5rem; justify-content: space-between; width: 100%">
+            <div style="display:flex; gap: 0.5rem">
+              <button class="btn btn-primary" onclick="window.open('${API_URL}/ventas/${v.id}/ticket?token=${localStorage.getItem('token')}', '_blank')">Imprimir</button>
+              <button class="btn btn-secondary" onclick="window.open('${API_URL}/ventas/${v.id}/pdf?token=${localStorage.getItem('token')}', '_blank')">PDF</button>
+            </div>
+            <div style="display:flex; gap: 0.5rem">
+              ${v.estado === 'completada' && auth.isAdmin() ? `<button class="btn btn-danger" onclick="window.compVoid(${v.id})">Anular</button>` : ''}
+              <button class="btn btn-secondary" onclick="app.closeModal('modal-detalle-venta')">Cerrar</button>
+            </div>
+          </div>
+        `;
         document.getElementById('comp-detalle-footer').innerHTML = footerHtml;
       }
     } catch (err) {

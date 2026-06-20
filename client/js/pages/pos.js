@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, API_URL } from '../api.js';
 import { scanner } from '../scanner.js';
 
 export default {
@@ -560,7 +560,7 @@ export default {
         // Setup post-sale modal
         document.getElementById('venta-exitosa-nro').textContent = `Comprobante: ${res.numero_comprobante}`;
         const token = localStorage.getItem('token');
-        document.getElementById('btn-print-ticket').onclick = () => window.open(`/api/ventas/${res.venta_id || res.id}/ticket?token=${token}`, '_blank');
+        document.getElementById('btn-print-ticket').onclick = () => window.open(`${API_URL}/ventas/${res.venta_id || res.id}/ticket?token=${token}`, '_blank');
         
         document.getElementById('btn-whatsapp-ticket').onclick = async () => {
           const phoneInput = document.getElementById('wa-phone-input');
@@ -570,7 +570,7 @@ export default {
           }
           
           const textMsg = `¡Hola! Gracias por su compra en Joyería Mariné. Adjunto su comprobante (${res.numero_comprobante}).`;
-          const pdfUrl = `/api/ventas/${res.venta_id || res.id}/pdf?token=${token}`;
+          const pdfUrl = `${API_URL}/ventas/${res.venta_id || res.id}/pdf?token=${token}`;
           
           const btnWa = document.getElementById('btn-whatsapp-ticket');
           btnWa.disabled = true;
