@@ -339,7 +339,7 @@ router.get('/:id/ticket', async (req, res, next) => {
             <div>${venta.numero_comprobante}</div>
           </div>
           <div class="mb">
-            <div>Fecha: ${new Date(venta.fecha).toLocaleString('es-PE')}</div>
+            <div>Fecha: ${new Date(venta.fecha).toLocaleString('es-PE', { timeZone: 'America/Lima' })}</div>
             <div>Cajero: ${venta.cajero || 'Admin'}</div>
             ${venta.cliente_nombre ? `<div>Cliente: ${venta.cliente_nombre}</div>` : ''}
           </div>
@@ -434,7 +434,7 @@ router.get('/:id/pdf', async (req, res, next) => {
     doc.text(venta.numero_comprobante, { align: 'center' });
     doc.font('Helvetica').moveDown();
 
-    doc.text(`Fecha: ${new Date(venta.fecha).toLocaleString('es-PE')}`);
+    doc.text(`Fecha: ${new Date(venta.fecha).toLocaleString('es-PE', { timeZone: 'America/Lima' })}`);
     doc.text(`Cajero: ${venta.cajero || 'Admin'}`);
     if (venta.cliente_nombre) doc.text(`Cliente: ${venta.cliente_nombre}`);
     

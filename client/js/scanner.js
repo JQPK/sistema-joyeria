@@ -15,24 +15,16 @@ export const scanner = {
     // Wait a tick for the modal to be visible (DOM needs to render)
     await new Promise(r => setTimeout(r, 300));
 
-    // Clear previous instance
-    if (this.html5Qrcode) {
-      try {
-        if (this.isScanning) {
-          await this.html5Qrcode.stop();
-        }
-        this.html5Qrcode.clear();
-      } catch(e) {
-        console.warn('Scanner cleanup error:', e);
-      }
-      this.html5Qrcode = null;
-    }
-
     try {
-      // Use Html5Qrcode directly (not Html5QrcodeScanner) for better control
-      this.html5Qrcode = new Html5Qrcode("reader");
-      this.isScanning = true;
+      if (!this.html5Qrcode) {
+        this.html5Qrcode = new Html5Qrcode("reader");
+      }
+      
+      if (this.isScanning) {
+        await this.html5Qrcode.stop();
+      }
 
+      this.isScanning = true;
       await this.html5Qrcode.start(
         { facingMode: "environment" }, // Use rear camera
         {
@@ -50,7 +42,7 @@ export const scanner = {
           }
         },
         (errorMessage) => {
-          // Ignore continuous scan errors (normal behavior)
+          // Ignore continuous scan errors
         }
       );
     } catch (err) {
@@ -65,13 +57,12 @@ export const scanner = {
     if (this.html5Qrcode && this.isScanning) {
       try {
         await this.html5Qrcode.stop();
-        this.html5Qrcode.clear();
       } catch(e) {
         console.warn('Scanner stop error:', e);
       }
     }
     this.isScanning = false;
-    this.html5Qrcode = null;
+    // Do NOT set this.html5Qrcode to null, we want to reuse the instance
     app.closeModal('modal-scanner');
   },
 
