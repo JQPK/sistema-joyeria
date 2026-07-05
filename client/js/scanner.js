@@ -1,14 +1,15 @@
 /**
  * Barcode Scanner Module
- * - On Android/native: uses @capacitor-mlkit/barcode-scanning (avoids WebView camera lifecycle crashes)
- * - On Web: uses Html5Qrcode (loaded via CDN in index.html)
+ * - On Android/native: uses @capacitor-mlkit/barcode-scanning with startScan/stopScan
+ *   (does NOT require Google Barcode Scanner Module to be installed separately)
+ * - On Web: uses Html5Qrcode with pause/resume to avoid ThreadPool termination
  * - Supports: Hardware barcode gun detection (all platforms)
  */
 
 export const scanner = {
   html5Qrcode: null,
   isScanning: false,
-  _closing: false,
+  _nativeListener: null,
 
   _isNative() {
     return window.Capacitor && window.Capacitor.isNativePlatform();
@@ -23,7 +24,7 @@ export const scanner = {
   },
 
   // ──────────────────────────────────────────
-  // NATIVE SCANNER (Android via MLKit plugin)
+  // NATIVE SCANNER — uses startScan (bundled ML Kit, no external module needed)
   // ──────────────────────────────────────────
   async _openNative(callback) {
     const BarcodeScanner = window.Capacitor?.Plugins?.BarcodeScanner;
@@ -48,86 +49,81 @@ export const scanner = {
       console.warn('Permission check failed:', e);
     }
 
-    // Check if Google Barcode Scanner module is installed
-    // installGoogleBarcodeScannerModule() returns immediately but installs asynchronously
-    // We must wait for the progress event to signal completion
-    try {
-      const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
-      if (!available) {
-        app.showToast('Instalando módulo de escáner de Google... Por favor espera.', 'info');
-        
-        // Wait for the module installation to fully complete
-        await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error('Timeout esperando instalación del módulo'));
-          }, 60000); // 60 second timeout
+    // Stop any previous scan session
+    try { await BarcodeScanner.stopScan(); } catch(e) {}
 
-          // addListener returns a handle synchronously in Capacitor bridge
-          const listenerHandle = BarcodeScanner.addListener(
-            'googleBarcodeScannerModuleInstallProgress',
-            (event) => {
-              console.log('Install progress:', JSON.stringify(event));
-              // state 3 = installed/complete
-              if (event.state === 3 || event.progress === 100) {
-                clearTimeout(timeout);
-                listenerHandle && listenerHandle.remove();
-                resolve();
-              }
-              // state 5 or 6 = failed
-              if (event.state === 5 || event.state === 6) {
-                clearTimeout(timeout);
-                listenerHandle && listenerHandle.remove();
-                reject(new Error('Error al instalar el módulo'));
-              }
-            }
-          );
-
-          // Trigger the installation AFTER listener is registered
-          BarcodeScanner.installGoogleBarcodeScannerModule().catch(reject);
-        });
-
-        app.showToast('Módulo instalado. Abriendo escáner...', 'success');
-      }
-    } catch(e) {
-      console.error('Module install failed:', e);
-      app.showToast('No se pudo instalar el módulo de escáner: ' + e.message, 'error');
-      return;
+    // Remove previous listener if any
+    if (this._nativeListener) {
+      try { this._nativeListener.remove(); } catch(e) {}
+      this._nativeListener = null;
     }
 
     try {
-      app.showToast('Apunta la cámara al código...', 'info');
-      const { barcodes } = await BarcodeScanner.scan({
-        formats: ['Code128', 'Code39', 'Ean13', 'Ean8', 'QrCode', 'UpcA', 'UpcE'],
+      // Listen for barcodes — fires each time a code is detected
+      this._nativeListener = BarcodeScanner.addListener('barcodesScanned', async (result) => {
+        if (result.barcodes && result.barcodes.length > 0) {
+          const decodedText = result.barcodes[0].rawValue;
+
+          // Stop scanning immediately
+          try { await BarcodeScanner.stopScan(); } catch(e) {}
+          if (this._nativeListener) {
+            try { this._nativeListener.remove(); } catch(e) {}
+            this._nativeListener = null;
+          }
+
+          app.showToast(`Código: ${decodedText}`, 'success');
+          if (typeof callback === 'function') {
+            callback(decodedText);
+          }
+        }
       });
 
-      if (barcodes && barcodes.length > 0) {
-        const decodedText = barcodes[0].rawValue;
-        app.showToast(`Código: ${decodedText}`, 'success');
-        if (typeof callback === 'function') {
-          callback(decodedText);
-        }
-      }
+      // Start the camera overlay scanner
+      await BarcodeScanner.startScan({
+        formats: ['Code128', 'Code39', 'Ean13', 'Ean8', 'QrCode', 'UpcA', 'UpcE'],
+        lensFacing: 'back',
+      });
+
+      app.showToast('Apunta la cámara al código. Toca aquí para cancelar.', 'info');
+
     } catch (err) {
-      // User cancelled the scan — no error needed
-      if (!err.message?.toLowerCase().includes('cancel') && !err.message?.toLowerCase().includes('user')) {
-        console.error('Native scanner error:', err);
-        app.showToast('Error al escanear. Intenta de nuevo.', 'error');
+      console.error('Native scanner startScan error:', err);
+      try { await BarcodeScanner.stopScan(); } catch(e) {}
+      if (this._nativeListener) {
+        try { this._nativeListener.remove(); } catch(e) {}
+        this._nativeListener = null;
       }
+      app.showToast('Error al iniciar el escáner nativo.', 'error');
+    }
+  },
+
+  async _stopNative() {
+    const BarcodeScanner = window.Capacitor?.Plugins?.BarcodeScanner;
+    if (BarcodeScanner) {
+      try { await BarcodeScanner.stopScan(); } catch(e) {}
+    }
+    if (this._nativeListener) {
+      try { this._nativeListener.remove(); } catch(e) {}
+      this._nativeListener = null;
     }
   },
 
   // ──────────────────────────────────────────
-  // WEB SCANNER (browser via Html5Qrcode CDN)
+  // WEB SCANNER — Html5Qrcode with pause/resume to avoid ThreadPool crash
   // ──────────────────────────────────────────
   async _openWeb(callback) {
     app.openModal('modal-scanner');
     await new Promise(r => setTimeout(r, 300));
 
-    // Fully destroy any previous instance first
-    await this._webCleanup();
-    await new Promise(r => setTimeout(r, 400));
+    // If already running, just resume
+    if (this.html5Qrcode && this.isScanning) {
+      try {
+        this.html5Qrcode.resume();
+      } catch(e) {}
+      return;
+    }
 
-    // Rebuild the reader div so Html5Qrcode always gets a fresh element
+    // Rebuild the reader div for a fresh start
     const container = document.querySelector('#modal-scanner .modal-body');
     const oldReader = document.getElementById('reader');
     if (oldReader) oldReader.remove();
@@ -135,6 +131,11 @@ export const scanner = {
     newReader.id = 'reader';
     newReader.style.width = '100%';
     if (container) container.appendChild(newReader);
+
+    if (this.html5Qrcode) {
+      try { this.html5Qrcode.clear(); } catch(e) {}
+      this.html5Qrcode = null;
+    }
 
     try {
       this.html5Qrcode = new Html5Qrcode('reader');
@@ -144,15 +145,12 @@ export const scanner = {
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1.0 },
         (decodedText) => {
-          if (this._closing) return;
-          this._closing = true;
-          setTimeout(async () => {
-            await this._webCleanup();
-            app.closeModal('modal-scanner');
-            app.showToast(`Código: ${decodedText}`, 'success');
-            if (typeof callback === 'function') callback(decodedText);
-            this._closing = false;
-          }, 200);
+          // PAUSE instead of stop — keeps camera thread alive for next scan
+          try { this.html5Qrcode.pause(true); } catch(e) {}
+          this.isScanning = false;
+          app.closeModal('modal-scanner');
+          app.showToast(`Código: ${decodedText}`, 'success');
+          if (typeof callback === 'function') callback(decodedText);
         },
         () => {} // ignore frame errors
       );
@@ -165,20 +163,15 @@ export const scanner = {
     }
   },
 
-  async _webCleanup() {
-    if (this.html5Qrcode) {
-      try { if (this.isScanning) await this.html5Qrcode.stop(); } catch(e) {}
-      try { this.html5Qrcode.clear(); } catch(e) {}
-      this.html5Qrcode = null;
-    }
-    this.isScanning = false;
-  },
-
   async close() {
     if (this._isNative()) {
-      // Native scanner closes itself after scan() resolves or is cancelled
+      await this._stopNative();
     } else {
-      await this._webCleanup();
+      // Pause camera instead of stopping to preserve the hardware thread
+      if (this.html5Qrcode) {
+        try { this.html5Qrcode.pause(true); } catch(e) {}
+      }
+      this.isScanning = false;
       app.closeModal('modal-scanner');
     }
   },
