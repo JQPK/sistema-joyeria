@@ -218,7 +218,7 @@ export default {
               <button class="btn btn-secondary" onclick="window.open('${API_URL}/ventas/${v.id}/pdf?token=${localStorage.getItem('token')}', '_blank')">PDF</button>
             </div>
             <div style="display:flex; gap: 0.5rem">
-              ${v.estado === 'completada' && auth.isAdmin() ? `<button class="btn btn-danger" onclick="window.compVoid(${v.id})">Anular</button>` : ''}
+              ${v.estado === 'completada' ? `<button class="btn btn-danger" onclick="window.compVoid(${v.id})">Anular</button>` : ''}
               <button class="btn btn-secondary" onclick="app.closeModal('modal-detalle-venta')">Cerrar</button>
             </div>
           </div>

@@ -253,9 +253,11 @@ router.post('/:id/anular', async (req, res, next) => {
     
     await client.query('BEGIN');
     
-    const saleRes = await client.query('SELECT estado FROM ventas WHERE id = $1 FOR UPDATE', [id]);
+    const saleRes = await client.query('SELECT numero_comprobante, total, estado FROM ventas WHERE id = $1 FOR UPDATE', [id]);
     if (saleRes.rows.length === 0) throw new Error('Venta no encontrada');
     if (saleRes.rows[0].estado === 'anulada') throw new Error('La venta ya fue anulada');
+    
+    const venta = saleRes.rows[0];
 
     // Restore stock
     const itemsRes = await client.query('SELECT producto_id, variante_id, cantidad FROM detalle_ventas WHERE venta_id = $1', [id]);
@@ -274,6 +276,12 @@ router.post('/:id/anular', async (req, res, next) => {
 
     // Mark as voided
     await client.query("UPDATE ventas SET estado = 'anulada', motivo_anulacion = $1 WHERE id = $2", [motivo || '', id]);
+
+    // Register cash refund (egreso)
+    await client.query(`
+      INSERT INTO movimientos_caja (tipo, concepto, monto, usuario_id)
+      VALUES ('egreso', $1, $2, $3)
+    `, [`Boleta ${venta.numero_comprobante} anulada`, venta.total, req.user.id]);
 
     await client.query('COMMIT');
     
