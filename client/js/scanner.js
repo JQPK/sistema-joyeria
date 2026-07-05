@@ -49,14 +49,47 @@ export const scanner = {
     }
 
     // Check if Google Barcode Scanner module is installed
+    // installGoogleBarcodeScannerModule() returns immediately but installs asynchronously
+    // We must wait for the progress event to signal completion
     try {
       const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
       if (!available) {
-        app.showToast('Instalando módulo de escáner...', 'info');
-        await BarcodeScanner.installGoogleBarcodeScannerModule();
+        app.showToast('Instalando módulo de escáner de Google... Por favor espera.', 'info');
+        
+        // Wait for the module installation to fully complete
+        await new Promise((resolve, reject) => {
+          let listenerHandle = null;
+          
+          const timeout = setTimeout(() => {
+            if (listenerHandle) listenerHandle.remove();
+            reject(new Error('Timeout esperando instalación del módulo'));
+          }, 60000); // 60 second timeout
+
+          BarcodeScanner.addListener('googleBarcodeScannerModuleInstallProgress', (event) => {
+            console.log('Install progress:', JSON.stringify(event));
+            // state 3 = installed/complete, state 2 = downloaded
+            if (event.state === 3 || event.progress === 100) {
+              clearTimeout(timeout);
+              if (listenerHandle) listenerHandle.remove();
+              resolve();
+            }
+            if (event.state === 5 || event.state === 6) { // failed states
+              clearTimeout(timeout);
+              if (listenerHandle) listenerHandle.remove();
+              reject(new Error('Error al instalar el módulo'));
+            }
+          }).then(handle => { listenerHandle = handle; });
+
+          // Trigger the installation after setting up the listener
+          BarcodeScanner.installGoogleBarcodeScannerModule().catch(reject);
+        });
+
+        app.showToast('Módulo instalado. Abriendo escáner...', 'success');
       }
     } catch(e) {
-      console.warn('Module check failed:', e);
+      console.error('Module install failed:', e);
+      app.showToast('No se pudo instalar el módulo de escáner: ' + e.message, 'error');
+      return;
     }
 
     try {
