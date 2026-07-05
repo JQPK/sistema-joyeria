@@ -163,11 +163,11 @@ export default {
             <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-barcode')">✕</button>
           </div>
           <div class="modal-body text-center" id="barcode-print-area">
-            <div style="padding: 1rem; background: white; border-radius: 8px; display: inline-block; margin-top: 1rem;">
-              <svg id="barcode-svg"></svg>
+            <div style="width: 76mm; height: 25mm; box-sizing: border-box; padding: 2mm; background: white; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;">
+              <p id="barcode-prod-name" style="margin: 0; font-size: 8px; font-family: sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;"></p>
+              <svg id="barcode-svg" style="max-height: 14mm; width: auto; margin: 1px 0;"></svg>
+              <p id="barcode-prod-price" style="margin: 0; font-size: 9px; font-weight: bold; font-family: sans-serif;"></p>
             </div>
-            <p class="text-muted mt-2" id="barcode-prod-name"></p>
-            <p class="text-gold fw-bold" id="barcode-prod-price"></p>
           </div>
           <div class="modal-footer flex-col gap-2">
             <button class="btn btn-primary w-full" onclick="window.prodPrintBarcode()">🖨️ Imprimir</button>
@@ -533,9 +533,11 @@ export default {
       JsBarcode("#barcode-svg", codigo, {
         format: "CODE128",
         lineColor: "#000",
-        width: 2,
-        height: 60,
-        displayValue: true
+        width: 1.5,
+        height: 30,
+        displayValue: true,
+        fontSize: 10,
+        margin: 0
       });
       app.openModal('modal-barcode');
     } catch (err) {
@@ -551,12 +553,23 @@ export default {
         <head>
           <title>Imprimir Etiqueta</title>
           <style>
-            body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
-            svg { max-width: 100%; height: auto; }
-            .price { font-size: 20px; font-weight: bold; margin-top: 10px; }
+            body { 
+              margin: 0; 
+              padding: 0; 
+              text-align: center; 
+              background: #fff;
+            }
             @media print {
-              @page { margin: 0; }
-              body { padding: 0; }
+              @page { 
+                size: 76mm 25mm;
+                margin: 0; 
+              }
+              body { 
+                margin: 0;
+                padding: 0;
+                width: 76mm;
+                height: 25mm;
+              }
             }
           </style>
         </head>
