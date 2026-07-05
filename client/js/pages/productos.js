@@ -162,12 +162,12 @@ export default {
             <h3 class="text-gold">Imprimir Etiqueta</h3>
             <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-barcode')">✕</button>
           </div>
-          <div class="modal-body text-center" id="barcode-print-area" style="padding: 10px;">
-            <div style="background: white; display: inline-block;">
+          <div class="modal-body text-center" id="barcode-print-area">
+            <div style="padding: 1rem; background: white; border-radius: 8px; display: inline-block; margin-top: 1rem;">
               <svg id="barcode-svg"></svg>
             </div>
-            <p id="barcode-prod-name" style="margin: 2px 0 0; font-size: 11px; line-height: 1.1; color: black;"></p>
-            <p id="barcode-prod-price" style="margin: 0; font-size: 13px; font-weight: bold; color: black;"></p>
+            <p class="text-muted mt-2" id="barcode-prod-name"></p>
+            <p class="text-gold fw-bold" id="barcode-prod-price"></p>
           </div>
           <div class="modal-footer flex-col gap-2">
             <button class="btn btn-primary w-full" onclick="window.prodPrintBarcode()">🖨️ Imprimir</button>
@@ -528,16 +528,14 @@ export default {
     document.getElementById('barcode-prod-name').textContent = nombre;
     document.getElementById('barcode-prod-price').textContent = `S/ ${parseFloat(precio).toFixed(2)}`;
     
-    // Generate barcode SVG (more compact for stickers)
+    // Generate barcode SVG
     try {
       JsBarcode("#barcode-svg", codigo, {
         format: "CODE128",
         lineColor: "#000",
-        width: 1.5,
-        height: 35,
-        displayValue: true,
-        fontSize: 12,
-        margin: 0
+        width: 2,
+        height: 60,
+        displayValue: true
       });
       app.openModal('modal-barcode');
     } catch (err) {
@@ -553,11 +551,12 @@ export default {
         <head>
           <title>Imprimir Etiqueta</title>
           <style>
-            body { font-family: sans-serif; text-align: center; margin: 0; padding: 5px 0 0 0; }
+            body { font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
             svg { max-width: 100%; height: auto; }
+            .price { font-size: 20px; font-weight: bold; margin-top: 10px; }
             @media print {
               @page { margin: 0; }
-              body { padding: 2px; }
+              body { padding: 0; }
             }
           </style>
         </head>
