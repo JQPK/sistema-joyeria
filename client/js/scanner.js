@@ -15,16 +15,25 @@ export const scanner = {
     // Wait a tick for the modal to be visible (DOM needs to render)
     await new Promise(r => setTimeout(r, 300));
 
-    try {
-      if (!this.html5Qrcode) {
-        this.html5Qrcode = new Html5Qrcode("reader");
-      }
-      
-      if (this.isScanning) {
+    // Ensure we start with a clean DOM element
+    const reader = document.getElementById('reader');
+    if (reader) reader.innerHTML = '';
+    
+    // Clean up any lingering instance
+    if (this.html5Qrcode) {
+      try {
         await this.html5Qrcode.stop();
-      }
+      } catch (e) {}
+      try {
+        this.html5Qrcode.clear();
+      } catch (e) {}
+      this.html5Qrcode = null;
+    }
 
+    try {
+      this.html5Qrcode = new Html5Qrcode("reader");
       this.isScanning = true;
+
       await this.html5Qrcode.start(
         { facingMode: "environment" }, // Use rear camera
         {
@@ -34,12 +43,14 @@ export const scanner = {
         },
         (decodedText) => {
           // SUCCESS — code detected
-          this.close();
-          app.showToast(`Código: ${decodedText}`, 'success');
-          
-          if (typeof callback === 'function') {
-            callback(decodedText);
-          }
+          // Stop scanning asynchronously to avoid library internal race conditions
+          setTimeout(() => {
+            this.close();
+            app.showToast(`Código: ${decodedText}`, 'success');
+            if (typeof callback === 'function') {
+              callback(decodedText);
+            }
+          }, 50);
         },
         (errorMessage) => {
           // Ignore continuous scan errors
@@ -48,21 +59,32 @@ export const scanner = {
     } catch (err) {
       console.error('Camera error:', err);
       this.isScanning = false;
+      this.html5Qrcode = null;
       app.showToast('No se pudo acceder a la cámara. Verifica los permisos.', 'error');
       app.closeModal('modal-scanner');
     }
   },
 
   async close() {
-    if (this.html5Qrcode && this.isScanning) {
+    if (this.html5Qrcode) {
       try {
         await this.html5Qrcode.stop();
       } catch(e) {
         console.warn('Scanner stop error:', e);
       }
+      try {
+        this.html5Qrcode.clear();
+      } catch(e) {
+        console.warn('Scanner clear error:', e);
+      }
     }
     this.isScanning = false;
-    // Do NOT set this.html5Qrcode to null, we want to reuse the instance
+    this.html5Qrcode = null;
+    
+    // Explicitly clean the DOM container
+    const reader = document.getElementById('reader');
+    if (reader) reader.innerHTML = '';
+
     app.closeModal('modal-scanner');
   },
 
