@@ -399,6 +399,12 @@ export default {
   addSpecificItemToCart(item, type) {
     // item is either a Product from this.products or a Variant structure
     const cartId = type === 'variant' ? `VAR-${item.variant_id}` : `PROD-${item.id}`;
+
+    // Block products with no stock
+    if (item.stock_actual <= 0) {
+      app.showToast(`Sin stock disponible: ${item.nombre}`, 'error');
+      return;
+    }
     
     const existing = this.cart.find(i => i.cart_id === cartId);
     

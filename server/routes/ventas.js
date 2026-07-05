@@ -175,7 +175,34 @@ router.post('/', async (req, res, next) => {
     ]);
     const ventaId = ventaRes.rows[0].id;
 
-    // 4. Insert items and update stock
+    // 4. Validate stock BEFORE inserting items (prevents negative stock)
+    for (const item of data.items) {
+      if (item.variante_id) {
+        const stockRes = await client.query(
+          'SELECT stock_actual, nombre_variante FROM producto_variantes WHERE id = $1',
+          [item.variante_id]
+        );
+        if (stockRes.rows.length === 0) throw new Error(`Variante no encontrada (id: ${item.variante_id})`);
+        const stockDisponible = stockRes.rows[0].stock_actual;
+        if (stockDisponible < item.cantidad) {
+          const nombre = stockRes.rows[0].nombre_variante;
+          throw new Error(`Stock insuficiente para "${nombre}": disponible ${stockDisponible}, solicitado ${item.cantidad}`);
+        }
+      } else {
+        const stockRes = await client.query(
+          'SELECT stock_actual, nombre FROM productos WHERE id = $1',
+          [item.producto_id]
+        );
+        if (stockRes.rows.length === 0) throw new Error(`Producto no encontrado (id: ${item.producto_id})`);
+        const stockDisponible = stockRes.rows[0].stock_actual;
+        if (stockDisponible < item.cantidad) {
+          const nombre = stockRes.rows[0].nombre;
+          throw new Error(`Stock insuficiente para "${nombre}": disponible ${stockDisponible}, solicitado ${item.cantidad}`);
+        }
+      }
+    }
+
+    // 5. Insert items and update stock
     for (const item of data.items) {
       await client.query(`
         INSERT INTO detalle_ventas (venta_id, producto_id, variante_id, cantidad, precio_unitario, descuento_item, subtotal_item)
