@@ -64,12 +64,13 @@ export const scanner = {
         if (result.barcodes && result.barcodes.length > 0) {
           const decodedText = result.barcodes[0].rawValue;
 
-          // Stop scanning immediately
+          // Stop scanning and hide overlay immediately
           try { await BarcodeScanner.stopScan(); } catch(e) {}
           if (this._nativeListener) {
             try { this._nativeListener.remove(); } catch(e) {}
             this._nativeListener = null;
           }
+          this._hideNativeOverlay();
 
           app.showToast(`Código: ${decodedText}`, 'success');
           if (typeof callback === 'function') {
@@ -101,15 +102,29 @@ export const scanner = {
   },
 
   _showNativeOverlay() {
+    // Make WebView fully transparent so native camera shows through
     document.body.style.backgroundColor = 'transparent';
     document.documentElement.style.backgroundColor = 'transparent';
+    // Hide all app content so only the camera + our overlay is visible
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) appContainer.style.visibility = 'hidden';
+    const toastContainer = document.getElementById('toast-container');
+    if (toastContainer) toastContainer.style.visibility = 'hidden';
+    // Show our scanner overlay UI
     const overlay = document.getElementById('native-scanner-overlay');
     if (overlay) overlay.style.display = 'block';
   },
 
   _hideNativeOverlay() {
+    // Restore app background
     document.body.style.backgroundColor = '';
     document.documentElement.style.backgroundColor = '';
+    // Restore app content visibility
+    const appContainer = document.getElementById('app-container');
+    if (appContainer) appContainer.style.visibility = '';
+    const toastContainer = document.getElementById('toast-container');
+    if (toastContainer) toastContainer.style.visibility = '';
+    // Hide scanner overlay
     const overlay = document.getElementById('native-scanner-overlay');
     if (overlay) overlay.style.display = 'none';
   },
