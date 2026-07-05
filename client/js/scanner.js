@@ -78,6 +78,9 @@ export const scanner = {
         }
       });
 
+      // Show the viewfinder overlay and make WebView transparent so camera shows through
+      this._showNativeOverlay();
+
       // Start the camera overlay scanner
       await BarcodeScanner.startScan({
         formats: ['Code128', 'Code39', 'Ean13', 'Ean8', 'QrCode', 'UpcA', 'UpcE'],
@@ -97,6 +100,20 @@ export const scanner = {
     }
   },
 
+  _showNativeOverlay() {
+    document.body.style.backgroundColor = 'transparent';
+    document.documentElement.style.backgroundColor = 'transparent';
+    const overlay = document.getElementById('native-scanner-overlay');
+    if (overlay) overlay.style.display = 'block';
+  },
+
+  _hideNativeOverlay() {
+    document.body.style.backgroundColor = '';
+    document.documentElement.style.backgroundColor = '';
+    const overlay = document.getElementById('native-scanner-overlay');
+    if (overlay) overlay.style.display = 'none';
+  },
+
   async _stopNative() {
     const BarcodeScanner = window.Capacitor?.Plugins?.BarcodeScanner;
     if (BarcodeScanner) {
@@ -106,6 +123,7 @@ export const scanner = {
       try { this._nativeListener.remove(); } catch(e) {}
       this._nativeListener = null;
     }
+    this._hideNativeOverlay();
   },
 
   // ──────────────────────────────────────────
