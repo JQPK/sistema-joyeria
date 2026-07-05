@@ -12,53 +12,44 @@ export const scanner = {
     // Open the scanner modal
     app.openModal('modal-scanner');
 
-    // Wait a tick for the modal to be visible (DOM needs to render)
+    // Wait for modal to be visible
     await new Promise(r => setTimeout(r, 300));
-    
-    // Clean up any lingering instance FIRST
-    if (this.html5Qrcode) {
-      try {
-        await this.html5Qrcode.stop();
-      } catch (e) {}
-      try {
-        this.html5Qrcode.clear();
-      } catch (e) {}
-      this.html5Qrcode = null;
-    }
 
-    // Now it is safe to ensure a clean DOM element
-    const reader = document.getElementById('reader');
-    if (reader) reader.innerHTML = '';
+    // Ensure any previous session is fully stopped before starting new one
+    await this._cleanup();
+
+    // Wait for the camera hardware to fully release (prevents AbortError)
+    await new Promise(r => setTimeout(r, 500));
 
     try {
       this.html5Qrcode = new Html5Qrcode("reader");
       this.isScanning = true;
 
-      this.startPromise = this.html5Qrcode.start(
-        { facingMode: "environment" }, // Use rear camera
+      await this.html5Qrcode.start(
+        { facingMode: "environment" },
         {
           fps: 10,
           qrbox: { width: 250, height: 150 },
           aspectRatio: 1.0
         },
         (decodedText) => {
-          // SUCCESS — code detected
-          // Stop scanning asynchronously to avoid library internal race conditions
-          setTimeout(() => {
-            this.close();
+          // SUCCESS — let the scan frame finish processing before closing
+          if (this._closing) return; // prevent double fire
+          this._closing = true;
+          setTimeout(async () => {
+            await this._cleanup();
+            app.closeModal('modal-scanner');
             app.showToast(`Código: ${decodedText}`, 'success');
             if (typeof callback === 'function') {
               callback(decodedText);
             }
-          }, 50);
+            this._closing = false;
+          }, 200);
         },
-        (errorMessage) => {
+        () => {
           // Ignore continuous scan errors
         }
       );
-      
-      await this.startPromise;
-      
     } catch (err) {
       console.error('Camera error:', err);
       this.isScanning = false;
@@ -68,31 +59,24 @@ export const scanner = {
     }
   },
 
-  async close() {
-    // If a start is currently pending, wait for it to finish before stopping
-    if (this.startPromise) {
-      try {
-        await this.startPromise;
-      } catch (e) {}
-      this.startPromise = null;
-    }
-
+  async _cleanup() {
     if (this.html5Qrcode) {
       try {
-        await this.html5Qrcode.stop();
+        if (this.isScanning) {
+          await this.html5Qrcode.stop();
+        }
       } catch(e) {}
       try {
+        // clear() removes the Html5Qrcode created elements cleanly
         this.html5Qrcode.clear();
       } catch(e) {}
+      this.html5Qrcode = null;
     }
-    
     this.isScanning = false;
-    this.html5Qrcode = null;
-    
-    // Explicitly clean the DOM container
-    const reader = document.getElementById('reader');
-    if (reader) reader.innerHTML = '';
+  },
 
+  async close() {
+    await this._cleanup();
     app.closeModal('modal-scanner');
   },
 
