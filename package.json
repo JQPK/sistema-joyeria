@@ -64,6 +64,7 @@
   },
   "dependencies": {
     "@bcyesil/capacitor-plugin-printer": "^0.0.6",
+    "@capacitor-mlkit/barcode-scanning": "^8.1.0",
     "chart.js": "^4.5.1",
     "csv-parse": "^6.2.1",
     "electron": "^36.0.0",
