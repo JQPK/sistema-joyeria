@@ -14,12 +14,8 @@ export const scanner = {
 
     // Wait a tick for the modal to be visible (DOM needs to render)
     await new Promise(r => setTimeout(r, 300));
-
-    // Ensure we start with a clean DOM element
-    const reader = document.getElementById('reader');
-    if (reader) reader.innerHTML = '';
     
-    // Clean up any lingering instance
+    // Clean up any lingering instance FIRST
     if (this.html5Qrcode) {
       try {
         await this.html5Qrcode.stop();
@@ -30,11 +26,15 @@ export const scanner = {
       this.html5Qrcode = null;
     }
 
+    // Now it is safe to ensure a clean DOM element
+    const reader = document.getElementById('reader');
+    if (reader) reader.innerHTML = '';
+
     try {
       this.html5Qrcode = new Html5Qrcode("reader");
       this.isScanning = true;
 
-      await this.html5Qrcode.start(
+      this.startPromise = this.html5Qrcode.start(
         { facingMode: "environment" }, // Use rear camera
         {
           fps: 10,
@@ -56,6 +56,9 @@ export const scanner = {
           // Ignore continuous scan errors
         }
       );
+      
+      await this.startPromise;
+      
     } catch (err) {
       console.error('Camera error:', err);
       this.isScanning = false;
@@ -66,18 +69,23 @@ export const scanner = {
   },
 
   async close() {
+    // If a start is currently pending, wait for it to finish before stopping
+    if (this.startPromise) {
+      try {
+        await this.startPromise;
+      } catch (e) {}
+      this.startPromise = null;
+    }
+
     if (this.html5Qrcode) {
       try {
         await this.html5Qrcode.stop();
-      } catch(e) {
-        console.warn('Scanner stop error:', e);
-      }
+      } catch(e) {}
       try {
         this.html5Qrcode.clear();
-      } catch(e) {
-        console.warn('Scanner clear error:', e);
-      }
+      } catch(e) {}
     }
+    
     this.isScanning = false;
     this.html5Qrcode = null;
     
