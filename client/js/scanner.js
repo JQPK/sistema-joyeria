@@ -26,40 +26,46 @@ export const scanner = {
   // NATIVE SCANNER (Android via MLKit plugin)
   // ──────────────────────────────────────────
   async _openNative(callback) {
-    const { BarcodeScanner, BarcodeFormat } = await import(
-      'https://esm.sh/@capacitor-mlkit/barcode-scanning'
-    ).catch(() => ({ BarcodeScanner: null }));
+    const BarcodeScanner = window.Capacitor?.Plugins?.BarcodeScanner;
 
     if (!BarcodeScanner) {
-      app.showToast('Plugin de escáner no disponible', 'error');
+      app.showToast('Plugin de escáner no disponible, usando cámara web...', 'info');
+      await this._openWeb(callback);
       return;
     }
 
     // Check and request camera permission
-    const { camera } = await BarcodeScanner.checkPermissions();
-    if (camera !== 'granted') {
-      const result = await BarcodeScanner.requestPermissions();
-      if (result.camera !== 'granted') {
-        app.showToast('Se necesita permiso de cámara para escanear.', 'error');
-        return;
+    try {
+      const { camera } = await BarcodeScanner.checkPermissions();
+      if (camera !== 'granted') {
+        const result = await BarcodeScanner.requestPermissions();
+        if (result.camera !== 'granted') {
+          app.showToast('Se necesita permiso de cámara para escanear.', 'error');
+          return;
+        }
       }
+    } catch(e) {
+      console.warn('Permission check failed:', e);
     }
 
-    // Check if ML Kit module is available, install if needed
-    const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
-    if (!available) {
-      app.showToast('Instalando módulo de escáner...', 'info');
-      await BarcodeScanner.installGoogleBarcodeScannerModule();
-      app.showToast('Módulo instalado. Intentando escanear...', 'success');
+    // Check if Google Barcode Scanner module is installed
+    try {
+      const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
+      if (!available) {
+        app.showToast('Instalando módulo de escáner...', 'info');
+        await BarcodeScanner.installGoogleBarcodeScannerModule();
+      }
+    } catch(e) {
+      console.warn('Module check failed:', e);
     }
 
     try {
-      app.showToast('Apunta la cámara al código de barras...', 'info');
+      app.showToast('Apunta la cámara al código...', 'info');
       const { barcodes } = await BarcodeScanner.scan({
-        formats: [BarcodeFormat.Code128, BarcodeFormat.Code39, BarcodeFormat.EAN13, BarcodeFormat.EAN8, BarcodeFormat.QrCode],
+        formats: ['Code128', 'Code39', 'Ean13', 'Ean8', 'QrCode', 'UpcA', 'UpcE'],
       });
 
-      if (barcodes.length > 0) {
+      if (barcodes && barcodes.length > 0) {
         const decodedText = barcodes[0].rawValue;
         app.showToast(`Código: ${decodedText}`, 'success');
         if (typeof callback === 'function') {
@@ -67,7 +73,8 @@ export const scanner = {
         }
       }
     } catch (err) {
-      if (!err.message?.includes('cancel')) {
+      // User cancelled the scan — no error needed
+      if (!err.message?.toLowerCase().includes('cancel') && !err.message?.toLowerCase().includes('user')) {
         console.error('Native scanner error:', err);
         app.showToast('Error al escanear. Intenta de nuevo.', 'error');
       }
