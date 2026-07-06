@@ -1,0 +1,130 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+    <meta charset="utf-8">
+    <title>Manual de Usuario - Sistema de Joyería</title>
+    <style>
+        body { font-family: 'Calibri', sans-serif; line-height: 1.6; color: #333; margin: 40px; }
+        h1 { color: #d4af37; border-bottom: 2px solid #d4af37; padding-bottom: 5px; font-size: 28px; }
+        h2 { color: #2c3e50; font-size: 22px; margin-top: 30px; }
+        h3 { color: #34495e; font-size: 18px; }
+        p { margin-bottom: 15px; }
+        ul { margin-bottom: 20px; }
+        li { margin-bottom: 8px; }
+        .note { background-color: #f8f9fa; border-left: 4px solid #d4af37; padding: 10px; font-style: italic; }
+        .header-title { text-align: center; margin-bottom: 50px; }
+        .page-break { page-break-before: always; }
+    </style>
+</head>
+<body>
+
+    <div class="header-title">
+        <h1 style="border:none; font-size: 36px; margin-bottom: 0;">Joyería Mariné</h1>
+        <h2 style="margin-top: 5px;">Manual de Usuario del Sistema POS e Inventario</h2>
+        <p>Versión 1.0</p>
+    </div>
+
+    <div class="page-break"></div>
+
+    <h1>1. Introducción</h1>
+    <p>Bienvenido al Sistema de Punto de Venta (POS) e Inventario de Joyería Mariné. Este sistema ha sido diseñado para gestionar de manera eficiente las ventas, el inventario, los clientes y la caja chica de su negocio. El sistema está optimizado tanto para computadoras de escritorio como para tablets táctiles.</p>
+    <p>El sistema cuenta con dos roles principales:</p>
+    <ul>
+        <li><b>Administrador:</b> Acceso total a todas las funciones, incluyendo gestión de usuarios, configuración, reportes avanzados y eliminación/edición de datos maestros.</li>
+        <li><b>Cajero:</b> Acceso enfocado en la operativa diaria: realizar ventas, ver productos, registrar clientes y gestionar la caja chica.</li>
+    </ul>
+
+    <h1>2. Acceso al Sistema</h1>
+    <p>Para ingresar al sistema, diríjase a la pantalla de inicio de sesión. Ingrese su <b>Usuario</b> y <b>Contraseña</b> proporcionados por el administrador.</p>
+    <p class="note">Nota: Si es la primera vez que se inicia el sistema y no hay usuarios, el sistema le pedirá crear la cuenta del Administrador Principal automáticamente.</p>
+
+    <h1>3. Punto de Venta (POS)</h1>
+    <p>Es el módulo principal para registrar ventas diarias. Aquí podrá agregar productos al carrito, aplicar descuentos y emitir boletas o facturas.</p>
+    
+    <h2>3.1 Buscar y Agregar Productos</h2>
+    <ul>
+        <li><b>Búsqueda manual:</b> Utilice la barra superior para escribir el nombre o código del producto. Al hacer clic sobre el producto, este se agregará al carrito (panel derecho).</li>
+        <li><b>Escáner de Código de Barras:</b> Haga clic en el ícono del escáner en la barra de búsqueda. En tablets, se abrirá la cámara transparente con un visor dorado; apunte al código de barras. En PC, puede usar un lector láser físico.</li>
+    </ul>
+
+    <h2>3.2 Variantes de Producto</h2>
+    <p>Si selecciona un producto que tiene variantes (ej. diferentes tallas o colores), se abrirá una ventana emergente para que seleccione la variante específica que el cliente desea llevar. El sistema verificará el stock antes de agregarlo al carrito.</p>
+
+    <h2>3.3 Cobrar y Emitir Comprobante</h2>
+    <p>Una vez que los productos están en el carrito:</p>
+    <ol>
+        <li>Seleccione el tipo de comprobante (Boleta o Factura).</li>
+        <li>Seleccione o busque el Cliente (opcional).</li>
+        <li>Seleccione el método de pago (Efectivo, Tarjeta, Yape, Plin, Transferencia).</li>
+        <li>Puede aplicar un <b>Descuento Global</b> en dinero (S/) si lo desea.</li>
+        <li>Haga clic en <b>Cobrar</b>.</li>
+    </ol>
+    <p>Al finalizar, el sistema generará la venta, descontará el stock y le mostrará las opciones para <b>Imprimir Ticket</b> o <b>Enviar por WhatsApp</b>.</p>
+
+    <div class="page-break"></div>
+
+    <h1>4. Gestión de Productos e Inventario</h1>
+    <p>Este módulo le permite mantener su catálogo de joyas actualizado.</p>
+
+    <h2>4.1 Crear un Producto</h2>
+    <ul>
+        <li>Diríjase a la pestaña <b>Productos</b> (Solo Administrador) o <b>Inventario</b>.</li>
+        <li>Haga clic en <b>Nuevo Producto</b>.</li>
+        <li>Complete los datos: Código (autogenerado o manual), Nombre, Categoría, Material, Costo y Precio de Venta.</li>
+        <li>Si el producto no tiene variantes, ingrese el Stock Inicial. Si tiene variantes, marque la casilla "Tiene Variantes" (el stock se gestionará por variante).</li>
+    </ul>
+
+    <h2>4.2 Generar e Imprimir Etiquetas</h2>
+    <p>Puede imprimir códigos de barras adhesivos para etiquetar sus joyas:</p>
+    <ol>
+        <li>Busque el producto en la lista.</li>
+        <li>Haga clic en el ícono de <b>Código de Barras</b>.</li>
+        <li>Se abrirá una vista previa de la etiqueta adaptada para rollos adhesivos (76x25mm).</li>
+        <li>Haga clic en <b>Imprimir</b>.</li>
+    </ol>
+
+    <h2>4.3 Importación Masiva por Excel</h2>
+    <p>Si tiene muchos productos nuevos, puede subirlos de golpe usando una plantilla de Excel. Haga clic en <b>Importar Excel</b>, descargue la plantilla, llénela con sus productos y vuelva a subir el archivo.</p>
+
+    <h1>5. Gestión de Clientes</h1>
+    <p>Le permite registrar los datos de sus clientes frecuentes. Puede agregar un cliente presionando <b>Nuevo Cliente</b> e ingresando su Documento (DNI/RUC), Nombre, Teléfono y Correo. Un cliente guardado acelera el proceso de facturación en el POS.</p>
+
+    <h1>6. Comprobantes y Anulaciones</h1>
+    <p>En el módulo de <b>Comprobantes</b> se guardan todas las ventas realizadas.</p>
+    <ul>
+        <li><b>Ver y Reimprimir:</b> Puede buscar cualquier venta por fecha o nombre, ver el detalle y volver a imprimir el ticket o descargar el PDF.</li>
+        <li><b>Anulaciones:</b> Si se cometió un error, tanto el Administrador como el Cajero pueden hacer clic en <b>Anular</b>. El sistema pedirá un motivo. Al anular:
+            <ul>
+                <li>El stock de los productos vendidos regresa automáticamente al inventario.</li>
+                <li>El dinero ingresado se registra como un <b>Egreso</b> en la Caja Chica con el concepto "Boleta anulada".</li>
+            </ul>
+        </li>
+    </ul>
+
+    <div class="page-break"></div>
+
+    <h1>7. Caja Chica</h1>
+    <p>Es vital para el control de efectivo en la tienda. Todo usuario (Admin o Cajero) que inicie operaciones debe gestionar su caja.</p>
+    <ul>
+        <li><b>Apertura de Caja:</b> Al iniciar el día, ingrese el monto base (ej. S/ 50 de sencillo) y haga clic en Abrir Caja.</li>
+        <li><b>Movimientos Manuales:</b> Puede registrar Ingresos Extra o Egresos (ej. Pago de pasajes, almuerzo, etc.). Las ventas y las anulaciones se registran automáticamente aquí.</li>
+        <li><b>Cierre de Caja:</b> Al finalizar el turno, el sistema suma el Monto de Apertura + Ingresos (Ventas) - Egresos (Anulaciones y gastos). El sistema le mostrará el "Saldo Esperado". Usted debe ingresar el saldo físico real que tiene en caja; si hay diferencias, el sistema registrará un descuadre (sobrante o faltante).</li>
+    </ul>
+
+    <h1>8. Reportes (Solo Administrador)</h1>
+    <p>El sistema ofrece gráficos e indicadores clave para evaluar la salud del negocio:</p>
+    <ul>
+        <li><b>Ventas Totales:</b> Filtre por fechas para ver los ingresos brutos.</li>
+        <li><b>Utilidad (Ganancia Real):</b> Muestra la ganancia descontando el costo de las joyas.</li>
+        <li><b>Top Productos:</b> Conozca qué joyas se venden más (Rankings).</li>
+        <li>Puede exportar esta información a Excel para un análisis detallado en contabilidad.</li>
+    </ul>
+
+    <h1>9. Configuración y Usuarios (Solo Administrador)</h1>
+    <p>En el panel de Sistema, el Administrador puede:</p>
+    <ul>
+        <li><b>Usuarios:</b> Crear nuevos accesos para cajeros, establecer contraseñas y desactivar usuarios que ya no trabajan en la empresa.</li>
+        <li><b>Configuración:</b> Ajustar los datos del ticket (RUC de la empresa, Nombre Comercial, Dirección, Teléfono y Mensaje de agradecimiento) así como configurar la impresora térmica en red y los correlativos iniciales para Boletas y Facturas.</li>
+    </ul>
+
+</body>
+</html>
