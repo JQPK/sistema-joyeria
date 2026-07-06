@@ -149,7 +149,7 @@ window.app = {
     const pageId = hash.replace('#', '');
     
     // RBAC check
-    if (['reportes', 'inventario', 'caja', 'configuracion', 'usuarios'].includes(pageId) && !auth.isAdmin()) {
+    if (['reportes', 'inventario', 'configuracion', 'usuarios'].includes(pageId) && !auth.isAdmin()) {
       window.location.hash = '#dashboard';
       this.showToast('Acceso denegado', 'error');
       return;
