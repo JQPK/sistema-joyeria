@@ -418,7 +418,7 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
               precio_venta, precio_compra, stock_actual, stock_minimo, peso_gramos
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
           `, [
-            baseId, sku, item['Variante'],
+            baseId, sku, item['Variante'] || item['Valor 1'] || 'Única',
             item['Atributo 1'] || '', item['Valor 1'] || '',
             item['Atributo 2'] || '', item['Valor 2'] || '',
             precio_venta, precio_compra, stock, stock_min, peso
