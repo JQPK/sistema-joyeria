@@ -107,6 +107,8 @@ export default {
                   <tr>
                     <th>Código/SKU</th>
                     <th>Producto/Variante</th>
+                    <th>Categoría</th>
+                    <th>Material</th>
                     <th>Stock Actual</th>
                     <th>Precio</th>
                   </tr>
@@ -190,7 +192,7 @@ export default {
   renderFullTable(data) {
     const tbody = document.querySelector('#inv-full-table tbody');
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No hay productos en inventario</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay productos en inventario</td></tr>';
       return;
     }
 
@@ -205,6 +207,8 @@ export default {
             <tr>
               <td>${v.sku}</td>
               <td>${p.nombre} - ${v.nombre_variante}</td>
+              <td>${p.categoria_nombre || '-'}</td>
+              <td>${p.material_nombre || '-'}</td>
               <td>${v.stock_actual}</td>
               <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
             </tr>
@@ -215,6 +219,8 @@ export default {
           <tr>
             <td>${p.codigo || '-'}</td>
             <td>${p.nombre}</td>
+            <td>${p.categoria_nombre || '-'}</td>
+            <td>${p.material_nombre || '-'}</td>
             <td>${p.stock_actual}</td>
             <td>S/ ${parseFloat(p.precio_venta).toFixed(2)}</td>
           </tr>
@@ -258,6 +264,8 @@ export default {
             'Producto': p.nombre,
             'SKU Variante': v.sku,
             'Variante': v.nombre_variante,
+            'Categoría': p.categoria_nombre || '-',
+            'Material': p.material_nombre || '-',
             'Stock': v.stock_actual,
             'Stock Mínimo': v.stock_minimo,
             'Precio Venta (S/)': parseFloat(v.precio_venta || p.precio_venta).toFixed(2)
@@ -269,6 +277,8 @@ export default {
           'Producto': p.nombre,
           'SKU Variante': '-',
           'Variante': '-',
+          'Categoría': p.categoria_nombre || '-',
+          'Material': p.material_nombre || '-',
           'Stock': p.stock_actual,
           'Stock Mínimo': p.stock_minimo,
           'Precio Venta (S/)': parseFloat(p.precio_venta).toFixed(2)
