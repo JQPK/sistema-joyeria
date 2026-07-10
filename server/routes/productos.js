@@ -316,27 +316,40 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
 
     await client.query('BEGIN');
     
-    // Group by 'Nombre Producto'
+    // Group by 'Nombre Producto' + 'Categoría' + 'Material'
     const grouped = {};
     for (const row of records) {
       let nombre = row['Nombre Producto'];
       if (!nombre) continue;
       
-      // Trim spaces to prevent grouping issues (e.g. "Anillo " vs "Anillo")
       if (typeof nombre === 'string') {
         nombre = nombre.trim();
         row['Nombre Producto'] = nombre;
       }
       
-      if (!grouped[nombre]) grouped[nombre] = [];
-      grouped[nombre].push(row);
+      let cat = row['Categoría'] || '';
+      if (typeof cat === 'string') {
+        cat = cat.trim();
+        row['Categoría'] = cat;
+      }
+
+      let mat = row['Material'] || '';
+      if (typeof mat === 'string') {
+        mat = mat.trim();
+        row['Material'] = mat;
+      }
+      
+      const groupKey = `${nombre}|${cat.toLowerCase()}|${mat.toLowerCase()}`;
+      if (!grouped[groupKey]) grouped[groupKey] = [];
+      grouped[groupKey].push(row);
     }
 
     let addedProducts = 0;
     let addedVariants = 0;
 
-    for (const nombre in grouped) {
-      const items = grouped[nombre];
+    for (const key in grouped) {
+      const items = grouped[key];
+      const nombre = items[0]['Nombre Producto'];
       
       // Determine if simple product or variants
       const hasVariants = items.some(i => i['Variante']);
@@ -347,14 +360,14 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
       let catId = null, matId = null;
 
       if (catName) {
-        let catRes = await client.query('SELECT id FROM categorias WHERE nombre = $1', [catName]);
+        let catRes = await client.query('SELECT id FROM categorias WHERE LOWER(nombre) = LOWER($1)', [catName]);
         if (catRes.rows.length === 0) {
           catRes = await client.query('INSERT INTO categorias (nombre) VALUES ($1) RETURNING id', [catName]);
         }
         catId = catRes.rows[0].id;
       }
       if (matName) {
-        let matRes = await client.query('SELECT id FROM materiales WHERE nombre = $1', [matName]);
+        let matRes = await client.query('SELECT id FROM materiales WHERE LOWER(nombre) = LOWER($1)', [matName]);
         if (matRes.rows.length === 0) {
           matRes = await client.query('INSERT INTO materiales (nombre) VALUES ($1) RETURNING id', [matName]);
         }
