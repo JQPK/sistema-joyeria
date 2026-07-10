@@ -360,16 +360,20 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
       let catId = null, matId = null;
 
       if (catName) {
-        let catRes = await client.query('SELECT id FROM categorias WHERE LOWER(nombre) = LOWER($1)', [catName]);
+        let catRes = await client.query('SELECT id, activo FROM categorias WHERE LOWER(nombre) = LOWER($1)', [catName]);
         if (catRes.rows.length === 0) {
           catRes = await client.query('INSERT INTO categorias (nombre) VALUES ($1) RETURNING id', [catName]);
+        } else if (catRes.rows[0].activo === false) {
+          await client.query('UPDATE categorias SET activo = true WHERE id = $1', [catRes.rows[0].id]);
         }
         catId = catRes.rows[0].id;
       }
       if (matName) {
-        let matRes = await client.query('SELECT id FROM materiales WHERE LOWER(nombre) = LOWER($1)', [matName]);
+        let matRes = await client.query('SELECT id, activo FROM materiales WHERE LOWER(nombre) = LOWER($1)', [matName]);
         if (matRes.rows.length === 0) {
           matRes = await client.query('INSERT INTO materiales (nombre) VALUES ($1) RETURNING id', [matName]);
+        } else if (matRes.rows[0].activo === false) {
+          await client.query('UPDATE materiales SET activo = true WHERE id = $1', [matRes.rows[0].id]);
         }
         matId = matRes.rows[0].id;
       }
