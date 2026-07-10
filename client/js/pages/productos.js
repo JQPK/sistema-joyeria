@@ -49,6 +49,7 @@ export default {
                   <th>Código / Variantes</th>
                   <th>Nombre</th>
                   <th>Categoría</th>
+                  <th>Material</th>
                   <th>Stock</th>
                   <th>Precio</th>
                   <th class="text-right">Acciones</th>
@@ -135,6 +136,7 @@ export default {
                       <tr>
                         <th>SKU</th>
                         <th>Variante</th>
+                        <th>Material</th>
                         <th>Stock</th>
                         <th>Precio (Opcional)</th>
                         <th>Acción</th>
@@ -303,6 +305,7 @@ export default {
           <td class="text-muted">${codeHtml}</td>
           <td class="fw-bold">${p.nombre}</td>
           <td>${p.categoria_nombre || '-'}</td>
+          <td>${p.material_nombre || '-'}</td>
           <td>
             <span class="badge ${p.stock_actual <= p.stock_minimo ? 'badge-danger' : 'badge-success'}">
               ${p.stock_actual}
@@ -361,6 +364,7 @@ export default {
               <tr>
                 <td>${v.sku}</td>
                 <td>${v.nombre_variante}</td>
+                <td>${p.material_nombre || '-'}</td>
                 <td>${v.stock_actual}</td>
                 <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
                 <td style="display: flex; gap: 0.25rem;">
