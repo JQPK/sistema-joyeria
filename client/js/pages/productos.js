@@ -493,11 +493,11 @@ export default {
       app.showToast('Variante actualizada correctamente', 'success');
       app.closeModal('modal-edit-variant');
       // Reload products list to reflect changes
-      this.loadData();
+      await this.loadData();
       // Re-open the modal with updated data
       const prodId = document.getElementById('prod-id').value;
       if (prodId) {
-        this.openModal(prodId);
+        await this.openModal(prodId);
       }
     } catch (err) {
       app.showToast(err.message || 'Error al actualizar', 'error');
