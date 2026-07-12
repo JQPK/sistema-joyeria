@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { auth } = require('../middleware/auth');
+const { logActivity } = require('../utils/logger');
 
 router.use(auth);
 
@@ -82,9 +83,11 @@ router.put('/:id', async (req, res, next) => {
     await client.query('BEGIN');
     
     // Get product_id
-    const varRes = await client.query('SELECT producto_id FROM producto_variantes WHERE id = $1', [req.params.id]);
+    const varRes = await client.query('SELECT producto_id, nombre_variante, stock_actual FROM producto_variantes WHERE id = $1', [req.params.id]);
     if (varRes.rows.length === 0) throw new Error('Variante no encontrada');
     const producto_id = varRes.rows[0].producto_id;
+    const varianteName = varRes.rows[0].nombre_variante;
+    const oldStock = varRes.rows[0].stock_actual;
 
     const fields = [];
     const values = [];
@@ -120,6 +123,16 @@ router.put('/:id', async (req, res, next) => {
     if (io) {
       io.emit('product:updated', { id: producto_id });
       io.emit('stock:changed');
+    }
+
+    // Log stock change if applicable
+    if (req.body.stock_actual !== undefined) {
+      const newStock = parseInt(req.body.stock_actual);
+      if (parseInt(oldStock) !== newStock) {
+        await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — Stock: ${oldStock} → ${newStock}`);
+      }
+    } else {
+      await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — datos actualizados`);
     }
 
     res.json({ success: true });

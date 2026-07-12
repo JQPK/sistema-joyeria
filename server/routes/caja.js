@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { auth } = require('../middleware/auth');
+const { logActivity } = require('../utils/logger');
 
 router.use(auth);
 
@@ -84,6 +85,9 @@ router.post('/', async (req, res, next) => {
 
     const io = req.app.get('io');
     if (io) io.emit('caja:updated');
+
+    const tipoLabel = tipo === 'ingreso' ? 'Ingreso' : 'Egreso';
+    await logActivity(db, req.user.id, 'MOVIMIENTO_CAJA', `${tipoLabel} manual: S/ ${parseFloat(monto).toFixed(2)} — '${concepto}'`);
 
     res.json({ success: true, id: result.rows[0].id });
   } catch (err) {

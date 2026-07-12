@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../config/database');
 const { auth } = require('../middleware/auth');
+const { logActivity } = require('../utils/logger');
 
 // Check if any users exist
 router.get('/check-users', async (req, res, next) => {
@@ -57,6 +58,7 @@ router.post('/login', async (req, res, next) => {
 
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
+      await logActivity(db, user.id, 'LOGIN_FALLIDO', `Intento de acceso fallido para el usuario '${user.username}' (contraseña incorrecta)`);
       return res.status(401).json({ success: false, message: 'Contraseña incorrecta' });
     }
 
@@ -69,6 +71,7 @@ router.post('/login', async (req, res, next) => {
 
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '24h' });
 
+    await logActivity(db, user.id, 'LOGIN', `Inicio de sesión exitoso — Usuario: ${user.nombre} (${user.rol})`);
     res.json({ success: true, token, user: payload });
   } catch (err) {
     next(err);

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { auth } = require('../middleware/auth');
+const { logActivity } = require('../utils/logger');
 
 router.use(auth);
 
@@ -235,6 +236,7 @@ router.post('/', async (req, res, next) => {
       io.emit('stock:changed');
     }
 
+    await logActivity(db, req.user.id, 'VENTA_COMPLETADA', `${data.tipo_comprobante === 'factura' ? 'Factura' : 'Boleta'} ${numero} por S/ ${parseFloat(data.total).toFixed(2)}${data.cliente_id ? ' — Cliente registrado' : ''}`);
     res.json({ success: true, venta_id: ventaId, numero_comprobante: numero });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -291,6 +293,7 @@ router.post('/:id/anular', async (req, res, next) => {
       io.emit('stock:changed');
     }
 
+    await logActivity(db, req.user.id, 'BOLETA_ANULADA', `Comprobante ${venta.numero_comprobante} anulado — Total S/ ${parseFloat(venta.total).toFixed(2)} — Motivo: ${motivo || 'no especificado'}`);
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');

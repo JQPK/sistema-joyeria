@@ -25,7 +25,11 @@ export const auth = {
     return res;
   },
 
-  logout() {
+  async logout() {
+    // Log logout activity (best-effort, don't block if it fails)
+    try {
+      await api.post('/actividad', { accion: 'LOGOUT', detalles: 'Sesión cerrada por el usuario' });
+    } catch (_) {}
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.hash = '';

@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 const { auth, adminOnly } = require('../middleware/auth');
+const { logActivity } = require('../utils/logger');
 
 router.use(auth);
 
@@ -31,6 +32,7 @@ router.post('/', adminOnly, async (req, res, next) => {
       VALUES ($1, $2, $3, $4) RETURNING id
     `, [nombre, username.toLowerCase().trim(), hash, rol || 'cajero']);
 
+    await logActivity(db, req.user.id, 'USUARIO_CREADO', `Nuevo usuario creado: '${username}' (nombre: ${nombre}, rol: ${rol || 'cajero'})`);
     res.json({ success: true, id: result.rows[0].id });
   } catch (err) {
     if (err.code === '23505') {
@@ -58,6 +60,7 @@ router.put('/:id', adminOnly, async (req, res, next) => {
       `, [nombre, username.toLowerCase().trim(), rol, id]);
     }
 
+    await logActivity(db, req.user.id, 'USUARIO_MODIFICADO', `Usuario '${username}' (ID: ${id}) modificado por el administrador`);
     res.json({ success: true });
   } catch (err) {
     next(err);

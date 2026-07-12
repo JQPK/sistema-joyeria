@@ -6,6 +6,7 @@ const multer = require('multer');
 const { parse } = require('csv-parse');
 const xlsx = require('xlsx');
 const upload = multer({ storage: multer.memoryStorage() });
+const { logActivity } = require('../utils/logger');
 
 router.use(auth);
 
@@ -220,6 +221,7 @@ router.post('/', async (req, res, next) => {
     const io = req.app.get('io');
     if (io) io.emit('product:created', { id: newId });
 
+    await logActivity(db, req.user.id, 'PRODUCTO_CREADO', `Nuevo producto creado: '${nombre}' (SKU: ${finalCodigo})`);
     res.json({ success: true, id: newId });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -235,6 +237,9 @@ router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     await client.query('BEGIN');
+
+    // Read current stock to detect manual change
+    const currentProd = await client.query('SELECT nombre, stock_actual, precio_venta FROM productos WHERE id = $1', [id]);
 
     // Check price change
     if (req.body.precio_venta !== undefined) {
@@ -278,6 +283,15 @@ router.put('/:id', async (req, res, next) => {
     const io = req.app.get('io');
     if (io) io.emit('product:updated', { id });
 
+    // Log stock update if changed manually
+    if (req.body.stock_actual !== undefined && currentProd.rows.length > 0) {
+      const oldStock = parseInt(currentProd.rows[0].stock_actual);
+      const newStock = parseInt(req.body.stock_actual);
+      if (oldStock !== newStock) {
+        await logActivity(db, req.user.id, 'STOCK_ACTUALIZADO', `'${currentProd.rows[0].nombre}' — Stock: ${oldStock} → ${newStock} (ajuste manual)`);
+      }
+    }
+
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -290,8 +304,11 @@ router.put('/:id', async (req, res, next) => {
 // DELETE soft
 router.delete('/:id', async (req, res, next) => {
   try {
-    const { id } = req.params;
+    const delProd = await db.query('SELECT nombre, codigo FROM productos WHERE id = $1', [id]);
     await db.query('UPDATE productos SET activo = false, updated_at = NOW() WHERE id = $1', [id]);
+    if (delProd.rows.length > 0) {
+      await logActivity(db, req.user.id, 'PRODUCTO_ELIMINADO', `Producto eliminado: '${delProd.rows[0].nombre}' (SKU: ${delProd.rows[0].codigo || '-'})`);
+    }
     
     const io = req.app.get('io');
     if (io) io.emit('product:deleted', { id });
@@ -453,6 +470,7 @@ router.post('/import-excel', upload.single('file'), async (req, res, next) => {
       io.emit('stock:changed');
     }
 
+    await logActivity(db, req.user.id, 'IMPORTACION_EXCEL', `Importación masiva: ${addedProducts} productos, ${addedVariants} variantes`);
     res.json({ success: true, message: `Importación exitosa: ${addedProducts} productos, ${addedVariants} variantes` });
   } catch (err) {
     await client.query('ROLLBACK');
