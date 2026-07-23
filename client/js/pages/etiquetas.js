@@ -353,8 +353,8 @@ export default {
   // ── IMPRIMIR ──────────────────────────────────────────────────────────────
 
   _imprimir() {
-    const copias = parseInt(document.getElementById('et-copias')?.value || '3');
-    const tamano = document.getElementById('et-tamano')?.value || 'medium';
+    const copias  = parseInt(document.getElementById('et-copias')?.value  || '3');
+    const tamano  = document.getElementById('et-tamano')?.value || 'medium';
 
     const items = this.todosLosItems.filter(i => this.seleccionados.has(i.id));
     if (items.length === 0) {
@@ -362,52 +362,103 @@ export default {
       return;
     }
 
-    // Generar etiquetas para zona-impresion
+    // Expandir: cada item × copias
     const etiquetas = [];
     for (const item of items) {
       for (let c = 0; c < copias; c++) etiquetas.push(item);
     }
 
+    // Dimensiones según tamaño elegido
     const dims = {
-      small:  { h: 35, fontSize: 7, labelFont: 6 },
-      medium: { h: 45, fontSize: 9, labelFont: 7 },
-      large:  { h: 55, fontSize: 11, labelFont: 8 }
+      small:  { bh: 30, fs: 7,  lf: 6  },
+      medium: { bh: 40, fs: 9,  lf: 7  },
+      large:  { bh: 52, fs: 11, lf: 8  }
     };
     const d = dims[tamano];
 
-    const zona = document.getElementById('zona-impresion');
-    zona.innerHTML = etiquetas.map((item, idx) => `
-      <div class="etiqueta-item">
-        <svg id="pr-bc-${idx}" style="width:100%;height:${d.h}mm"></svg>
-        <div class="etiqueta-sku">${item.codigo}</div>
-        <div class="etiqueta-nombre" title="${item.nombre}">${item.nombre}</div>
+    // Construir HTML de las etiquetas como cadena
+    // Usamos <canvas> porque la ventana nueva tendrá JsBarcode disponible
+    const labelsHtml = etiquetas.map((item, idx) => `
+      <div class="lbl">
+        <canvas id="bc${idx}"></canvas>
+        <div class="sku">${item.codigo}</div>
+        <div class="nom">${item.nombre.replace(/</g,'&lt;')}</div>
       </div>
     `).join('');
-    zona.style.display = 'grid';
 
-    // Esperar un tick para que el DOM se actualice, luego dibujar barras
-    setTimeout(() => {
-      etiquetas.forEach((item, idx) => {
+    // Obtener URL de JsBarcode para incluirla en la ventana nueva
+    const jsbUrl = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiquetas — Joyería Mariné</title>
+  <script src="${jsbUrl}"><\/script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; font-family: Arial, sans-serif; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3mm;
+      padding: 8mm;
+    }
+    .lbl {
+      border: 0.4pt solid #bbb;
+      border-radius: 2mm;
+      padding: 2mm 2mm 1.5mm;
+      text-align: center;
+      page-break-inside: avoid;
+      overflow: hidden;
+    }
+    .lbl canvas { width: 100%; max-height: ${d.bh}px; display: block; }
+    .sku { font-size: ${d.fs}pt; font-weight: bold; font-family: monospace;
+           margin-top: 1mm; color: #000; }
+    .nom { font-size: ${d.lf}pt; color: #444; margin-top: 0.5mm;
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media print {
+      body { margin: 0; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grid">${labelsHtml}</div>
+  <script>
+    window.onload = function() {
+      const items = ${JSON.stringify(etiquetas)};
+      items.forEach(function(item, idx) {
         try {
-          JsBarcode(`#pr-bc-${idx}`, item.codigo, {
+          JsBarcode('#bc' + idx, item.codigo, {
             format: 'CODE128',
             displayValue: false,
-            margin: 1,
-            width: 1.5,
-            height: 40,
+            margin: 2,
+            width: 1.6,
+            height: ${d.bh},
             background: '#ffffff',
             lineColor: '#000000'
           });
-        } catch (e) { /* código inválido, se deja vacío */ }
+        } catch(e) {}
       });
+      // Pequeña espera para que el render de canvas termine, luego imprime
+      setTimeout(function() { window.print(); }, 400);
+    };
+  <\/script>
+</body>
+</html>`;
 
-      // Lanzar impresión y después ocultar zona
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => { zona.style.display = 'none'; zona.innerHTML = ''; }, 500);
-      }, 300);
-    }, 100);
+    // Abrir ventana nueva y escribir el contenido
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (!win) {
+      if (typeof app !== 'undefined') app.showToast('Permite las ventanas emergentes en tu navegador', 'error');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
   },
+
 
   // ── BIND EVENTOS ─────────────────────────────────────────────────────────
 
