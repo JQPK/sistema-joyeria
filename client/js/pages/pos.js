@@ -22,6 +22,10 @@ export default {
             <button id="btn-pos-scan" class="btn btn-secondary btn-icon" title="Escanear con cámara">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h3M20 7V4h-3M4 17v3h3M20 17v3h-3M9 12h6"></path></svg>
             </button>
+            <button id="btn-toggle-cart" class="btn btn-primary btn-icon" title="Ver carrito" style="position:relative">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+              <span id="mobile-cart-count" class="badge" style="position:absolute;top:-6px;right:-6px;background:var(--accent-gold);color:#000;font-size:.65rem;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0 4px">0</span>
+            </button>
           </div>
           
           <div class="filter-scroll" id="pos-categories">
@@ -70,11 +74,7 @@ export default {
         </div>
       </div>
       
-      <!-- Mobile Cart Toggle Button -->
-      <button id="btn-toggle-cart" class="btn btn-primary btn-fab cart-toggle-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-        <span id="mobile-cart-count" class="badge bg-white text-primary" style="margin-left:0.5rem">0</span>
-      </button>
+      <!-- Cart toggle moved to search bar, no separate FAB needed -->
 
       <!-- Checkout Modal -->
       <div id="modal-checkout" class="modal-overlay">
