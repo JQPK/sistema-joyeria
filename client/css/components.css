@@ -55,6 +55,8 @@
   border-radius: 50%;
   min-height: var(--touch-target);
   width: var(--touch-target);
+  overflow: visible;   /* allow badge to show outside button bounds */
+  position: relative;
 }
 
 .btn-sm {
