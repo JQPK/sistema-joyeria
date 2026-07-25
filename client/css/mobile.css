@@ -46,17 +46,20 @@
     gap: 0.5rem;
   }
   
-  /* Cart Panel: Completely hidden, fullscreen overlay when active */
+
+  /* Cart Panel: hidden by default, centered modal popup when active */
   .pos-cart {
     display: none;
     position: fixed;
-    top: var(--topbar-height);
-    bottom: var(--bottom-nav-height);
-    left: 0;
-    right: 0;
-    z-index: 150;
+    inset: 0;
+    z-index: 500;
+    /* backdrop */
+    background: rgba(0,0,0,0.65);
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    /* reset desktop styles */
     border-radius: 0;
-    background: var(--bg-card);
     border: none;
     box-shadow: none;
     flex-direction: column;
@@ -64,7 +67,19 @@
 
   .pos-cart.active {
     display: flex;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.2);
+  }
+
+  /* Inner card that sizes to content */
+  .pos-cart > .pos-cart-inner {
+    background: var(--bg-card);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
   }
 
   /* Cart toggle FAB button */

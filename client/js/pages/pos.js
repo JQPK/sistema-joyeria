@@ -37,41 +37,43 @@ export default {
           </div>
         </div>
 
-        <!-- Cart Section -->
+        <!-- Cart Section: backdrop is pos-cart-panel itself, inner card is pos-cart-inner -->
         <div class="pos-cart" id="pos-cart-panel">
-          <div class="card-header" style="background: var(--bg-primary)">
-            <h3 style="font-size: 1.1rem; display:flex; align-items:center; gap:0.5rem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-              Pedido Actual
-            </h3>
-            <button id="btn-close-cart" class="btn-icon btn-secondary" style="display:none">✕</button>
-          </div>
-          
-          <div class="cart-items" id="pos-cart-items">
-            <div class="empty-state text-center text-muted" style="margin-top: 2rem">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:48px;height:48px;opacity:0.5;margin-bottom:1rem"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
-              <p>El carrito está vacío</p>
+          <div class="pos-cart-inner">
+            <div class="card-header" style="background: var(--bg-primary)">
+              <h3 style="font-size: 1.1rem; display:flex; align-items:center; gap:0.5rem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                Pedido Actual
+              </h3>
+              <button id="btn-close-cart" class="btn-icon btn-secondary">✕</button>
             </div>
-          </div>
-          
-          <div class="cart-summary">
-            <div class="summary-row">
-              <span class="text-muted">Subtotal</span>
-              <span class="fw-bold" id="pos-subtotal">S/ 0.00</span>
+
+            <div class="cart-items" id="pos-cart-items">
+              <div class="empty-state text-center text-muted" style="margin-top: 2rem">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:48px;height:48px;opacity:0.5;margin-bottom:1rem"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
+                <p>El carrito está vacío</p>
+              </div>
             </div>
-            <div class="summary-row">
-              <span class="text-muted">Descuento</span>
-              <span class="text-danger fw-bold" id="pos-descuento">- S/ 0.00</span>
+
+            <div class="cart-summary">
+              <div class="summary-row">
+                <span class="text-muted">Subtotal</span>
+                <span class="fw-bold" id="pos-subtotal">S/ 0.00</span>
+              </div>
+              <div class="summary-row">
+                <span class="text-muted">Descuento</span>
+                <span class="text-danger fw-bold" id="pos-descuento">- S/ 0.00</span>
+              </div>
+              <div class="summary-row summary-total">
+                <span>Total</span>
+                <span class="text-gold" id="pos-total">S/ 0.00</span>
+              </div>
+              <button id="btn-checkout" class="btn btn-primary w-full" style="margin-top: 1rem" disabled>
+                Cobrar
+              </button>
             </div>
-            <div class="summary-row summary-total">
-              <span>Total</span>
-              <span class="text-gold" id="pos-total">S/ 0.00</span>
-            </div>
-            <button id="btn-checkout" class="btn btn-primary w-full" style="margin-top: 1rem" disabled>
-              Cobrar
-            </button>
-          </div>
-        </div>
+          </div><!-- /pos-cart-inner -->
+        </div><!-- /pos-cart-panel -->
       </div>
       
       <!-- Cart toggle moved to search bar, no separate FAB needed -->
@@ -212,21 +214,21 @@ export default {
       this.handleScannedCode(code);
     });
 
-    // Mobile cart toggle
+    // Mobile cart toggle — click backdrop or X to close
     const toggleBtn = document.getElementById('btn-toggle-cart');
-    const closeBtn = document.getElementById('btn-close-cart');
+    const closeBtn  = document.getElementById('btn-close-cart');
     const cartPanel = document.getElementById('pos-cart-panel');
-    
-    if (toggleBtn && cartPanel) {
-      toggleBtn.addEventListener('click', () => {
-        cartPanel.classList.add('active');
-        closeBtn.style.display = 'block';
-      });
-    }
-    if (closeBtn && cartPanel) {
-      closeBtn.addEventListener('click', () => {
-        cartPanel.classList.remove('active');
-        closeBtn.style.display = 'none';
+
+    const openCart  = () => cartPanel.classList.add('active');
+    const closeCart = () => cartPanel.classList.remove('active');
+
+    if (toggleBtn) toggleBtn.addEventListener('click', openCart);
+    if (closeBtn)  closeBtn.addEventListener('click', closeCart);
+
+    // Close when clicking the dark backdrop (not the inner card)
+    if (cartPanel) {
+      cartPanel.addEventListener('click', (e) => {
+        if (e.target === cartPanel) closeCart();
       });
     }
 
