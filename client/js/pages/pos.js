@@ -186,6 +186,12 @@ export default {
     `;
 
     this.bindEvents();
+
+    // Move cart panel to document.body so position:fixed is relative
+    // to the real viewport (not the animated page-view container)
+    const cartPanel = document.getElementById('pos-cart-panel');
+    if (cartPanel) document.body.appendChild(cartPanel);
+
     await this.loadData();
   },
 
