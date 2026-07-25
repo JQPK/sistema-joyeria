@@ -127,39 +127,55 @@ export default {
         </div>
 
       </div>
-    </div>
+    `;
 
-    <!-- MODAL: Detalle de producto por escaneo -->
-    <div id="inv-scan-modal" style="display:none; position:fixed; inset:0; z-index:1000;
-         background:rgba(0,0,0,.7); align-items:center; justify-content:center; padding:1rem">
+    this._crearModal();
+    await this.loadData();
+  },
+
+  // Crea el modal en document.body para que position:fixed funcione sobre el viewport real
+  _crearModal() {
+    // Quitar si ya existe (por si se navega de ida y vuelta)
+    const viejo = document.getElementById('inv-scan-modal');
+    if (viejo) viejo.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'inv-scan-modal';
+    modal.style.cssText = [
+      'display:none',
+      'position:fixed',
+      'inset:0',
+      'z-index:9999',
+      'background:rgba(0,0,0,.72)',
+      'align-items:center',
+      'justify-content:center',
+      'padding:1rem'
+    ].join(';');
+    modal.innerHTML = `
       <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:480px;
-                  max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.5)">
-
-        <!-- Cabecera modal -->
-        <div style="padding:1.25rem 1.25rem .5rem; display:flex; justify-content:space-between; align-items:center;
-                    border-bottom:1px solid var(--border)">
-          <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-primary); display:flex; gap:.5rem; align-items:center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"><path d="M3 9V5a2 2 0 0 1 2-2h4M3 15v4a2 2 0 0 1 2 2h4M21 9V5a2 2 0 0 1-2-2h-4M21 15v4a2 2 0 0 1-2 2h-4M7 12h10"></path></svg>
+                  max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.6);">
+        <div style="padding:1.25rem 1.25rem .5rem; display:flex; justify-content:space-between;
+                    align-items:center; border-bottom:1px solid var(--border)">
+          <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-primary);
+                     display:flex; gap:.5rem; align-items:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18">
+              <path d="M3 9V5a2 2 0 0 1 2-2h4M3 15v4a2 2 0 0 1 2 2h4M21 9V5a2 2 0 0 1-2-2h-4M21 15v4a2 2 0 0 1-2 2h-4M7 12h10"></path>
+            </svg>
             Detalle del Producto
           </h3>
-          <button onclick="window.invCloseModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1.5rem;line-height:1">&times;</button>
+          <button onclick="window.invCloseModal()"
+                  style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1.5rem;line-height:1">&times;</button>
         </div>
-
-        <!-- Contenido dinámico -->
         <div id="inv-scan-content" style="padding:1.25rem">
-          <div class="text-center text-muted" style="padding:2rem">Escaneando...</div>
+          <div class="text-center text-muted" style="padding:2rem">Buscando producto...</div>
         </div>
-
-        <!-- Pie modal -->
         <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end">
           <button class="btn btn-secondary" onclick="window.invScan()">📷 Escanear otro</button>
           <button class="btn btn-primary" onclick="window.invCloseModal()">Cerrar</button>
         </div>
       </div>
-    </div>
     `;
-
-    await this.loadData();
+    document.body.appendChild(modal);
   },
 
   async loadData() {
