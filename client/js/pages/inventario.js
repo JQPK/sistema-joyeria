@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { scanner } from '../scanner.js';
 
 export default {
   container: null,
@@ -94,6 +95,10 @@ export default {
               <div class="form-control flex items-center" style="padding:0; min-width:0">
                 <input type="text" id="inv-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar producto...">
               </div>
+              <button class="btn btn-secondary btn-sm flex items-center gap-2" onclick="window.invScan()" title="Escanear código de barras">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M3 9V5a2 2 0 0 1 2-2h4M3 15v4a2 2 0 0 1 2 2h4M21 9V5a2 2 0 0 1-2-2h-4M21 15v4a2 2 0 0 1-2 2h-4M7 12h10"></path></svg>
+                Escanear
+              </button>
               <button class="btn btn-secondary btn-sm flex items-center gap-2" onclick="window.invExportExcel()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 Exportar
@@ -122,6 +127,36 @@ export default {
         </div>
 
       </div>
+    </div>
+
+    <!-- MODAL: Detalle de producto por escaneo -->
+    <div id="inv-scan-modal" style="display:none; position:fixed; inset:0; z-index:1000;
+         background:rgba(0,0,0,.7); align-items:center; justify-content:center; padding:1rem">
+      <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:480px;
+                  max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.5)">
+
+        <!-- Cabecera modal -->
+        <div style="padding:1.25rem 1.25rem .5rem; display:flex; justify-content:space-between; align-items:center;
+                    border-bottom:1px solid var(--border)">
+          <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-primary); display:flex; gap:.5rem; align-items:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18"><path d="M3 9V5a2 2 0 0 1 2-2h4M3 15v4a2 2 0 0 1 2 2h4M21 9V5a2 2 0 0 1-2-2h-4M21 15v4a2 2 0 0 1-2 2h-4M7 12h10"></path></svg>
+            Detalle del Producto
+          </h3>
+          <button onclick="window.invCloseModal()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1.5rem;line-height:1">&times;</button>
+        </div>
+
+        <!-- Contenido dinámico -->
+        <div id="inv-scan-content" style="padding:1.25rem">
+          <div class="text-center text-muted" style="padding:2rem">Escaneando...</div>
+        </div>
+
+        <!-- Pie modal -->
+        <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end">
+          <button class="btn btn-secondary" onclick="window.invScan()">📷 Escanear otro</button>
+          <button class="btn btn-primary" onclick="window.invCloseModal()">Cerrar</button>
+        </div>
+      </div>
+    </div>
     `;
 
     await this.loadData();
@@ -294,9 +329,114 @@ export default {
     XLSX.writeFile(wb, `Reporte_Inventario_${dateStr}.xlsx`);
   },
 
+  async scanProducto() {
+    await scanner.open(async (codigo) => {
+      this.showScanModal();
+      try {
+        const res = await api.get(`/productos/sku/${encodeURIComponent(codigo)}`);
+        if (!res.success) {
+          this.renderScanError(codigo);
+          return;
+        }
+
+        // Fetch full product details
+        const prodRes = await api.get(`/productos/${res.data.id}`);
+        if (prodRes.success) {
+          this.renderScanResult(prodRes.data, res.type === 'variant' ? res.data : null);
+        } else {
+          this.renderScanError(codigo);
+        }
+      } catch(err) {
+        this.renderScanError(codigo);
+      }
+    });
+  },
+
+  showScanModal() {
+    const modal = document.getElementById('inv-scan-modal');
+    if (modal) {
+      modal.style.display = 'flex';
+      document.getElementById('inv-scan-content').innerHTML =
+        '<div class="text-center text-muted" style="padding:2rem">Buscando producto...</div>';
+    }
+  },
+
+  renderScanError(codigo) {
+    document.getElementById('inv-scan-content').innerHTML = `
+      <div style="text-align:center; padding:1.5rem">
+        <div style="font-size:2.5rem; margin-bottom:.5rem">❌</div>
+        <div style="font-weight:700; color:var(--color-danger)">Producto no encontrado</div>
+        <div style="color:var(--text-muted); font-size:.85rem; margin-top:.5rem; font-family:monospace">${codigo}</div>
+      </div>
+    `;
+  },
+
+  renderScanResult(prod, variantData) {
+    const stockActual = variantData ? variantData.stock_actual : prod.stock_actual;
+    const stockMin    = prod.stock_minimo || 1;
+    const precio      = variantData ? (variantData.precio_venta || prod.precio_venta) : prod.precio_venta;
+    const sku         = variantData ? variantData.codigo : prod.codigo;
+    const nombre      = variantData ? variantData.nombre : prod.nombre;
+
+    const stockPct   = Math.min(100, Math.round((stockActual / Math.max(stockMin * 3, 1)) * 100));
+    let stockColor   = '#4ade80';  // verde
+    let stockLabel   = 'Disponible';
+    if (stockActual <= 0)           { stockColor = '#f87171'; stockLabel = 'Sin stock'; }
+    else if (stockActual <= stockMin) { stockColor = '#fbbf24'; stockLabel = 'Stock bajo'; }
+
+    document.getElementById('inv-scan-content').innerHTML = `
+      <!-- Nombre y SKU -->
+      <div style="margin-bottom:1rem">
+        <div style="font-size:1.1rem; font-weight:700; color:var(--text-primary); line-height:1.3">${nombre}</div>
+        <div style="font-size:.8rem; color:var(--text-muted); font-family:monospace; margin-top:.2rem">${sku || '-'}</div>
+      </div>
+
+      <!-- Barra de stock -->
+      <div style="background:var(--bg-secondary); border-radius:12px; padding:1rem; margin-bottom:1rem">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem">
+          <span style="font-size:.85rem; color:var(--text-muted)">Stock actual</span>
+          <span style="font-weight:700; font-size:1.4rem; color:${stockColor}">${stockActual}
+            <span style="font-size:.75rem; font-weight:400; opacity:.8">${stockLabel}</span>
+          </span>
+        </div>
+        <div style="height:8px; background:var(--border); border-radius:4px; overflow:hidden">
+          <div style="height:100%; width:${stockPct}%; background:${stockColor}; border-radius:4px; transition:width .4s"></div>
+        </div>
+        <div style="font-size:.75rem; color:var(--text-muted); margin-top:.35rem">Mínimo requerido: ${stockMin} unidades</div>
+      </div>
+
+      <!-- Ficha de detalles -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem">
+        ${this._detCard('💰 Precio Venta', `S/ ${parseFloat(precio).toFixed(2)}`)}
+        ${this._detCard('📦 Precio Compra', prod.precio_compra > 0 ? `S/ ${parseFloat(prod.precio_compra).toFixed(2)}` : '—')}
+        ${this._detCard('🏷️ Categoría', prod.categoria_nombre || '—')}
+        ${this._detCard('⚗️ Material', prod.material_nombre || '—')}
+        ${this._detCard('⚖️ Peso', prod.peso_gramos > 0 ? `${prod.peso_gramos} gr` : '—')}
+        ${this._detCard('📉 Descuento', prod.descuento_porcentaje > 0 ? `${prod.descuento_porcentaje}%` : 'Sin descuento')}
+        ${prod.tiene_variantes ? this._detCard('🔀 Variantes', prod.variantes ? prod.variantes.length + ' variantes' : '—') : ''}
+      </div>
+
+      ${prod.descripcion ? `<div style="margin-top:.75rem; padding:.75rem; background:var(--bg-secondary); border-radius:8px; font-size:.82rem; color:var(--text-muted)">${prod.descripcion}</div>` : ''}
+    `;
+  },
+
+  _detCard(label, value) {
+    return `
+      <div style="background:var(--bg-secondary); border-radius:8px; padding:.6rem .75rem">
+        <div style="font-size:.72rem; color:var(--text-muted); margin-bottom:.15rem">${label}</div>
+        <div style="font-weight:600; font-size:.9rem; color:var(--text-primary)">${value}</div>
+      </div>
+    `;
+  },
+
   load() {
     this.bindEvents();
     this.loadData();
     window.invExportExcel = this.exportExcel.bind(this);
+    window.invScan = () => this.scanProducto();
+    window.invCloseModal = () => {
+      const m = document.getElementById('inv-scan-modal');
+      if (m) m.style.display = 'none';
+    };
   }
 };

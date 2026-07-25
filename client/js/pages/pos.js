@@ -171,6 +171,12 @@ export default {
               <button class="btn btn-secondary w-full" style="margin-top: 1.5rem" onclick="window.posNewSale()">
                 Nueva Venta
               </button>
+
+              <!-- Stock restante tras la venta -->
+              <div id="venta-stock-restante" style="display:none; margin-top:1rem; text-align:left">
+                <div style="font-size:.8rem; font-weight:600; color:var(--text-muted); margin-bottom:.5rem; text-transform:uppercase; letter-spacing:.05em">📦 Stock restante de esta venta</div>
+                <div id="venta-stock-lista" style="display:flex; flex-direction:column; gap:.35rem"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -618,6 +624,10 @@ export default {
           }
         };
         app.openModal('modal-venta-exitosa');
+
+        // Mostrar stock restante de los productos vendidos
+        this._mostrarStockRestante(payload.items);
+
       }
     } catch (err) {
       app.showToast(err.message, 'error');
@@ -650,6 +660,64 @@ export default {
     if (cartPanel) cartPanel.classList.remove('active');
     
     this.loadData();
+  },
+
+  async _mostrarStockRestante(items) {
+    const wrapper = document.getElementById('venta-stock-restante');
+    const lista   = document.getElementById('venta-stock-lista');
+    if (!wrapper || !lista) return;
+
+    // Deduplicate by producto_id + variante_id
+    const vistos = new Set();
+    const unicos = items.filter(i => {
+      const key = `${i.producto_id}-${i.variante_id || ''}`;
+      if (vistos.has(key)) return false;
+      vistos.add(key);
+      return true;
+    });
+
+    wrapper.style.display = 'block';
+    lista.innerHTML = '<div style="color:var(--text-muted);font-size:.8rem">Consultando stock...</div>';
+
+    try {
+      const filas = await Promise.all(unicos.map(async (item) => {
+        try {
+          const res = await api.get(`/productos/${item.producto_id}`);
+          if (!res.success) return null;
+          const prod = res.data;
+
+          let nombre, stock, stockMin;
+          if (item.variante_id && prod.variantes) {
+            const v = prod.variantes.find(x => x.id === item.variante_id);
+            nombre   = v ? `${prod.nombre} — ${v.nombre_variante}` : prod.nombre;
+            stock    = v ? v.stock_actual : prod.stock_actual;
+          } else {
+            nombre = prod.nombre;
+            stock  = prod.stock_actual;
+          }
+          stockMin = prod.stock_minimo || 1;
+
+          let color = '#4ade80', bg = 'rgba(74,222,128,.1)', icono = '✅';
+          if (stock <= 0)           { color = '#f87171'; bg = 'rgba(248,113,113,.1)'; icono = '🚨'; }
+          else if (stock <= stockMin) { color = '#fbbf24'; bg = 'rgba(251,191,36,.1)';  icono = '⚠️'; }
+
+          return `
+            <div style="display:flex; justify-content:space-between; align-items:center;
+                        background:${bg}; border-radius:8px; padding:.4rem .65rem">
+              <span style="font-size:.8rem; color:var(--text-primary); overflow:hidden;
+                           text-overflow:ellipsis; white-space:nowrap; max-width:75%">${nombre}</span>
+              <span style="font-weight:700; color:${color}; font-size:.85rem; white-space:nowrap">
+                ${icono} ${stock} uds
+              </span>
+            </div>`;
+        } catch { return null; }
+      }));
+
+      const html = filas.filter(Boolean).join('');
+      lista.innerHTML = html || '<div style="color:var(--text-muted);font-size:.8rem">Sin datos</div>';
+    } catch {
+      lista.innerHTML = '<div style="color:var(--text-muted);font-size:.8rem">Error consultando stock</div>';
+    }
   },
 
   load() {
