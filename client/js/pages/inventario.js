@@ -346,6 +346,10 @@ export default {
   },
 
   async scanProducto() {
+    // Cerrar el modal primero (si estaba abierto por un escaneo previo)
+    const modal = document.getElementById('inv-scan-modal');
+    if (modal) modal.style.display = 'none';
+
     await scanner.open(async (codigo) => {
       this.showScanModal();
       try {
