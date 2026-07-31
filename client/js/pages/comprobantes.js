@@ -48,6 +48,8 @@ export default {
                   <th>Fecha</th>
                   <th>Comprobante</th>
                   <th>Cliente</th>
+                  <th>Atendido por</th>
+                  <th>Pago</th>
                   <th>Total</th>
                   <th>Estado</th>
                   <th class="text-right">Acciones</th>
@@ -134,11 +136,14 @@ export default {
 
     tbody.innerHTML = data.map(v => {
       const fechaStr = new Date(v.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      const pagoLabel = _pagoLabel(v.metodo_pago);
       return `
       <tr>
         <td class="text-muted">${fechaStr}</td>
         <td class="fw-bold">${v.numero_comprobante}</td>
         <td>${v.cliente_nombre || 'Cliente General'}</td>
+        <td style="font-size:.82rem">${v.vendedor_nombre || '—'}</td>
+        <td><span class="badge" style="${_pagoColor(v.metodo_pago)}">${pagoLabel}</span></td>
         <td class="fw-bold text-gold">S/ ${parseFloat(v.total).toFixed(2)}</td>
         <td>
           <span class="badge ${v.estado === 'completada' ? 'badge-success' : 'badge-danger'}">
@@ -177,7 +182,11 @@ export default {
                 <span class="text-muted">Cliente:</span> <span class="fw-bold">${v.cliente_nombre || 'General'}</span>
               </div>
               <div class="flex justify-between" style="margin-bottom:0.5rem">
-                <span class="text-muted">Vendedor:</span> <span class="fw-bold">${v.vendedor_nombre}</span>
+                <span class="text-muted">Atendido por:</span> <span class="fw-bold">${v.vendedor_nombre || '—'}</span>
+              </div>
+              <div class="flex justify-between" style="margin-bottom:0.5rem">
+                <span class="text-muted">Método de pago:</span>
+                <span class="badge" style="${_pagoColor(v.metodo_pago)}">${_pagoLabel(v.metodo_pago)}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-muted">Estado:</span> 
@@ -250,3 +259,17 @@ export default {
     window.compVoid = this.voidSale.bind(this);
   }
 };
+
+// Helpers de método de pago (fuera del objeto para reuso en template literals)
+function _pagoLabel(m) {
+  const map = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Yape / Transferencia' };
+  return map[m] || m || '—';
+}
+function _pagoColor(m) {
+  const map = {
+    efectivo:      'background:rgba(74,222,128,.15);color:#16a34a',
+    tarjeta:       'background:rgba(96,165,250,.15);color:#1d4ed8',
+    transferencia: 'background:rgba(167,139,250,.15);color:#7c3aed'
+  };
+  return (map[m] || 'background:var(--bg-secondary);color:var(--text-muted)') + ';padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600';
+}
