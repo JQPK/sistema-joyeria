@@ -380,11 +380,11 @@ export default {
       for (let c = 0; c < copias; c++) etiquetas.push(item);
     }
 
-    // Dimensiones según tamaño elegido
+    // Dimensiones según tamaño elegido (comprimido)
     const dims = {
-      small:  { bh: 30, fs: 7,  lf: 6  },
-      medium: { bh: 40, fs: 9,  lf: 7  },
-      large:  { bh: 52, fs: 11, lf: 8  }
+      small:  { bh: 20, fs: 5.5, lf: 5   },
+      medium: { bh: 28, fs: 6.5, lf: 5.5 },
+      large:  { bh: 36, fs: 7.5, lf: 6   }
     };
     const d = dims[tamano];
 
@@ -414,26 +414,26 @@ export default {
     body { background: #fff; font-family: Arial, sans-serif; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 3mm;
-      padding: 8mm;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2mm;
+      padding: 6mm;
     }
     .lbl {
-      border: 0.4pt solid #bbb;
-      border-radius: 2mm;
-      padding: 2mm 2mm 1.5mm;
+      border: 0.3pt solid #ccc;
+      border-radius: 1.5mm;
+      padding: 1mm 1.5mm 1mm;
       text-align: center;
       page-break-inside: avoid;
       overflow: hidden;
     }
     .lbl canvas { width: 100%; max-height: ${d.bh}px; display: block; }
     .sku { font-size: ${d.fs}pt; font-weight: bold; font-family: monospace;
-           margin-top: 1mm; color: #000; }
-    .nom { font-size: ${d.lf}pt; color: #444; margin-top: 0.5mm;
+           margin-top: 0.5mm; color: #000; line-height: 1.1; }
+    .nom { font-size: ${d.lf}pt; color: #444; margin-top: 0.2mm; line-height: 1.1;
            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mat { font-size: ${d.lf}pt; color: #777; margin-top: 0.3mm;
+    .mat { font-size: ${d.lf}pt; color: #777; margin-top: 0.1mm; line-height: 1.1;
            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .prc { font-size: ${d.lf + 1}pt; font-weight: bold; color: #92400e; margin-top: 0.5mm; }
+    .prc { font-size: ${d.lf}pt; font-weight: bold; color: #92400e; margin-top: 0.2mm; line-height: 1.1; }
     @media print {
       body { margin: 0; }
       .no-print { display: none; }
