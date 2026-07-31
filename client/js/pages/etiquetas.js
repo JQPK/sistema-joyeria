@@ -80,6 +80,12 @@ export default {
               </select>
             </div>
 
+            <div class="form-group" style="margin:0;flex:1;min-width:160px">
+              <label class="form-label" style="font-size:.78rem">Buscar por código</label>
+              <input type="text" id="et-buscar-codigo" class="form-control"
+                     placeholder="Ej. JM-VAR-605947" style="font-family:monospace;font-size:.82rem">
+            </div>
+
             <div class="form-group" style="margin:0;min-width:110px">
               <label class="form-label" style="font-size:.78rem">Copias por producto</label>
               <select id="et-copias" class="form-control">
@@ -166,7 +172,6 @@ export default {
       if (resProd.success) {
         for (const p of resProd.data) {
           if (p.tiene_variantes && p.variantes && p.variantes.length > 0) {
-            // Cada variante es una etiqueta independiente
             for (const v of p.variantes) {
               const sku = v.sku || p.codigo || `VAR-${v.id}`;
               const nombre = `${p.nombre} — ${v.nombre_variante}`;
@@ -175,6 +180,8 @@ export default {
                 codigo: sku,
                 nombre: nombre,
                 categoria_id: p.categoria_id,
+                material: p.material_nombre || '',
+                precio: parseFloat(v.precio_venta || p.precio_venta || 0),
                 tipo: 'variante'
               });
             }
@@ -185,6 +192,8 @@ export default {
               codigo: codigo,
               nombre: p.nombre,
               categoria_id: p.categoria_id,
+              material: p.material_nombre || '',
+              precio: parseFloat(p.precio_venta || 0),
               tipo: 'producto'
             });
           }
@@ -271,10 +280,11 @@ export default {
   },
 
   _aplicarFiltro() {
-    const catId = document.getElementById('et-filtro-cat')?.value || '';
-    const filtrados = catId
-      ? this.todosLosItems.filter(i => String(i.categoria_id) === catId)
-      : this.todosLosItems;
+    const catId  = document.getElementById('et-filtro-cat')?.value || '';
+    const buscar = (document.getElementById('et-buscar-codigo')?.value || '').toLowerCase().trim();
+    let filtrados = this.todosLosItems;
+    if (catId)  filtrados = filtrados.filter(i => String(i.categoria_id) === catId);
+    if (buscar) filtrados = filtrados.filter(i => i.codigo.toLowerCase().includes(buscar));
     this._renderLista(filtrados);
     // Restaurar estado visual de checkboxes
     document.querySelectorAll('.et-chk').forEach(chk => {
@@ -324,6 +334,8 @@ export default {
                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.codigo}</div>
         <div style="font-size:${d.labelFont}px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"
              title="${item.nombre}">${item.nombre}</div>
+        ${item.material ? `<div style="font-size:${d.labelFont}px;color:#888;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.material}</div>` : ''}
+        <div style="font-size:${d.labelFont + 1}px;font-weight:700;color:#b45309;margin-top:1px">S/ ${item.precio.toFixed(2)}</div>
       </div>
     `).join('');
 
@@ -383,6 +395,8 @@ export default {
         <canvas id="bc${idx}"></canvas>
         <div class="sku">${item.codigo}</div>
         <div class="nom">${item.nombre.replace(/</g,'&lt;')}</div>
+        ${item.material ? `<div class="mat">${item.material.replace(/</g,'&lt;')}</div>` : ''}
+        <div class="prc">S/ ${item.precio.toFixed(2)}</div>
       </div>
     `).join('');
 
@@ -417,6 +431,9 @@ export default {
            margin-top: 1mm; color: #000; }
     .nom { font-size: ${d.lf}pt; color: #444; margin-top: 0.5mm;
            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mat { font-size: ${d.lf}pt; color: #777; margin-top: 0.3mm;
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prc { font-size: ${d.lf + 1}pt; font-weight: bold; color: #92400e; margin-top: 0.5mm; }
     @media print {
       body { margin: 0; }
       .no-print { display: none; }
@@ -465,6 +482,7 @@ export default {
   _bindEventos() {
     document.getElementById('btn-imprimir')?.addEventListener('click', () => this._imprimir());
     document.getElementById('et-filtro-cat')?.addEventListener('change', () => this._aplicarFiltro());
+    document.getElementById('et-buscar-codigo')?.addEventListener('input', () => this._aplicarFiltro());
 
     window.etSelAll  = () => {
       // Seleccionar todos los visibles en lista actual
