@@ -388,15 +388,12 @@ export default {
     };
     const d = dims[tamano];
 
-    // Construir HTML de las etiquetas como cadena
-    // Usamos <canvas> porque la ventana nueva tendrá JsBarcode disponible
+    // Estructura comprimida: barras+SKU integrado, nombre, material•precio en una sola línea
     const labelsHtml = etiquetas.map((item, idx) => `
       <div class="lbl">
         <canvas id="bc${idx}"></canvas>
-        <div class="sku">${item.codigo}</div>
         <div class="nom">${item.nombre.replace(/</g,'&lt;')}</div>
-        ${item.material ? `<div class="mat">${item.material.replace(/</g,'&lt;')}</div>` : ''}
-        <div class="prc">S/ ${item.precio.toFixed(2)}</div>
+        <div class="inf">${item.material ? item.material.replace(/</g,'&lt;') + ' &bull; ' : ''}S/ ${item.precio.toFixed(2)}</div>
       </div>
     `).join('');
 
@@ -426,14 +423,10 @@ export default {
       page-break-inside: avoid;
       overflow: hidden;
     }
-    .lbl canvas { width: 100%; max-height: ${d.bh}px; display: block; }
-    .sku { font-size: ${d.fs}pt; font-weight: bold; font-family: monospace;
-           margin-top: 0.5mm; color: #000; line-height: 1.1; }
-    .nom { font-size: ${d.lf}pt; color: #444; margin-top: 0.2mm; line-height: 1.1;
+    .lbl canvas { width: 100%; display: block; }
+    .nom { font-size: ${d.lf}pt; color: #333; margin-top: 0.2mm; line-height: 1.2;
            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mat { font-size: ${d.lf}pt; color: #777; margin-top: 0.1mm; line-height: 1.1;
-           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .prc { font-size: ${d.lf}pt; font-weight: bold; color: #92400e; margin-top: 0.2mm; line-height: 1.1; }
+    .inf { font-size: ${d.lf}pt; color: #555; margin-top: 0.1mm; line-height: 1.2; }
     @media print {
       body { margin: 0; }
       .no-print { display: none; }
@@ -449,9 +442,11 @@ export default {
         try {
           JsBarcode('#bc' + idx, item.codigo, {
             format: 'CODE128',
-            displayValue: false,
+            displayValue: true,
+            fontSize: 9,
+            textMargin: 1,
             margin: 2,
-            width: 1.6,
+            width: 1.2,
             height: ${d.bh},
             background: '#ffffff',
             lineColor: '#000000'
