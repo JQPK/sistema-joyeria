@@ -19,12 +19,12 @@ router.get('/', async (req, res, next) => {
     let paramIdx = 1;
 
     if (req.query.fecha_inicio) {
-      query += ` AND m.fecha >= $${paramIdx++}`;
+      query += ` AND (m.fecha AT TIME ZONE 'America/Lima')::date >= $${paramIdx++}::date`;
       params.push(req.query.fecha_inicio);
     }
     if (req.query.fecha_fin) {
-      query += ` AND m.fecha <= $${paramIdx++}`;
-      params.push(req.query.fecha_fin + ' 23:59:59');
+      query += ` AND (m.fecha AT TIME ZONE 'America/Lima')::date <= $${paramIdx++}::date`;
+      params.push(req.query.fecha_fin);
     }
     if (req.query.tipo) {
       query += ` AND m.tipo = $${paramIdx++}`;
@@ -52,12 +52,12 @@ router.get('/resumen', async (req, res, next) => {
     let paramIdx = 1;
 
     if (req.query.fechaInicio) {
-      query += ` AND fecha >= $${paramIdx++}`;
+      query += ` AND (fecha AT TIME ZONE 'America/Lima')::date >= $${paramIdx++}::date`;
       params.push(req.query.fechaInicio);
     }
     if (req.query.fechaFin) {
-      query += ` AND fecha <= $${paramIdx++}`;
-      params.push(req.query.fechaFin + ' 23:59:59');
+      query += ` AND (fecha AT TIME ZONE 'America/Lima')::date <= $${paramIdx++}::date`;
+      params.push(req.query.fechaFin);
     }
 
     const result = await db.query(query, params);

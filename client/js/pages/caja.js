@@ -112,7 +112,10 @@ export default {
       </div>
     `;
 
-    document.getElementById('caja-fecha').value = new Date().toISOString().split('T')[0];
+    // Usar fecha local (Lima), no UTC
+    const hoy = new Date();
+    const fechaLocal = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+    document.getElementById('caja-fecha').value = fechaLocal;
     await this.loadData();
   },
 
@@ -221,5 +224,11 @@ export default {
     window.cajaOpenModal = this.openModal.bind(this);
     window.cajaSave = this.save.bind(this);
     window.cajaExport = this.exportExcel.bind(this);
+    // Refrescar fecha local cada vez que se navega a la página
+    const input = document.getElementById('caja-fecha');
+    if (input && !input.value) {
+      const hoy = new Date();
+      input.value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+    }
   }
 };
