@@ -151,7 +151,7 @@ export default {
     }
 
     tbody.innerHTML = data.map(m => {
-      const horaStr = new Date(m.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+      const horaStr = fmtHora(m.fecha);
       const isIngreso = m.tipo === 'ingreso';
       return `
       <tr>
@@ -203,7 +203,7 @@ export default {
     }
 
     const data = this.movimientos.map(m => ({
-      'Fecha y Hora': new Date(m.fecha).toLocaleString('es-PE'),
+      'Fecha y Hora': fmtFecha(m.fecha),
       'Tipo': m.tipo.toUpperCase(),
       'Concepto': m.concepto,
       'Usuario': m.usuario_nombre,

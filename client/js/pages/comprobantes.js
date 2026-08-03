@@ -135,7 +135,7 @@ export default {
     }
 
     tbody.innerHTML = data.map(v => {
-      const fechaStr = new Date(v.fecha).toLocaleString('es-PE', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      const fechaStr = fmtFecha(v.fecha);
       const pagoLabel = _pagoLabel(v.metodo_pago);
       return `
       <tr>
@@ -170,7 +170,7 @@ export default {
         const v = res.data;
         document.getElementById('comp-modal-title').textContent = `Venta ${v.numero_comprobante}`;
         
-        const fechaStr = new Date(v.fecha).toLocaleString('es-PE');
+        const fechaStr = fmtFecha(v.fecha);
         
         let html = `
           <div class="flex-col gap-4">

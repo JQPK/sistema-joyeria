@@ -193,10 +193,7 @@ export default {
 
     tbody.innerHTML = data.map(a => {
       const cfg = getConfig(a.accion);
-      const fecha = new Date(a.fecha).toLocaleString('es-PE', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
+      const fecha = fmtFecha(a.fecha, { second: '2-digit' });
       return `
         <tr>
           <td class="text-muted" style="font-size:.82rem; white-space:nowrap">${fecha}</td>

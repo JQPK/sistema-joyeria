@@ -1,6 +1,18 @@
 import { auth } from './auth.js';
 import { api } from './api.js';
 
+// ── Helpers de fecha/hora siempre en zona Lima ───────────────────────────────
+const TZ = 'America/Lima';
+window.fmtFecha = (fecha, opts) => {
+  const defaults = { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+  return new Date(fecha).toLocaleString('es-PE', { ...defaults, ...(opts || {}) });
+};
+window.fmtHora = (fecha) =>
+  new Date(fecha).toLocaleString('es-PE', { timeZone: TZ, hour: '2-digit', minute: '2-digit' });
+window.fmtSoloFecha = (fecha) =>
+  new Date(fecha).toLocaleString('es-PE', { timeZone: TZ, day: '2-digit', month: '2-digit', year: 'numeric' });
+// ─────────────────────────────────────────────────────────────────────────────
+
 window.app = {
   socket: null,
   pages: {},
