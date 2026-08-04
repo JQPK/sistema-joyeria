@@ -171,8 +171,12 @@ export default {
         <div id="inv-scan-content" style="padding:1.25rem">
           <div class="text-center text-muted" style="padding:2rem">Buscando producto...</div>
         </div>
-        <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end">
+        <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap">
           <button class="btn btn-secondary" onclick="window.invScan()">📷 Escanear otro</button>
+          <button class="btn btn-secondary" onclick="window.invImprimirEtiqueta()" id="inv-btn-print"
+                  style="background:rgba(96,165,250,.12);color:#3b82f6;border:1px solid rgba(96,165,250,.35);display:none">
+            🖨️ Imprimir
+          </button>
           <button class="btn btn-warning" onclick="window.invAbrirEdicion()" id="inv-btn-editar"
                   style="background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.4);display:none">
             ✏️ Actualizar
@@ -463,9 +467,11 @@ export default {
     this._currentProd    = prod;
     this._currentVariant = variantData || null;
 
-    // Mostrar botón de edición
+    // Mostrar botones de edición e impresión
     const btnEditar = document.getElementById('inv-btn-editar');
+    const btnPrint  = document.getElementById('inv-btn-print');
     if (btnEditar) btnEditar.style.display = 'inline-flex';
+    if (btnPrint)  btnPrint.style.display  = 'inline-flex';
 
     const stockActual = variantData ? variantData.stock_actual : prod.stock_actual;
     const stockMin    = prod.stock_minimo || 1;
@@ -598,18 +604,111 @@ export default {
     }
   },
 
+  imprimirEtiqueta() {
+    const prod    = this._currentProd;
+    const variant = this._currentVariant;
+    if (!prod) return;
+
+    const codigo  = variant ? (variant.sku || variant.codigo || prod.codigo) : (prod.codigo || '');
+    const nombre  = variant ? `${prod.nombre} — ${variant.nombre_variante}` : prod.nombre;
+    const precio  = variant
+      ? parseFloat(variant.precio_venta || prod.precio_venta || 0)
+      : parseFloat(prod.precio_venta || 0);
+
+    if (!codigo) return app.showToast('Este producto no tiene código de barras', 'warning');
+
+    const jsbUrl = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+
+    const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Etiqueta — ${nombre}</title>
+  <script src="${jsbUrl}"><\/script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #fff; font-family: Arial, sans-serif;
+           display: flex; align-items: center; justify-content: center;
+           min-height: 100vh; padding: 8mm; }
+    .wrap {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 3mm;
+      width: 100%;
+    }
+    .lbl {
+      border: 0.4pt solid #ccc;
+      border-radius: 2mm;
+      padding: 1.5mm;
+      text-align: center;
+      page-break-inside: avoid;
+      overflow: hidden;
+    }
+    .lbl canvas { width: 100%; display: block; }
+    .nom { font-size: 6pt; color: #333; margin-top: 0.5mm; line-height: 1.2;
+           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prc { font-size: 7pt; font-weight: bold; color: #92400e; margin-top: 0.3mm; }
+    @media print { body { margin: 0; padding: 6mm; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="lbl"><canvas id="bc0"></canvas>
+      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
+      <div class="prc">S/ ${precio.toFixed(2)}</div>
+    </div>
+    <div class="lbl"><canvas id="bc1"></canvas>
+      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
+      <div class="prc">S/ ${precio.toFixed(2)}</div>
+    </div>
+    <div class="lbl"><canvas id="bc2"></canvas>
+      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
+      <div class="prc">S/ ${precio.toFixed(2)}</div>
+    </div>
+    <div class="lbl"><canvas id="bc3"></canvas>
+      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
+      <div class="prc">S/ ${precio.toFixed(2)}</div>
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      const codigo = ${JSON.stringify(codigo)};
+      [0,1,2,3].forEach(function(i) {
+        try {
+          JsBarcode('#bc' + i, codigo, {
+            format: 'CODE128', displayValue: true,
+            fontSize: 9, textMargin: 1,
+            margin: 2, width: 1.2, height: 28,
+            background: '#ffffff', lineColor: '#000000'
+          });
+        } catch(e) {}
+      });
+      setTimeout(function() { window.print(); }, 400);
+    };
+  <\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=600,height=400');
+    if (!win) return app.showToast('Permite las ventanas emergentes en tu navegador', 'error');
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  },
+
   load() {
     this.bindEvents();
     this.loadData();
-    window.invExportExcel   = this.exportExcel.bind(this);
-    window.invScan          = () => this.scanProducto();
-    window.invAbrirEdicion  = () => this.abrirEdicion();
-    window.invGuardarEdicion = () => this.guardarEdicion();
-    window.invCloseModal    = () => {
+    window.invExportExcel    = this.exportExcel.bind(this);
+    window.invScan            = () => this.scanProducto();
+    window.invAbrirEdicion    = () => this.abrirEdicion();
+    window.invGuardarEdicion  = () => this.guardarEdicion();
+    window.invImprimirEtiqueta = () => this.imprimirEtiqueta();
+    window.invCloseModal      = () => {
       const m = document.getElementById('inv-scan-modal');
       if (m) m.style.display = 'none';
     };
-    window.invCloseEditModal = () => {
+    window.invCloseEditModal  = () => {
       const em = document.getElementById('inv-edit-modal');
       if (em) em.style.display = 'none';
     };
