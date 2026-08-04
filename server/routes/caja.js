@@ -42,6 +42,7 @@ router.get('/', async (req, res, next) => {
 // GET resumen
 router.get('/resumen', async (req, res, next) => {
   try {
+    // Resumen general de movimientos de caja
     let query = `
       SELECT
         COALESCE(SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END), 0) as total_ingresos,
@@ -63,7 +64,38 @@ router.get('/resumen', async (req, res, next) => {
     const result = await db.query(query, params);
     const data = result.rows[0];
     data.saldo_neto = parseFloat(data.total_ingresos) - parseFloat(data.total_egresos);
-    
+
+    // Desglose de ingresos por método de pago (join con tabla ventas a través del concepto)
+    // Los ingresos de venta tienen concepto "Venta BXXX-NNNN" o "Venta FXXX-NNNN"
+    let pagoQuery = `
+      SELECT
+        COALESCE(SUM(CASE WHEN v.metodo_pago = 'efectivo' THEN v.total ELSE 0 END), 0)       as ingresos_efectivo,
+        COALESCE(SUM(CASE WHEN v.metodo_pago IN ('transferencia', 'tarjeta') THEN v.total ELSE 0 END), 0) as ingresos_yape,
+        COALESCE(SUM(CASE WHEN v.metodo_pago = 'tarjeta' THEN v.total ELSE 0 END), 0)        as ingresos_tarjeta,
+        COALESCE(SUM(CASE WHEN v.metodo_pago = 'transferencia' THEN v.total ELSE 0 END), 0)  as ingresos_transferencia
+      FROM ventas v
+      WHERE v.estado = 'completada'
+    `;
+    const pagoParams = [];
+    let pagoIdx = 1;
+
+    if (req.query.fechaInicio) {
+      pagoQuery += ` AND (v.fecha AT TIME ZONE 'America/Lima')::date >= $${pagoIdx++}::date`;
+      pagoParams.push(req.query.fechaInicio);
+    }
+    if (req.query.fechaFin) {
+      pagoQuery += ` AND (v.fecha AT TIME ZONE 'America/Lima')::date <= $${pagoIdx++}::date`;
+      pagoParams.push(req.query.fechaFin);
+    }
+
+    const pagoResult = await db.query(pagoQuery, pagoParams);
+    const pagoData = pagoResult.rows[0];
+
+    data.ingresos_efectivo      = parseFloat(pagoData.ingresos_efectivo      || 0);
+    data.ingresos_yape          = parseFloat(pagoData.ingresos_yape          || 0);
+    data.ingresos_tarjeta       = parseFloat(pagoData.ingresos_tarjeta       || 0);
+    data.ingresos_transferencia = parseFloat(pagoData.ingresos_transferencia || 0);
+
     res.json({ success: true, data });
   } catch (err) {
     next(err);

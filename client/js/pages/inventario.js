@@ -3,6 +3,8 @@ import { scanner } from '../scanner.js';
 
 export default {
   container: null,
+  _currentProd: null,     // producto completo del último escaneo
+  _currentVariant: null,  // variante del último escaneo (o null)
 
   async init(container) {
     this.container = container;
@@ -171,11 +173,77 @@ export default {
         </div>
         <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end">
           <button class="btn btn-secondary" onclick="window.invScan()">📷 Escanear otro</button>
+          <button class="btn btn-warning" onclick="window.invAbrirEdicion()" id="inv-btn-editar"
+                  style="background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.4);display:none">
+            ✏️ Actualizar
+          </button>
           <button class="btn btn-primary" onclick="window.invCloseModal()">Cerrar</button>
         </div>
       </div>
     `;
     document.body.appendChild(modal);
+
+    // ── Modal de edición del producto ──────────────────────────────────────────
+    const viejo2 = document.getElementById('inv-edit-modal');
+    if (viejo2) viejo2.remove();
+
+    const editModal = document.createElement('div');
+    editModal.id = 'inv-edit-modal';
+    editModal.style.cssText = [
+      'display:none',
+      'position:fixed',
+      'inset:0',
+      'z-index:10000',
+      'background:rgba(0,0,0,.82)',
+      'align-items:center',
+      'justify-content:center',
+      'padding:1rem'
+    ].join(';');
+    editModal.innerHTML = `
+      <div style="background:var(--bg-card); border-radius:16px; width:100%; max-width:420px;
+                  max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,.7);">
+        <div style="padding:1.25rem 1.25rem .5rem; display:flex; justify-content:space-between;
+                    align-items:center; border-bottom:1px solid var(--border)">
+          <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-primary);
+                     display:flex; gap:.5rem; align-items:center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Actualizar Producto
+          </h3>
+          <button onclick="window.invCloseEditModal()"
+                  style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:1.5rem;line-height:1">&times;</button>
+        </div>
+        <div style="padding:1.25rem; display:flex; flex-direction:column; gap:.9rem">
+          <div>
+            <label style="font-size:.8rem; color:var(--text-muted); display:block; margin-bottom:.3rem">Nombre del Producto</label>
+            <input id="inv-edit-nombre" type="text" class="form-control" style="width:100%" placeholder="Nombre">
+          </div>
+          <div>
+            <label style="font-size:.8rem; color:var(--text-muted); display:block; margin-bottom:.3rem">Descripción</label>
+            <textarea id="inv-edit-descripcion" class="form-control" rows="2" style="width:100%;resize:vertical" placeholder="Descripción opcional"></textarea>
+          </div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem">
+            <div>
+              <label style="font-size:.8rem; color:var(--text-muted); display:block; margin-bottom:.3rem">Precio de Venta (S/)</label>
+              <input id="inv-edit-precio" type="number" step="0.01" min="0" class="form-control" style="width:100%" placeholder="0.00">
+            </div>
+            <div>
+              <label style="font-size:.8rem; color:var(--text-muted); display:block; margin-bottom:.3rem">Stock Actual</label>
+              <input id="inv-edit-stock" type="number" min="0" class="form-control" style="width:100%" placeholder="0">
+            </div>
+          </div>
+        </div>
+        <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="window.invCloseEditModal()">Cancelar</button>
+          <button class="btn btn-primary" onclick="window.invGuardarEdicion()">
+            💾 Guardar cambios
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(editModal);
   },
 
   async loadData() {
@@ -392,6 +460,13 @@ export default {
   },
 
   renderScanResult(prod, variantData) {
+    this._currentProd    = prod;
+    this._currentVariant = variantData || null;
+
+    // Mostrar botón de edición
+    const btnEditar = document.getElementById('inv-btn-editar');
+    if (btnEditar) btnEditar.style.display = 'inline-flex';
+
     const stockActual = variantData ? variantData.stock_actual : prod.stock_actual;
     const stockMin    = prod.stock_minimo || 1;
     const precio      = variantData ? (variantData.precio_venta || prod.precio_venta) : prod.precio_venta;
@@ -449,14 +524,94 @@ export default {
     `;
   },
 
+  abrirEdicion() {
+    const prod    = this._currentProd;
+    const variant = this._currentVariant;
+    if (!prod) return;
+
+    // Rellenar campos del modal de edición
+    document.getElementById('inv-edit-nombre').value      = prod.nombre || '';
+    document.getElementById('inv-edit-descripcion').value = prod.descripcion || '';
+    document.getElementById('inv-edit-precio').value      = variant
+      ? parseFloat(variant.precio_venta || prod.precio_venta || 0).toFixed(2)
+      : parseFloat(prod.precio_venta || 0).toFixed(2);
+    document.getElementById('inv-edit-stock').value       = variant
+      ? (variant.stock_actual ?? 0)
+      : (prod.stock_actual ?? 0);
+
+    // Abrir modal de edición
+    const em = document.getElementById('inv-edit-modal');
+    if (em) em.style.display = 'flex';
+  },
+
+  async guardarEdicion() {
+    const prod    = this._currentProd;
+    const variant = this._currentVariant;
+    if (!prod) return;
+
+    const nombre      = document.getElementById('inv-edit-nombre').value.trim();
+    const descripcion = document.getElementById('inv-edit-descripcion').value.trim();
+    const precio      = parseFloat(document.getElementById('inv-edit-precio').value);
+    const stock       = parseInt(document.getElementById('inv-edit-stock').value, 10);
+
+    if (!nombre)       return app.showToast('El nombre no puede estar vacío', 'error');
+    if (isNaN(precio)) return app.showToast('Precio inválido', 'error');
+    if (isNaN(stock))  return app.showToast('Stock inválido', 'error');
+
+    try {
+      // Actualizar siempre el producto base (nombre, descripción, precio si no hay variante)
+      const prodPayload = { nombre, descripcion };
+      if (!variant) {
+        prodPayload.precio_venta = precio;
+        prodPayload.stock_actual = stock;
+      }
+      await api.put(`/productos/${prod.id}`, prodPayload);
+
+      // Si hay variante, actualizar el precio y stock de la variante específica
+      if (variant) {
+        await api.put(`/variantes/${variant.id}`, {
+          precio_venta: precio,
+          stock_actual: stock
+        });
+      }
+
+      app.showToast('Producto actualizado correctamente', 'success');
+
+      // Cerrar modal de edición
+      const em = document.getElementById('inv-edit-modal');
+      if (em) em.style.display = 'none';
+
+      // Refrescar datos del scan modal con info actualizada
+      const prodRes = await api.get(`/productos/${prod.id}`);
+      if (prodRes.success) {
+        let updatedVariant = null;
+        if (variant && prodRes.data.variantes) {
+          updatedVariant = prodRes.data.variantes.find(v => v.id === variant.id) || null;
+        }
+        this.renderScanResult(prodRes.data, updatedVariant);
+      }
+
+      // Refrescar tabla general
+      this.loadData();
+    } catch (err) {
+      app.showToast('Error al actualizar: ' + (err.message || 'Error desconocido'), 'error');
+    }
+  },
+
   load() {
     this.bindEvents();
     this.loadData();
-    window.invExportExcel = this.exportExcel.bind(this);
-    window.invScan = () => this.scanProducto();
-    window.invCloseModal = () => {
+    window.invExportExcel   = this.exportExcel.bind(this);
+    window.invScan          = () => this.scanProducto();
+    window.invAbrirEdicion  = () => this.abrirEdicion();
+    window.invGuardarEdicion = () => this.guardarEdicion();
+    window.invCloseModal    = () => {
       const m = document.getElementById('inv-scan-modal');
       if (m) m.style.display = 'none';
+    };
+    window.invCloseEditModal = () => {
+      const em = document.getElementById('inv-edit-modal');
+      if (em) em.style.display = 'none';
     };
   }
 };

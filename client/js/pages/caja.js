@@ -49,6 +49,28 @@ export default {
             </div>
           </div>
 
+          <!-- Desglose de ingresos por método de pago -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.5rem">
+            <div class="card stat-card" style="border-left: 4px solid #16a34a; padding: 0.75rem">
+              <div style="display:flex; align-items:center; gap: 0.5rem">
+                <div style="font-size:1.3rem">💵</div>
+                <div>
+                  <div class="text-muted" style="font-size: 0.78rem">Ingresos Efectivo</div>
+                  <div class="fw-bold" style="font-size: 1.05rem; color:#16a34a" id="caja-efectivo">S/ 0.00</div>
+                </div>
+              </div>
+            </div>
+            <div class="card stat-card" style="border-left: 4px solid #7c3aed; padding: 0.75rem">
+              <div style="display:flex; align-items:center; gap: 0.5rem">
+                <div style="font-size:1.3rem">📲</div>
+                <div>
+                  <div class="text-muted" style="font-size: 0.78rem">Yape / Transferencia</div>
+                  <div class="fw-bold" style="font-size: 1.05rem; color:#7c3aed" id="caja-yape">S/ 0.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="mobile-filter-row" style="margin-bottom: 1rem">
             <input type="date" id="caja-fecha" class="form-control">
             <button class="btn btn-secondary" onclick="window.cajaLoad()">Filtrar Día</button>
@@ -130,8 +152,13 @@ export default {
 
       if (resRes.success) {
         document.getElementById('caja-ingresos').textContent = `S/ ${parseFloat(resRes.data.total_ingresos).toFixed(2)}`;
-        document.getElementById('caja-egresos').textContent = `S/ ${parseFloat(resRes.data.total_egresos).toFixed(2)}`;
-        document.getElementById('caja-saldo').textContent = `S/ ${parseFloat(resRes.data.saldo_neto).toFixed(2)}`;
+        document.getElementById('caja-egresos').textContent  = `S/ ${parseFloat(resRes.data.total_egresos).toFixed(2)}`;
+        document.getElementById('caja-saldo').textContent    = `S/ ${parseFloat(resRes.data.saldo_neto).toFixed(2)}`;
+        // Desglose por método de pago
+        const efectivoEl = document.getElementById('caja-efectivo');
+        const yapeEl     = document.getElementById('caja-yape');
+        if (efectivoEl) efectivoEl.textContent = `S/ ${(resRes.data.ingresos_efectivo || 0).toFixed(2)}`;
+        if (yapeEl)     yapeEl.textContent     = `S/ ${(resRes.data.ingresos_yape    || 0).toFixed(2)}`;
       }
 
       if (movRes.success) {

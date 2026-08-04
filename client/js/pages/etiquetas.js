@@ -3,7 +3,7 @@ import { api } from '../api.js';
 export default {
   container: null,
   todosLosItems: [],    // [{id, codigo, nombre, tipo:'producto'|'variante'}]
-  seleccionados: new Set(),
+  seleccionados: new Map(),  // Map<id, cantidad> — cantidad de etiquetas por item
   categorias: [],
 
   async init(container) {
@@ -87,7 +87,7 @@ export default {
             </div>
 
             <div class="form-group" style="margin:0;min-width:110px">
-              <label class="form-label" style="font-size:.78rem">Copias por producto</label>
+              <label class="form-label" style="font-size:.78rem">Copias por defecto</label>
               <select id="et-copias" class="form-control">
                 <option value="1">1 copia</option>
                 <option value="2">2 copias</option>
@@ -200,8 +200,9 @@ export default {
         }
       }
 
-      // Seleccionar todos por defecto
-      this.seleccionados = new Set(this.todosLosItems.map(i => i.id));
+      // Seleccionar todos por defecto con cantidad inicial de 3
+      const copiasDefault = parseInt(document.getElementById('et-copias')?.value || '3');
+      this.seleccionados = new Map(this.todosLosItems.map(i => [i.id, copiasDefault]));
 
       this._poblarCategoriasSelect();
       this._renderLista(this.todosLosItems);
@@ -232,6 +233,7 @@ export default {
 
     cont.innerHTML = items.map(item => {
       const checked = this.seleccionados.has(item.id) ? 'checked' : '';
+      const qty     = this.seleccionados.has(item.id) ? (this.seleccionados.get(item.id) || 1) : 1;
       const badge = item.tipo === 'variante'
         ? `<span style="font-size:.65rem;background:rgba(167,139,250,.2);color:#a78bfa;padding:1px 5px;border-radius:4px;margin-left:4px">variante</span>`
         : '';
@@ -241,30 +243,55 @@ export default {
                class="et-label-row" data-id="${item.id}">
           <input type="checkbox" class="et-chk" data-id="${item.id}" ${checked}
                  style="accent-color:var(--primary);width:15px;height:15px;flex-shrink:0">
-          <div style="min-width:0">
+          <div style="min-width:0;flex:1">
             <div style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
               ${item.nombre}${badge}
             </div>
             <div style="font-size:.72rem;color:var(--text-muted);font-family:monospace">${item.codigo}</div>
           </div>
+          <input type="number" class="et-qty" data-id="${item.id}" value="${qty}" min="1" max="999"
+                 style="width:52px;text-align:center;font-size:.82rem;padding:2px 4px;
+                        border:1px solid var(--border);border-radius:4px;background:var(--bg-secondary);
+                        color:var(--text-primary);${this.seleccionados.has(item.id) ? '' : 'opacity:.35;pointer-events:none'}"
+                 title="Cantidad de etiquetas para este producto">
         </label>
       `;
     }).join('');
 
-    // Eventos de checkbox
+    // Eventos de checkbox y cantidad
     cont.querySelectorAll('.et-chk').forEach(chk => {
       chk.addEventListener('change', () => {
-        const id = chk.dataset.id;
-        if (chk.checked) this.seleccionados.add(id);
-        else this.seleccionados.delete(id);
-        this._actualizarContador();
-        // Resaltar fila
+        const id  = chk.dataset.id;
         const row = chk.closest('.et-label-row');
-        if (row) row.style.borderColor = chk.checked ? 'var(--primary)' : 'var(--border)';
+        const qtyInput = row?.querySelector('.et-qty');
+        if (chk.checked) {
+          const copiasDefault = parseInt(document.getElementById('et-copias')?.value || '3');
+          this.seleccionados.set(id, copiasDefault);
+          if (qtyInput) { qtyInput.style.opacity = '1'; qtyInput.style.pointerEvents = 'auto'; qtyInput.value = copiasDefault; }
+          if (row) row.style.borderColor = 'var(--primary)';
+        } else {
+          this.seleccionados.delete(id);
+          if (qtyInput) { qtyInput.style.opacity = '.35'; qtyInput.style.pointerEvents = 'none'; }
+          if (row) row.style.borderColor = 'var(--border)';
+        }
+        this._actualizarContador();
       });
       // Resalte inicial
       const row = chk.closest('.et-label-row');
       if (row && chk.checked) row.style.borderColor = 'var(--primary)';
+    });
+
+    // Actualizar cantidad en el Map cuando se cambia el spinner
+    cont.querySelectorAll('.et-qty').forEach(qtyInput => {
+      qtyInput.addEventListener('change', () => {
+        const id  = qtyInput.dataset.id;
+        const val = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+        qtyInput.value = val;
+        if (this.seleccionados.has(id)) {
+          this.seleccionados.set(id, val);
+          this._actualizarContador();
+        }
+      });
     });
   },
 
@@ -274,8 +301,9 @@ export default {
     const el = document.getElementById('et-contador');
     if (el) {
       const total = this.todosLosItems.length;
-      const sel = this.seleccionados.size;
-      el.textContent = `${total} items en total — ${sel} seleccionados`;
+      const sel   = this.seleccionados.size;
+      const totalEtiquetas = Array.from(this.seleccionados.values()).reduce((a, b) => a + b, 0);
+      el.textContent = `${total} items en total — ${sel} seleccionados — ${totalEtiquetas} etiquetas`;
     }
   },
 
@@ -286,20 +314,23 @@ export default {
     if (catId)  filtrados = filtrados.filter(i => String(i.categoria_id) === catId);
     if (buscar) filtrados = filtrados.filter(i => i.codigo.toLowerCase().includes(buscar));
     this._renderLista(filtrados);
-    // Restaurar estado visual de checkboxes
+    // Restaurar estado visual de checkboxes y spinners
     document.querySelectorAll('.et-chk').forEach(chk => {
       const sel = this.seleccionados.has(chk.dataset.id);
       chk.checked = sel;
       const row = chk.closest('.et-label-row');
       if (row) row.style.borderColor = sel ? 'var(--primary)' : 'var(--border)';
+      const qtyInput = row?.querySelector('.et-qty');
+      if (qtyInput) {
+        qtyInput.style.opacity = sel ? '1' : '.35';
+        qtyInput.style.pointerEvents = sel ? 'auto' : 'none';
+        if (sel) qtyInput.value = this.seleccionados.get(chk.dataset.id) || 1;
+      }
     });
     this._actualizarContador();
   },
 
   _generarVistaPrevia() {
-    const copias = parseInt(document.getElementById('et-copias')?.value || '3');
-    const tamano = document.getElementById('et-tamano')?.value || 'medium';
-
     const items = this.todosLosItems.filter(i => this.seleccionados.has(i.id));
     if (items.length === 0) {
       const prev = document.getElementById('et-preview');
@@ -308,6 +339,7 @@ export default {
     }
 
     // Calcular dimensiones según tamaño
+    const tamano = document.getElementById('et-tamano')?.value || 'medium';
     const dims = {
       small:  { w: 120, h: 40, fontSize: 7, labelFont: 6 },
       medium: { w: 180, h: 50, fontSize: 9, labelFont: 7 },
@@ -315,10 +347,11 @@ export default {
     };
     const d = dims[tamano];
 
-    // Generar etiquetas (cada item × copias)
+    // Generar etiquetas con cantidades individuales por item
     const etiquetas = [];
     for (const item of items) {
-      for (let c = 0; c < copias; c++) {
+      const qty = this.seleccionados.get(item.id) || 1;
+      for (let c = 0; c < qty; c++) {
         etiquetas.push(item);
       }
     }
@@ -365,8 +398,7 @@ export default {
   // ── IMPRIMIR ──────────────────────────────────────────────────────────────
 
   _imprimir() {
-    const copias  = parseInt(document.getElementById('et-copias')?.value  || '3');
-    const tamano  = document.getElementById('et-tamano')?.value || 'medium';
+    const tamano = document.getElementById('et-tamano')?.value || 'medium';
 
     const items = this.todosLosItems.filter(i => this.seleccionados.has(i.id));
     if (items.length === 0) {
@@ -374,10 +406,11 @@ export default {
       return;
     }
 
-    // Expandir: cada item × copias
+    // Expandir: cada item × cantidad individual
     const etiquetas = [];
     for (const item of items) {
-      for (let c = 0; c < copias; c++) etiquetas.push(item);
+      const qty = this.seleccionados.get(item.id) || 1;
+      for (let c = 0; c < qty; c++) etiquetas.push(item);
     }
 
     // Dimensiones según tamaño elegido (comprimido)
@@ -411,7 +444,7 @@ export default {
     body { background: #fff; font-family: Arial, sans-serif; }
     .grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 2mm;
       padding: 6mm;
     }
@@ -480,12 +513,15 @@ export default {
     document.getElementById('et-buscar-codigo')?.addEventListener('input', () => this._aplicarFiltro());
 
     window.etSelAll  = () => {
+      const copiasDefault = parseInt(document.getElementById('et-copias')?.value || '3');
       // Seleccionar todos los visibles en lista actual
       document.querySelectorAll('.et-chk').forEach(chk => {
         chk.checked = true;
-        this.seleccionados.add(chk.dataset.id);
+        this.seleccionados.set(chk.dataset.id, copiasDefault);
         const row = chk.closest('.et-label-row');
         if (row) row.style.borderColor = 'var(--primary)';
+        const qtyInput = row?.querySelector('.et-qty');
+        if (qtyInput) { qtyInput.style.opacity = '1'; qtyInput.style.pointerEvents = 'auto'; qtyInput.value = copiasDefault; }
       });
       this._actualizarContador();
     };
@@ -496,6 +532,8 @@ export default {
         this.seleccionados.delete(chk.dataset.id);
         const row = chk.closest('.et-label-row');
         if (row) row.style.borderColor = 'var(--border)';
+        const qtyInput = row?.querySelector('.et-qty');
+        if (qtyInput) { qtyInput.style.opacity = '.35'; qtyInput.style.pointerEvents = 'none'; }
       });
       this._actualizarContador();
     };
