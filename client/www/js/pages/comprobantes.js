@@ -1,0 +1,275 @@
+import { api, API_URL } from '../api.js';
+import { auth } from '../auth.js';
+
+export default {
+  container: null,
+  ventas: [],
+
+  async init(container) {
+    this.container = container;
+    this.container.innerHTML = `
+      <div class="card">
+        <div class="card-header">
+          <h2 class="text-gold">Comprobantes y Ventas</h2>
+        </div>
+        
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom: 0.75rem">
+            <div class="form-control flex items-center" style="padding:0">
+              <input type="text" id="comp-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar por comprobante o cliente...">
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem">
+            <div class="form-group mb-0">
+              <label class="form-label">Estado</label>
+              <select id="comp-filter-estado" class="form-control">
+                <option value="">Todos</option>
+                <option value="completada">Completada</option>
+                <option value="anulada">Anulada</option>
+              </select>
+            </div>
+            <div class="form-group mb-0">
+              <label class="form-label">Desde</label>
+              <input type="date" id="comp-fecha-inicio" class="form-control">
+            </div>
+            <div class="form-group mb-0">
+              <label class="form-label">Hasta</label>
+              <input type="date" id="comp-fecha-fin" class="form-control">
+            </div>
+            <div class="form-group mb-0" style="display:flex; align-items:flex-end">
+              <button class="btn btn-primary w-full" onclick="window.compLoad()">Filtrar</button>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="comp-table">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Comprobante</th>
+                  <th>Cliente</th>
+                  <th>Atendido por</th>
+                  <th>Pago</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th class="text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td colspan="6" class="text-center text-muted">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Ver Detalle -->
+      <div id="modal-detalle-venta" class="modal-overlay">
+        <div class="modal">
+          <div class="modal-header">
+            <h3 class="text-gold" id="comp-modal-title">Detalle de Venta</h3>
+            <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-detalle-venta')">✕</button>
+          </div>
+          <div class="modal-body">
+            <div id="comp-detalle-content">Cargando...</div>
+          </div>
+          <div class="modal-footer" id="comp-detalle-footer">
+            <button class="btn btn-secondary" onclick="app.closeModal('modal-detalle-venta')">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.bindEvents();
+    
+    // Set default dates to today
+    // Default to empty dates to show recent ones
+    document.getElementById('comp-fecha-inicio').value = '';
+    document.getElementById('comp-fecha-fin').value = '';
+
+    await this.loadData();
+  },
+
+  bindEvents() {
+    const search = document.getElementById('comp-search');
+    const estado = document.getElementById('comp-filter-estado');
+
+    search.addEventListener('input', () => this.filterTable());
+    estado.addEventListener('change', () => this.filterTable());
+  },
+
+  async loadData() {
+    try {
+      const fechaInicio = document.getElementById('comp-fecha-inicio').value;
+      const fechaFin = document.getElementById('comp-fecha-fin').value;
+
+      const res = await api.get('/ventas', { fecha_inicio: fechaInicio, fecha_fin: fechaFin });
+      if (res.success) {
+        this.ventas = res.data;
+        this.renderTable(this.ventas);
+      }
+    } catch (err) {
+      app.showToast('Error cargando comprobantes', 'error');
+    }
+  },
+
+  filterTable() {
+    const term = document.getElementById('comp-search').value.toLowerCase();
+    const estado = document.getElementById('comp-filter-estado').value;
+
+    const filtered = this.ventas.filter(v => {
+      const matchTerm = (v.numero_comprobante && v.numero_comprobante.toLowerCase().includes(term)) || 
+                        (v.cliente_nombre && v.cliente_nombre.toLowerCase().includes(term));
+      const matchEstado = estado ? v.estado === estado : true;
+      return matchTerm && matchEstado;
+    });
+
+    this.renderTable(filtered);
+  },
+
+  renderTable(data) {
+    const tbody = document.querySelector('#comp-table tbody');
+    if (data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No se encontraron comprobantes</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.map(v => {
+      const fechaStr = fmtFecha(v.fecha);
+      const pagoLabel = _pagoLabel(v.metodo_pago);
+      return `
+      <tr>
+        <td class="text-muted">${fechaStr}</td>
+        <td class="fw-bold">${v.numero_comprobante}</td>
+        <td>${v.cliente_nombre || 'Cliente General'}</td>
+        <td style="font-size:.82rem">${v.vendedor_nombre || '—'}</td>
+        <td><span class="badge" style="${_pagoColor(v.metodo_pago)}">${pagoLabel}</span></td>
+        <td class="fw-bold text-gold">S/ ${parseFloat(v.total).toFixed(2)}</td>
+        <td>
+          <span class="badge ${v.estado === 'completada' ? 'badge-success' : 'badge-danger'}">
+            ${v.estado}
+          </span>
+        </td>
+        <td class="text-right">
+          <button class="btn-icon btn-secondary" onclick="window.compView(${v.id})" title="Ver Detalle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </td>
+      </tr>
+    `}).join('');
+  },
+
+  async viewDetails(id) {
+    document.getElementById('comp-modal-title').textContent = 'Cargando...';
+    document.getElementById('comp-detalle-content').innerHTML = '<div class="text-center">Cargando detalles...</div>';
+    app.openModal('modal-detalle-venta');
+
+    try {
+      const res = await api.get(`/ventas/${id}`);
+      if (res.success) {
+        const v = res.data;
+        document.getElementById('comp-modal-title').textContent = `Venta ${v.numero_comprobante}`;
+        
+        const fechaStr = fmtFecha(v.fecha);
+        
+        let html = `
+          <div class="flex-col gap-4">
+            <div class="card bg-secondary" style="background:var(--bg-secondary); padding: 1rem; border-radius: var(--border-radius-sm)">
+              <div class="flex justify-between" style="margin-bottom:0.5rem">
+                <span class="text-muted">Fecha:</span> <span class="fw-bold">${fechaStr}</span>
+              </div>
+              <div class="flex justify-between" style="margin-bottom:0.5rem">
+                <span class="text-muted">Cliente:</span> <span class="fw-bold">${v.cliente_nombre || 'General'}</span>
+              </div>
+              <div class="flex justify-between" style="margin-bottom:0.5rem">
+                <span class="text-muted">Atendido por:</span> <span class="fw-bold">${v.vendedor_nombre || '—'}</span>
+              </div>
+              <div class="flex justify-between" style="margin-bottom:0.5rem">
+                <span class="text-muted">Método de pago:</span>
+                <span class="badge" style="${_pagoColor(v.metodo_pago)}">${_pagoLabel(v.metodo_pago)}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted">Estado:</span> 
+                <span class="badge ${v.estado === 'completada' ? 'badge-success' : 'badge-danger'}">${v.estado}</span>
+              </div>
+            </div>
+
+            <table class="data-table" style="font-size: 0.9rem">
+              <thead>
+                <tr>
+                  <th>Cant</th>
+                  <th>Producto</th>
+                  <th class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${v.items.map(i => `
+                  <tr>
+                    <td>${i.cantidad}</td>
+                    <td>${i.producto_nombre} <br><small class="text-muted">${i.producto_codigo}</small></td>
+                    <td class="text-right">S/ ${parseFloat(i.subtotal_item).toFixed(2)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+
+            <div class="text-right fw-bold text-gold" style="font-size: 1.2rem; padding-top: 1rem; border-top: 2px dashed var(--bg-secondary)">
+              Total: S/ ${parseFloat(v.total).toFixed(2)}
+            </div>
+          </div>
+        `;
+        document.getElementById('comp-detalle-content').innerHTML = html;
+
+        let footerHtml = `
+          <div style="display:flex; flex-wrap:wrap; gap: 0.5rem; justify-content: space-between; width: 100%">
+            <div style="display:flex; gap: 0.5rem">
+              <button class="btn btn-primary" onclick="app.printUrl('${API_URL}/ventas/${v.id}/ticket?token=${localStorage.getItem('token')}')">Imprimir</button>
+              <button class="btn btn-secondary" onclick="window.open('${API_URL}/ventas/${v.id}/pdf?token=${localStorage.getItem('token')}', '_blank')">PDF</button>
+            </div>
+            <div style="display:flex; gap: 0.5rem">
+              ${v.estado === 'completada' ? `<button class="btn btn-danger" onclick="window.compVoid(${v.id})">Anular</button>` : ''}
+              <button class="btn btn-secondary" onclick="app.closeModal('modal-detalle-venta')">Cerrar</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('comp-detalle-footer').innerHTML = footerHtml;
+      }
+    } catch (err) {
+      document.getElementById('comp-detalle-content').innerHTML = `<div class="text-danger">${err.message}</div>`;
+    }
+  },
+
+  async voidSale(id) {
+    const motivo = prompt('Motivo de la anulación (obligatorio):');
+    if (!motivo) return;
+
+    try {
+      await api.post(`/ventas/${id}/anular`, { motivo });
+      app.showToast('Venta anulada correctamente', 'success');
+      app.closeModal('modal-detalle-venta');
+      this.loadData();
+    } catch (err) {
+      app.showToast(err.message, 'error');
+    }
+  },
+
+  load() {
+    window.compLoad = this.loadData.bind(this);
+    window.compView = this.viewDetails.bind(this);
+    window.compVoid = this.voidSale.bind(this);
+  }
+};
+
+// Helpers de método de pago (fuera del objeto para reuso en template literals)
+function _pagoLabel(m) {
+  const map = { efectivo: 'Efectivo', tarjeta: 'Tarjeta', transferencia: 'Yape / Transferencia' };
+  return map[m] || m || '—';
+}
+function _pagoColor(m) {
+  const map = {
+    efectivo:      'background:rgba(74,222,128,.15);color:#16a34a',
+    tarjeta:       'background:rgba(96,165,250,.15);color:#1d4ed8',
+    transferencia: 'background:rgba(167,139,250,.15);color:#7c3aed'
+  };
+  return (map[m] || 'background:var(--bg-secondary);color:var(--text-muted)') + ';padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:600';
+}

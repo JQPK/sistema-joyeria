@@ -1,0 +1,44 @@
+:root {
+  /* Colors - "Desierto Dorado" */
+  --bg-primary: #FAF6F0;
+  --bg-secondary: #F0E6D6;
+  --bg-tertiary: #E8D5B7;
+  --bg-card: #FFFFFF;
+  
+  --accent-gold: #C9A96E;
+  --accent-gold-dark: #A67C52;
+  --accent-gold-light: rgba(201, 169, 110, 0.15);
+  
+  --color-success: #81B29A;
+  --color-danger: #E07A5F;
+  --color-warning: #F2CC8F;
+  --color-info: #8EAFC2;
+  
+  --text-primary: #3D2B1F;
+  --text-secondary: #8B6F47;
+  --text-inverse: #FFFFFF;
+  
+  /* Typography */
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Outfit', system-ui, -apple-system, sans-serif;
+  
+  /* Layout */
+  --sidebar-width: 260px;
+  --topbar-height: 60px;
+  --bottom-nav-height: 65px;
+  --border-radius-sm: 6px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 24px;
+  
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(61, 43, 31, 0.05);
+  --shadow-md: 0 8px 24px rgba(61, 43, 31, 0.08);
+  --shadow-lg: 0 16px 32px rgba(61, 43, 31, 0.12);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  
+  /* Touch */
+  --touch-target: 48px;
+}
