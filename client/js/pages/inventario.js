@@ -171,17 +171,17 @@ export default {
         <div id="inv-scan-content" style="padding:1.25rem">
           <div class="text-center text-muted" style="padding:2rem">Buscando producto...</div>
         </div>
-        <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end; flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick="window.invScan()">📷 Escanear otro</button>
+        <div style="padding:.75rem 1.25rem 1.25rem; display:grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap:.5rem;">
+          <button class="btn btn-secondary" onclick="window.invScan()" style="width:100%">📷 Escanear otro</button>
           <button class="btn btn-secondary" onclick="window.invImprimirEtiqueta()" id="inv-btn-print"
-                  style="background:rgba(96,165,250,.12);color:#3b82f6;border:1px solid rgba(96,165,250,.35);display:none">
+                  style="background:rgba(96,165,250,.12);color:#3b82f6;border:1px solid rgba(96,165,250,.35);display:none;width:100%">
             🖨️ Imprimir
           </button>
           <button class="btn btn-warning" onclick="window.invAbrirEdicion()" id="inv-btn-editar"
-                  style="background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.4);display:none">
+                  style="background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.4);display:none;width:100%">
             ✏️ Actualizar
           </button>
-          <button class="btn btn-primary" onclick="window.invCloseModal()">Cerrar</button>
+          <button class="btn btn-primary" onclick="window.invCloseModal()" style="width:100%">Cerrar</button>
         </div>
       </div>
     `;
@@ -431,10 +431,28 @@ export default {
           return;
         }
 
-        // Fetch full product details
+        // Fetch full product details (includes variantes array)
         const prodRes = await api.get(`/productos/${res.data.id}`);
         if (prodRes.success) {
-          this.renderScanResult(prodRes.data, res.type === 'variant' ? res.data : null);
+          let variantObj = null;
+          if (res.type === 'variant') {
+            // res.data.variant_id es el id real de la variante en producto_variantes
+            const variantId = res.data.variant_id;
+            if (prodRes.data.variantes && variantId) {
+              variantObj = prodRes.data.variantes.find(v => v.id === variantId) || null;
+            }
+            // Fallback: si no se encontró en el array, usar los datos básicos con el id correcto
+            if (!variantObj) {
+              variantObj = {
+                id: res.data.variant_id,
+                sku: res.data.codigo,
+                nombre_variante: res.data.nombre,
+                precio_venta: res.data.precio_venta,
+                stock_actual: res.data.stock_actual
+              };
+            }
+          }
+          this.renderScanResult(prodRes.data, variantObj);
         } else {
           this.renderScanError(codigo);
         }
@@ -476,8 +494,8 @@ export default {
     const stockActual = variantData ? variantData.stock_actual : prod.stock_actual;
     const stockMin    = prod.stock_minimo || 1;
     const precio      = variantData ? (variantData.precio_venta || prod.precio_venta) : prod.precio_venta;
-    const sku         = variantData ? variantData.codigo : prod.codigo;
-    const nombre      = variantData ? variantData.nombre : prod.nombre;
+    const sku         = variantData ? (variantData.sku || variantData.codigo) : prod.codigo;
+    const nombre      = variantData ? `${prod.nombre} - ${variantData.nombre_variante || variantData.nombre}` : prod.nombre;
 
     const stockPct   = Math.min(100, Math.round((stockActual / Math.max(stockMin * 3, 1)) * 100));
     let stockColor   = '#4ade80';  // verde
@@ -535,9 +553,14 @@ export default {
     const variant = this._currentVariant;
     if (!prod) return;
 
-    // Rellenar campos del modal de edición
-    document.getElementById('inv-edit-nombre').value      = prod.nombre || '';
-    document.getElementById('inv-edit-descripcion').value = prod.descripcion || '';
+    // Si hay variante: nombre y descripción son los de la variante
+    // Si no hay variante: nombre y descripción son los del producto
+    document.getElementById('inv-edit-nombre').value      = variant
+      ? (variant.nombre_variante || '')
+      : (prod.nombre || '');
+    document.getElementById('inv-edit-descripcion').value = variant
+      ? (variant.descripcion || prod.descripcion || '')
+      : (prod.descripcion || '');
     document.getElementById('inv-edit-precio').value      = variant
       ? parseFloat(variant.precio_venta || prod.precio_venta || 0).toFixed(2)
       : parseFloat(prod.precio_venta || 0).toFixed(2);
@@ -565,17 +588,20 @@ export default {
     if (isNaN(stock))  return app.showToast('Stock inválido', 'error');
 
     try {
-      // Actualizar siempre el producto base (nombre, descripción, precio si no hay variante)
-      const prodPayload = { nombre, descripcion };
-      if (!variant) {
-        prodPayload.precio_venta = precio;
-        prodPayload.stock_actual = stock;
-      }
-      await api.put(`/productos/${prod.id}`, prodPayload);
-
-      // Si hay variante, actualizar el precio y stock de la variante específica
       if (variant) {
+        // Con variante: actualizar nombre_variante, descripcion, precio y stock de la variante
+        // El producto padre NO se toca
         await api.put(`/variantes/${variant.id}`, {
+          nombre_variante: nombre,
+          descripcion:     descripcion,
+          precio_venta:    precio,
+          stock_actual:    stock
+        });
+      } else {
+        // Sin variante: actualizar directamente el producto
+        await api.put(`/productos/${prod.id}`, {
+          nombre,
+          descripcion,
           precio_venta: precio,
           stock_actual: stock
         });
@@ -610,90 +636,60 @@ export default {
     if (!prod) return;
 
     const codigo  = variant ? (variant.sku || variant.codigo || prod.codigo) : (prod.codigo || '');
-    const nombre  = variant ? `${prod.nombre} — ${variant.nombre_variante}` : prod.nombre;
+    const nombre  = variant ? `${prod.nombre} - ${variant.nombre_variante}` : prod.nombre;
     const precio  = variant
       ? parseFloat(variant.precio_venta || prod.precio_venta || 0)
       : parseFloat(prod.precio_venta || 0);
 
     if (!codigo) return app.showToast('Este producto no tiene código de barras', 'warning');
 
-    const jsbUrl = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
-
-    const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Etiqueta — ${nombre}</title>
-  <script src="${jsbUrl}"><\/script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #fff; font-family: Arial, sans-serif;
-           display: flex; align-items: center; justify-content: center;
-           min-height: 100vh; padding: 8mm; }
-    .wrap {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 3mm;
-      width: 100%;
-    }
-    .lbl {
-      border: 0.4pt solid #ccc;
-      border-radius: 2mm;
-      padding: 1.5mm;
-      text-align: center;
-      page-break-inside: avoid;
-      overflow: hidden;
-    }
-    .lbl canvas { width: 100%; display: block; }
-    .nom { font-size: 6pt; color: #333; margin-top: 0.5mm; line-height: 1.2;
-           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .prc { font-size: 7pt; font-weight: bold; color: #92400e; margin-top: 0.3mm; }
-    @media print { body { margin: 0; padding: 6mm; } }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <div class="lbl"><canvas id="bc0"></canvas>
-      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
-      <div class="prc">S/ ${precio.toFixed(2)}</div>
-    </div>
-    <div class="lbl"><canvas id="bc1"></canvas>
-      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
-      <div class="prc">S/ ${precio.toFixed(2)}</div>
-    </div>
-    <div class="lbl"><canvas id="bc2"></canvas>
-      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
-      <div class="prc">S/ ${precio.toFixed(2)}</div>
-    </div>
-    <div class="lbl"><canvas id="bc3"></canvas>
-      <div class="nom" title="${nombre.replace(/"/g,'&quot;')}">${nombre.replace(/</g,'&lt;')}</div>
-      <div class="prc">S/ ${precio.toFixed(2)}</div>
-    </div>
-  </div>
-  <script>
-    window.onload = function() {
-      const codigo = ${JSON.stringify(codigo)};
-      [0,1,2,3].forEach(function(i) {
-        try {
-          JsBarcode('#bc' + i, codigo, {
-            format: 'CODE128', displayValue: true,
-            fontSize: 9, textMargin: 1,
-            margin: 2, width: 1.2, height: 28,
-            background: '#ffffff', lineColor: '#000000'
-          });
-        } catch(e) {}
+    // Crear contenedor temporal para generar la etiqueta con el formato exacto de productos.js
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = `
+      <div style="width: 76mm; height: 25mm; box-sizing: border-box; padding: 2mm; background: white; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;">
+        <p style="margin: 0; font-size: 8px; font-family: sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">${nombre}</p>
+        <svg id="temp-barcode-svg" style="max-height: 14mm; width: auto; margin: 1px 0;"></svg>
+        <p style="margin: 0; font-size: 9px; font-weight: bold; font-family: sans-serif;">S/ ${precio.toFixed(2)}</p>
+      </div>
+    `;
+    document.body.appendChild(tempDiv);
+    
+    try {
+      JsBarcode("#temp-barcode-svg", codigo, {
+        format: "CODE128",
+        lineColor: "#000",
+        width: 1.5,
+        height: 30,
+        displayValue: true,
+        fontSize: 10,
+        margin: 0
       });
-      setTimeout(function() { window.print(); }, 400);
-    };
-  <\/script>
-</body>
-</html>`;
-
-    const win = window.open('', '_blank', 'width=600,height=400');
-    if (!win) return app.showToast('Permite las ventanas emergentes en tu navegador', 'error');
-    win.document.open();
-    win.document.write(html);
-    win.document.close();
+      
+      const printArea = tempDiv.innerHTML;
+      const htmlContent = `
+        <html>
+          <head>
+            <title>Imprimir Etiqueta</title>
+            <style>
+              body { margin: 0; padding: 0; text-align: center; background: #fff; }
+              @media print {
+                @page { size: 76mm 25mm; margin: 0; }
+                body { margin: 0; padding: 0; width: 76mm; height: 25mm; }
+              }
+            </style>
+          </head>
+          <body>
+            ${printArea}
+          </body>
+        </html>
+      `;
+      app.printHtml(htmlContent);
+    } catch (err) {
+      console.error(err);
+      app.showToast('Error generando código de barras', 'error');
+    } finally {
+      document.body.removeChild(tempDiv);
+    }
   },
 
   load() {

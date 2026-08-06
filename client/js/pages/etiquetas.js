@@ -5,6 +5,7 @@ export default {
   todosLosItems: [],    // [{id, codigo, nombre, tipo:'producto'|'variante'}]
   seleccionados: new Map(),  // Map<id, cantidad> — cantidad de etiquetas por item
   categorias: [],
+  materiales: [],
 
   async init(container) {
     this.container = container;
@@ -77,6 +78,13 @@ export default {
               <label class="form-label" style="font-size:.78rem">Categoría</label>
               <select id="et-filtro-cat" class="form-control">
                 <option value="">Todas las categorías</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin:0;flex:1;min-width:140px">
+              <label class="form-label" style="font-size:.78rem">Material</label>
+              <select id="et-filtro-mat" class="form-control">
+                <option value="">Todos los materiales</option>
               </select>
             </div>
 
@@ -161,12 +169,14 @@ export default {
 
   async _cargarDatos() {
     try {
-      const [resProd, resCat] = await Promise.all([
+      const [resProd, resCat, resMat] = await Promise.all([
         api.get('/productos'),
-        api.get('/categorias')
+        api.get('/categorias'),
+        api.get('/materiales')
       ]);
 
       this.categorias = resCat.success ? resCat.data : [];
+      this.materiales = resMat.success ? resMat.data : [];
       this.todosLosItems = [];
 
       if (resProd.success) {
@@ -180,6 +190,7 @@ export default {
                 codigo: sku,
                 nombre: nombre,
                 categoria_id: p.categoria_id,
+                material_id: p.material_id || null,
                 material: p.material_nombre || '',
                 precio: parseFloat(v.precio_venta || p.precio_venta || 0),
                 tipo: 'variante'
@@ -192,6 +203,7 @@ export default {
               codigo: codigo,
               nombre: p.nombre,
               categoria_id: p.categoria_id,
+              material_id: p.material_id || null,
               material: p.material_nombre || '',
               precio: parseFloat(p.precio_venta || 0),
               tipo: 'producto'
@@ -215,9 +227,15 @@ export default {
 
   _poblarCategoriasSelect() {
     const sel = document.getElementById('et-filtro-cat');
-    if (!sel) return;
-    sel.innerHTML = '<option value="">Todas las categorías</option>' +
-      this.categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    if (sel) {
+      sel.innerHTML = '<option value="">Todas las categorías</option>' +
+        this.categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+    }
+    const selMat = document.getElementById('et-filtro-mat');
+    if (selMat) {
+      selMat.innerHTML = '<option value="">Todos los materiales</option>' +
+        this.materiales.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('');
+    }
   },
 
   // ── RENDER LISTA DE SELECCIÓN ─────────────────────────────────────────────
@@ -309,10 +327,12 @@ export default {
 
   _aplicarFiltro() {
     const catId  = document.getElementById('et-filtro-cat')?.value || '';
+    const matId  = document.getElementById('et-filtro-mat')?.value || '';
     const buscar = (document.getElementById('et-buscar-codigo')?.value || '').toLowerCase().trim();
     let filtrados = this.todosLosItems;
     if (catId)  filtrados = filtrados.filter(i => String(i.categoria_id) === catId);
-    if (buscar) filtrados = filtrados.filter(i => i.codigo.toLowerCase().includes(buscar));
+    if (matId)  filtrados = filtrados.filter(i => String(i.material_id)  === matId);
+    if (buscar) filtrados = filtrados.filter(i => i.codigo.toLowerCase().includes(buscar) || i.nombre.toLowerCase().includes(buscar));
     this._renderLista(filtrados);
     // Restaurar estado visual de checkboxes y spinners
     document.querySelectorAll('.et-chk').forEach(chk => {
