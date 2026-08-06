@@ -530,6 +530,7 @@ export default {
   _bindEventos() {
     document.getElementById('btn-imprimir')?.addEventListener('click', () => this._imprimir());
     document.getElementById('et-filtro-cat')?.addEventListener('change', () => this._aplicarFiltro());
+    document.getElementById('et-filtro-mat')?.addEventListener('change', () => this._aplicarFiltro());
     document.getElementById('et-buscar-codigo')?.addEventListener('input', () => this._aplicarFiltro());
 
     window.etSelAll  = () => {
