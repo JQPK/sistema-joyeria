@@ -306,7 +306,7 @@ router.put('/:id', async (req, res, next) => {
         INSERT INTO inventario_sucursales (producto_id, sucursal_id, stock_actual, stock_minimo)
         VALUES ($1, $2, $3, $4)
         ON CONFLICT (producto_id, sucursal_id) 
-        DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo, updated_at = NOW()
+        DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo
       `, [id, sucursalId, newStock, newMin]);
 
       // Log stock update if changed manually
