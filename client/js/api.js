@@ -36,6 +36,11 @@ async function handleResponse(res) {
 
 export const api = {
   async get(endpoint, params = {}) {
+    const activeSucursal = localStorage.getItem('activeSucursal');
+    if (activeSucursal && params.sucursal_id === undefined) {
+      params.sucursal_id = activeSucursal;
+    }
+
     const url = new URL(API_URL + endpoint, window.location.origin);
     Object.keys(params).forEach(key => {
       if (params[key] !== undefined && params[key] !== null && params[key] !== '') {
@@ -49,6 +54,11 @@ export const api = {
 
   async post(endpoint, body = {}) {
     const isFormData = body instanceof FormData;
+    const activeSucursal = localStorage.getItem('activeSucursal');
+    if (!isFormData && activeSucursal && typeof body === 'object' && body.sucursal_id === undefined) {
+      body.sucursal_id = activeSucursal;
+    }
+
     const headers = getHeaders();
     if (isFormData) delete headers['Content-Type'];
 
@@ -62,6 +72,11 @@ export const api = {
 
   async put(endpoint, body = {}) {
     const isFormData = body instanceof FormData;
+    const activeSucursal = localStorage.getItem('activeSucursal');
+    if (!isFormData && activeSucursal && typeof body === 'object' && body.sucursal_id === undefined) {
+      body.sucursal_id = activeSucursal;
+    }
+
     const headers = getHeaders();
     if (isFormData) delete headers['Content-Type'];
 
