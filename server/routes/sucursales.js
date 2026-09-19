@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const auth = require('../middleware/auth');
-const checkRole = require('../middleware/checkRole');
+const { auth, adminOnly } = require('../middleware/auth');
 
 // Get all sucursales
 router.get('/', auth, async (req, res, next) => {
@@ -15,7 +14,7 @@ router.get('/', auth, async (req, res, next) => {
 });
 
 // Create sucursal (Admin only)
-router.post('/', auth, checkRole(['admin']), async (req, res, next) => {
+router.post('/', auth, adminOnly, async (req, res, next) => {
   try {
     const { nombre, direccion, telefono } = req.body;
     const result = await db.query(
@@ -29,7 +28,7 @@ router.post('/', auth, checkRole(['admin']), async (req, res, next) => {
 });
 
 // Update sucursal (Admin only)
-router.put('/:id', auth, checkRole(['admin']), async (req, res, next) => {
+router.put('/:id', auth, adminOnly, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { nombre, direccion, telefono, activo } = req.body;
