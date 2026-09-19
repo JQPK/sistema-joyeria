@@ -59,12 +59,26 @@ router.post('/', async (req, res, next) => {
       VALUES ($1, $2, $3, $4)
     `, [newVarId, sucursalId, stock_actual || 0, stock_minimo || 1]);
 
-    // Update parent product flag
+    // Update parent product flag and recalculate stock for branch
     await client.query(`
       UPDATE productos 
       SET tiene_variantes = TRUE
       WHERE id = $1
     `, [producto_id]);
+
+    await client.query(`
+      INSERT INTO inventario_sucursales (producto_id, sucursal_id, stock_actual)
+      VALUES (
+        $1, 
+        $2, 
+        (SELECT COALESCE(SUM(ivs.stock_actual), 0) 
+         FROM inventario_variantes_sucursales ivs 
+         JOIN producto_variantes pv ON ivs.variante_id = pv.id 
+         WHERE pv.producto_id = $1 AND pv.activo = true AND ivs.sucursal_id = $2)
+      )
+      ON CONFLICT (producto_id, sucursal_id)
+      DO UPDATE SET stock_actual = EXCLUDED.stock_actual
+    `, [producto_id, sucursalId]);
 
     await client.query('COMMIT');
     
@@ -134,6 +148,21 @@ router.put('/:id', async (req, res, next) => {
         DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo
       `, [req.params.id, sucursalId, newStock, newMin]);
       
+      // Recalculate parent stock for this branch
+      await client.query(`
+        INSERT INTO inventario_sucursales (producto_id, sucursal_id, stock_actual)
+        VALUES (
+          $1, 
+          $2, 
+          (SELECT COALESCE(SUM(ivs.stock_actual), 0) 
+           FROM inventario_variantes_sucursales ivs 
+           JOIN producto_variantes pv ON ivs.variante_id = pv.id 
+           WHERE pv.producto_id = $1 AND pv.activo = true AND ivs.sucursal_id = $2)
+        )
+        ON CONFLICT (producto_id, sucursal_id)
+        DO UPDATE SET stock_actual = EXCLUDED.stock_actual
+      `, [producto_id, sucursalId]);
+
       if (req.body.stock_actual !== undefined && oldStock !== newStock) {
         await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — Stock Tienda ${sucursalId}: ${oldStock} → ${newStock}`);
       }
@@ -176,10 +205,21 @@ router.delete('/:id', async (req, res, next) => {
     
     await client.query(`
       UPDATE productos 
-      SET tiene_variantes = $2,
-          stock_actual = (SELECT COALESCE(SUM(stock_actual), 0) FROM producto_variantes WHERE producto_id = $1 AND activo = true)
+      SET tiene_variantes = $2
       WHERE id = $1
     `, [producto_id, count > 0]);
+
+    // Recalculate parent stock across all branches
+    await client.query(`
+      UPDATE inventario_sucursales
+      SET stock_actual = (
+        SELECT COALESCE(SUM(ivs.stock_actual), 0) 
+        FROM inventario_variantes_sucursales ivs 
+        JOIN producto_variantes pv ON ivs.variante_id = pv.id 
+        WHERE pv.producto_id = $1 AND pv.activo = true AND ivs.sucursal_id = inventario_sucursales.sucursal_id
+      )
+      WHERE producto_id = $1
+    `, [producto_id]);
 
     await client.query('COMMIT');
     
