@@ -46,7 +46,7 @@ window.app = {
   async loadSucursales() {
     try {
       const res = await api.get('/sucursales');
-      this.sucursales = res;
+      this.sucursales = res.data || [];
       
       const select = document.getElementById('header-sucursal-select');
       if (!select) return;

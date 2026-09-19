@@ -127,7 +127,8 @@ export default {
 
   async load() {
     try {
-      const sucursales = await api.get('/sucursales');
+      const res = await api.get('/sucursales');
+      const sucursales = res.data || [];
       this.data = sucursales;
       const tbody = this.container.querySelector('#table-sucursales tbody');
       

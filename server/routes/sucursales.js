@@ -7,7 +7,7 @@ const { auth, adminOnly } = require('../middleware/auth');
 router.get('/', auth, async (req, res, next) => {
   try {
     const result = await db.query('SELECT * FROM sucursales ORDER BY id ASC');
-    res.json(result.rows);
+    res.json({ success: true, data: result.rows });
   } catch (err) {
     next(err);
   }
@@ -21,7 +21,7 @@ router.post('/', auth, adminOnly, async (req, res, next) => {
       'INSERT INTO sucursales (nombre, direccion, telefono) VALUES ($1, $2, $3) RETURNING *',
       [nombre, direccion, telefono]
     );
-    res.status(201).json(result.rows[0]);
+    res.status(201).json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
   }
@@ -37,9 +37,9 @@ router.put('/:id', auth, adminOnly, async (req, res, next) => {
       [nombre, direccion, telefono, activo, id]
     );
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Sucursal no encontrada' });
+      return res.status(404).json({ success: false, message: 'Sucursal no encontrada' });
     }
-    res.json(result.rows[0]);
+    res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
   }
