@@ -1,4 +1,8 @@
-export const API_URL = 'https://joyeria-marine-server.onrender.com/api';
+// Detectar automáticamente si estamos en local o en la nube (Render)
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+export const API_URL = isLocal 
+  ? 'http://localhost:3000/api' 
+  : 'https://joyeria-marine-dev.onrender.com/api';
 
 function getHeaders() {
   const token = localStorage.getItem('token');

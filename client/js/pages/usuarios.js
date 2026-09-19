@@ -70,6 +70,14 @@ export default {
                   <option value="admin">Administrador (Acceso Total)</option>
                 </select>
               </div>
+
+              <div class="form-group">
+                <label class="form-label">Tienda Asignada</label>
+                <select id="usr-sucursal" class="form-control">
+                  <!-- Se llenará dinámicamente -->
+                </select>
+                <small class="text-muted" style="display:block;margin-top:4px;">Los administradores pueden cambiar de tienda, los cajeros facturan por defecto aquí.</small>
+              </div>
             </form>
           </div>
           <div class="modal-footer">
@@ -133,12 +141,17 @@ export default {
     document.getElementById('usr-modal-title').textContent = isEdit ? 'Editar Usuario' : 'Nuevo Usuario';
     document.getElementById('usr-pwd-hint').textContent = isEdit ? '(Dejar en blanco para no cambiar)' : '(Obligatorio)';
     
+    // Fill sucursales dropdown
+    const sucSelect = document.getElementById('usr-sucursal');
+    sucSelect.innerHTML = app.sucursales.map(s => `<option value="${s.id}">${s.nombre}</option>`).join('');
+
     if (isEdit) {
       const u = this.usuarios.find(x => x.id === id);
       document.getElementById('usr-id').value = u.id;
       document.getElementById('usr-nombre').value = u.nombre;
       document.getElementById('usr-username').value = u.username;
       document.getElementById('usr-rol').value = u.rol;
+      if (u.sucursal_id) document.getElementById('usr-sucursal').value = u.sucursal_id;
       document.getElementById('usr-pwd').value = '';
     } else {
       document.getElementById('usr-form').reset();
@@ -155,7 +168,8 @@ export default {
     const payload = {
       nombre: document.getElementById('usr-nombre').value,
       username: document.getElementById('usr-username').value,
-      rol: document.getElementById('usr-rol').value
+      rol: document.getElementById('usr-rol').value,
+      sucursal_id: document.getElementById('usr-sucursal').value
     };
 
     const pwd = document.getElementById('usr-pwd').value;

@@ -45,6 +45,7 @@ const configRoutes = require('./routes/config');
 const actividadRoutes = require('./routes/actividad');
 const licenciasRoutes = require('./routes/licencias');
 const variantesRoutes = require('./routes/variantes');
+const sucursalesRoutes = require('./routes/sucursales');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/productos', productosRoutes);
@@ -59,6 +60,7 @@ app.use('/api/config', configRoutes);
 app.use('/api/actividad', actividadRoutes);
 app.use('/api/licencias', licenciasRoutes);
 app.use('/api/variantes', variantesRoutes);
+app.use('/api/sucursales', sucursalesRoutes);
 
 // Handle SPA routing
 app.get('*', (req, res) => {

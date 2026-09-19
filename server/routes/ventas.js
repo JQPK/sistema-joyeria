@@ -144,6 +144,7 @@ router.post('/', async (req, res, next) => {
     
     const data = req.body;
     data.usuario_id = req.user.id; // Assign to current user
+    data.sucursal_id = data.sucursal_id || req.user.sucursal_id || 1;
 
     // 1. Get next correlative
     const configRes = await client.query('SELECT * FROM config_empresa WHERE id = 1');
@@ -167,12 +168,12 @@ router.post('/', async (req, res, next) => {
     // 3. Insert sale
     const ventaRes = await client.query(`
       INSERT INTO ventas (numero_comprobante, tipo_comprobante, cliente_id, subtotal, descuento, total,
-        metodo_pago, monto_pagado, cambio, notas, usuario_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id
+        metodo_pago, monto_pagado, cambio, notas, usuario_id, sucursal_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id
     `, [
       numero, data.tipo_comprobante || 'boleta', data.cliente_id || null, data.subtotal, 
       data.descuento || 0, data.total, data.metodo_pago || 'efectivo', 
-      data.monto_pagado || data.total, data.cambio || 0, data.notas || '', data.usuario_id
+      data.monto_pagado || data.total, data.cambio || 0, data.notas || '', data.usuario_id, data.sucursal_id
     ]);
     const ventaId = ventaRes.rows[0].id;
 
@@ -180,10 +181,13 @@ router.post('/', async (req, res, next) => {
     for (const item of data.items) {
       if (item.variante_id) {
         const stockRes = await client.query(
-          'SELECT stock_actual, nombre_variante FROM producto_variantes WHERE id = $1',
-          [item.variante_id]
+          `SELECT i.stock_actual, v.nombre_variante 
+           FROM inventario_variantes_sucursales i
+           JOIN producto_variantes v ON i.variante_id = v.id
+           WHERE i.variante_id = $1 AND i.sucursal_id = $2`,
+          [item.variante_id, data.sucursal_id]
         );
-        if (stockRes.rows.length === 0) throw new Error(`Variante no encontrada (id: ${item.variante_id})`);
+        if (stockRes.rows.length === 0) throw new Error(`Variante no encontrada o sin stock en esta sucursal (id: ${item.variante_id})`);
         const stockDisponible = stockRes.rows[0].stock_actual;
         if (stockDisponible < item.cantidad) {
           const nombre = stockRes.rows[0].nombre_variante;
@@ -191,10 +195,13 @@ router.post('/', async (req, res, next) => {
         }
       } else {
         const stockRes = await client.query(
-          'SELECT stock_actual, nombre FROM productos WHERE id = $1',
-          [item.producto_id]
+          `SELECT i.stock_actual, p.nombre 
+           FROM inventario_sucursales i
+           JOIN productos p ON i.producto_id = p.id
+           WHERE i.producto_id = $1 AND i.sucursal_id = $2`,
+          [item.producto_id, data.sucursal_id]
         );
-        if (stockRes.rows.length === 0) throw new Error(`Producto no encontrado (id: ${item.producto_id})`);
+        if (stockRes.rows.length === 0) throw new Error(`Producto no encontrado o sin stock en esta sucursal (id: ${item.producto_id})`);
         const stockDisponible = stockRes.rows[0].stock_actual;
         if (stockDisponible < item.cantidad) {
           const nombre = stockRes.rows[0].nombre;
@@ -211,14 +218,9 @@ router.post('/', async (req, res, next) => {
       `, [ventaId, item.producto_id, item.variante_id || null, item.cantidad, item.precio_unitario, item.descuento_item || 0, item.subtotal_item]);
       
       if (item.variante_id) {
-        await client.query('UPDATE producto_variantes SET stock_actual = stock_actual - $1 WHERE id = $2', [item.cantidad, item.variante_id]);
-        await client.query(`
-          UPDATE productos 
-          SET stock_actual = (SELECT COALESCE(SUM(stock_actual), 0) FROM producto_variantes WHERE producto_id = $1 AND activo = true)
-          WHERE id = $1
-        `, [item.producto_id]);
+        await client.query('UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual - $1 WHERE variante_id = $2 AND sucursal_id = $3', [item.cantidad, item.variante_id, data.sucursal_id]);
       } else {
-        await client.query('UPDATE productos SET stock_actual = stock_actual - $1 WHERE id = $2', [item.cantidad, item.producto_id]);
+        await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual - $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, data.sucursal_id]);
       }
     }
 
@@ -255,7 +257,7 @@ router.post('/:id/anular', async (req, res, next) => {
     
     await client.query('BEGIN');
     
-    const saleRes = await client.query('SELECT numero_comprobante, total, estado FROM ventas WHERE id = $1 FOR UPDATE', [id]);
+    const saleRes = await client.query('SELECT numero_comprobante, total, estado, sucursal_id FROM ventas WHERE id = $1 FOR UPDATE', [id]);
     if (saleRes.rows.length === 0) throw new Error('Venta no encontrada');
     if (saleRes.rows[0].estado === 'anulada') throw new Error('La venta ya fue anulada');
     
@@ -265,14 +267,9 @@ router.post('/:id/anular', async (req, res, next) => {
     const itemsRes = await client.query('SELECT producto_id, variante_id, cantidad FROM detalle_ventas WHERE venta_id = $1', [id]);
     for (const item of itemsRes.rows) {
       if (item.variante_id) {
-        await client.query('UPDATE producto_variantes SET stock_actual = stock_actual + $1 WHERE id = $2', [item.cantidad, item.variante_id]);
-        await client.query(`
-          UPDATE productos 
-          SET stock_actual = (SELECT COALESCE(SUM(stock_actual), 0) FROM producto_variantes WHERE producto_id = $1 AND activo = true)
-          WHERE id = $1
-        `, [item.producto_id]);
+        await client.query('UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual + $1 WHERE variante_id = $2 AND sucursal_id = $3', [item.cantidad, item.variante_id, venta.sucursal_id]);
       } else {
-        await client.query('UPDATE productos SET stock_actual = stock_actual + $1 WHERE id = $2', [item.cantidad, item.producto_id]);
+        await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual + $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, venta.sucursal_id]);
       }
     }
 

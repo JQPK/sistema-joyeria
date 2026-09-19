@@ -35,11 +35,59 @@ window.app = {
     // Is Authenticated
     this.setupUserUI();
     this.connectRealtime();
+    await this.loadSucursales();
     this.showScreen('app-container');
     
     // Initial Route
     this.handleRoute();
     window.addEventListener('hashchange', () => this.handleRoute());
+  },
+
+  async loadSucursales() {
+    try {
+      const res = await api.get('/sucursales');
+      this.sucursales = res;
+      
+      const select = document.getElementById('header-sucursal-select');
+      if (!select) return;
+      
+      select.innerHTML = '';
+      this.sucursales.forEach(s => {
+        if (s.activo) {
+          const opt = document.createElement('option');
+          opt.value = s.id;
+          opt.textContent = s.nombre;
+          select.appendChild(opt);
+        }
+      });
+      
+      const user = auth.getUser();
+      // Si el usuario tiene una tienda asignada, o si ya seleccionamos una antes
+      const savedSucursal = localStorage.getItem('activeSucursal');
+      if (savedSucursal && this.sucursales.find(s => s.id == savedSucursal)) {
+        this.activeSucursal = savedSucursal;
+      } else if (user && user.sucursal_id) {
+        this.activeSucursal = user.sucursal_id;
+      } else if (this.sucursales.length > 0) {
+        this.activeSucursal = this.sucursales[0].id;
+      }
+      
+      select.value = this.activeSucursal;
+      
+      select.addEventListener('change', (e) => {
+        this.activeSucursal = e.target.value;
+        localStorage.setItem('activeSucursal', this.activeSucursal);
+        this.showToast('Cambiaste de tienda. Actualizando vista...', 'success');
+        // Recargar el módulo actual
+        const hash = window.location.hash || '#dashboard';
+        const pageId = hash.replace('#', '');
+        if (this.pages[pageId] && typeof this.pages[pageId].load === 'function') {
+          this.pages[pageId].load();
+        }
+      });
+    } catch (err) {
+      console.error('Error cargando sucursales:', err);
+    }
   },
 
   bindEvents() {

@@ -23,14 +23,14 @@ router.get('/', adminOnly, async (req, res, next) => {
 // POST create user
 router.post('/', adminOnly, async (req, res, next) => {
   try {
-    const { nombre, username, password, rol } = req.body;
+    const { nombre, username, password, rol, sucursal_id } = req.body;
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
 
     const result = await db.query(`
-      INSERT INTO usuarios (nombre, username, password_hash, rol) 
-      VALUES ($1, $2, $3, $4) RETURNING id
-    `, [nombre, username.toLowerCase().trim(), hash, rol || 'cajero']);
+      INSERT INTO usuarios (nombre, username, password_hash, rol, sucursal_id) 
+      VALUES ($1, $2, $3, $4, $5) RETURNING id
+    `, [nombre, username.toLowerCase().trim(), hash, rol || 'cajero', sucursal_id || 1]);
 
     await logActivity(db, req.user.id, 'USUARIO_CREADO', `Nuevo usuario creado: '${username}' (nombre: ${nombre}, rol: ${rol || 'cajero'})`);
     res.json({ success: true, id: result.rows[0].id });
@@ -46,18 +46,18 @@ router.post('/', adminOnly, async (req, res, next) => {
 router.put('/:id', adminOnly, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { nombre, username, rol, password } = req.body;
+    const { nombre, username, rol, password, sucursal_id } = req.body;
 
     if (password) {
       const salt = await bcrypt.genSalt(10);
       const hash = await bcrypt.hash(password, salt);
       await db.query(`
-        UPDATE usuarios SET nombre = $1, username = $2, password_hash = $3, rol = $4 WHERE id = $5
-      `, [nombre, username.toLowerCase().trim(), hash, rol, id]);
+        UPDATE usuarios SET nombre = $1, username = $2, password_hash = $3, rol = $4, sucursal_id = $5 WHERE id = $6
+      `, [nombre, username.toLowerCase().trim(), hash, rol, sucursal_id || 1, id]);
     } else {
       await db.query(`
-        UPDATE usuarios SET nombre = $1, username = $2, rol = $3 WHERE id = $4
-      `, [nombre, username.toLowerCase().trim(), rol, id]);
+        UPDATE usuarios SET nombre = $1, username = $2, rol = $3, sucursal_id = $4 WHERE id = $5
+      `, [nombre, username.toLowerCase().trim(), rol, sucursal_id || 1, id]);
     }
 
     await logActivity(db, req.user.id, 'USUARIO_MODIFICADO', `Usuario '${username}' (ID: ${id}) modificado por el administrador`);
