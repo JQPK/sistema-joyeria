@@ -50,11 +50,19 @@ router.post('/', async (req, res, next) => {
       peso_gramos || 0, imagen_path || null
     ]);
 
-    // Update parent product stock and flag
+    const newVarId = result.rows[0].id;
+
+    // Insert initial stock into current branch
+    const sucursalId = req.body.sucursal_id || req.user.sucursal_id || 1;
+    await client.query(`
+      INSERT INTO inventario_variantes_sucursales (variante_id, sucursal_id, stock_actual, stock_minimo)
+      VALUES ($1, $2, $3, $4)
+    `, [newVarId, sucursalId, stock_actual || 0, stock_minimo || 1]);
+
+    // Update parent product flag
     await client.query(`
       UPDATE productos 
-      SET tiene_variantes = TRUE,
-          stock_actual = (SELECT COALESCE(SUM(stock_actual), 0) FROM producto_variantes WHERE producto_id = $1 AND activo = true)
+      SET tiene_variantes = TRUE
       WHERE id = $1
     `, [producto_id]);
 
@@ -81,13 +89,17 @@ router.put('/:id', async (req, res, next) => {
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
+    const sucursalId = req.body.sucursal_id || req.user.sucursal_id || 1;
     
     // Get product_id
-    const varRes = await client.query('SELECT producto_id, nombre_variante, stock_actual FROM producto_variantes WHERE id = $1', [req.params.id]);
+    const varRes = await client.query('SELECT producto_id, nombre_variante FROM producto_variantes WHERE id = $1', [req.params.id]);
     if (varRes.rows.length === 0) throw new Error('Variante no encontrada');
     const producto_id = varRes.rows[0].producto_id;
     const varianteName = varRes.rows[0].nombre_variante;
-    const oldStock = varRes.rows[0].stock_actual;
+    
+    // Get current branch stock
+    const curStockRes = await client.query('SELECT stock_actual FROM inventario_variantes_sucursales WHERE variante_id = $1 AND sucursal_id = $2', [req.params.id, sucursalId]);
+    const oldStock = curStockRes.rows.length > 0 ? parseInt(curStockRes.rows[0].stock_actual) : 0;
 
     const fields = [];
     const values = [];
@@ -95,7 +107,7 @@ router.put('/:id', async (req, res, next) => {
     
     const allowed = ['sku', 'nombre_variante', 'atributo_1_nombre', 'atributo_1_valor', 
                      'atributo_2_nombre', 'atributo_2_valor', 'precio_venta', 'precio_compra', 
-                     'stock_actual', 'stock_minimo', 'peso_gramos', 'imagen_path', 'activo'];
+                     'peso_gramos', 'imagen_path', 'activo'];
 
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
@@ -108,13 +120,25 @@ router.put('/:id', async (req, res, next) => {
       fields.push(`updated_at = NOW()`);
       values.push(req.params.id);
       await client.query(`UPDATE producto_variantes SET ${fields.join(', ')} WHERE id = $${paramIdx}`, values);
+    }
+
+    // Update branch specific stock
+    if (req.body.stock_actual !== undefined || req.body.stock_minimo !== undefined) {
+      const newStock = req.body.stock_actual !== undefined ? parseInt(req.body.stock_actual) : oldStock;
+      const newMin = req.body.stock_minimo !== undefined ? parseInt(req.body.stock_minimo) : 1;
       
-      // Update parent stock
       await client.query(`
-        UPDATE productos 
-        SET stock_actual = (SELECT COALESCE(SUM(stock_actual), 0) FROM producto_variantes WHERE producto_id = $1 AND activo = true)
-        WHERE id = $1
-      `, [producto_id]);
+        INSERT INTO inventario_variantes_sucursales (variante_id, sucursal_id, stock_actual, stock_minimo)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (variante_id, sucursal_id) 
+        DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo, updated_at = NOW()
+      `, [req.params.id, sucursalId, newStock, newMin]);
+      
+      if (req.body.stock_actual !== undefined && oldStock !== newStock) {
+        await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — Stock Tienda ${sucursalId}: ${oldStock} → ${newStock}`);
+      }
+    } else {
+      await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — datos actualizados`);
     }
 
     await client.query('COMMIT');
@@ -123,16 +147,6 @@ router.put('/:id', async (req, res, next) => {
     if (io) {
       io.emit('product:updated', { id: producto_id });
       io.emit('stock:changed');
-    }
-
-    // Log stock change if applicable
-    if (req.body.stock_actual !== undefined) {
-      const newStock = parseInt(req.body.stock_actual);
-      if (parseInt(oldStock) !== newStock) {
-        await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — Stock: ${oldStock} → ${newStock}`);
-      }
-    } else {
-      await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — datos actualizados`);
     }
 
     res.json({ success: true });

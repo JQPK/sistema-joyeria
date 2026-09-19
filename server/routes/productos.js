@@ -160,13 +160,17 @@ router.get('/sku/:sku', async (req, res, next) => {
 // GET by id
 router.get('/:id', async (req, res, next) => {
   try {
+    const sucursalId = req.query.sucursal_id || req.user.sucursal_id || 1;
     const result = await db.query(`
-      SELECT p.*, c.nombre as categoria_nombre, m.nombre as material_nombre
+      SELECT p.*, c.nombre as categoria_nombre, m.nombre as material_nombre,
+             COALESCE(inv.stock_actual, 0) as stock_actual,
+             COALESCE(inv.stock_minimo, 1) as stock_minimo
       FROM productos p
       LEFT JOIN categorias c ON p.categoria_id = c.id
       LEFT JOIN materiales m ON p.material_id = m.id
+      LEFT JOIN inventario_sucursales inv ON p.id = inv.producto_id AND inv.sucursal_id = $2
       WHERE p.id = $1
-    `, [req.params.id]);
+    `, [req.params.id, sucursalId]);
     
     if (result.rows.length === 0) return res.status(404).json({ success: false, message: 'Producto no encontrado' });
     
@@ -174,10 +178,13 @@ router.get('/:id', async (req, res, next) => {
     
     // Fetch variants
     if (product.tiene_variantes) {
-      const variantsRes = await db.query(
-        'SELECT * FROM producto_variantes WHERE producto_id = $1 AND activo = true ORDER BY nombre_variante ASC',
-        [req.params.id]
-      );
+      const variantsRes = await db.query(`
+        SELECT v.*, COALESCE(inv.stock_actual, 0) as stock_actual, COALESCE(inv.stock_minimo, 1) as stock_minimo
+        FROM producto_variantes v
+        LEFT JOIN inventario_variantes_sucursales inv ON v.id = inv.variante_id AND inv.sucursal_id = $2
+        WHERE v.producto_id = $1 AND v.activo = true 
+        ORDER BY v.nombre_variante ASC
+      `, [req.params.id, sucursalId]);
       product.variantes = variantsRes.rows;
     } else {
       product.variantes = [];
@@ -247,33 +254,35 @@ router.put('/:id', async (req, res, next) => {
   const client = await db.pool.connect();
   try {
     const { id } = req.params;
+    const sucursalId = req.body.sucursal_id || req.user.sucursal_id || 1;
     await client.query('BEGIN');
 
-    // Read current stock to detect manual change
-    const currentProd = await client.query('SELECT nombre, stock_actual, precio_venta FROM productos WHERE id = $1', [id]);
+    // Read current global info
+    const currentProd = await client.query('SELECT nombre, precio_venta FROM productos WHERE id = $1', [id]);
+    
+    // Read current branch stock
+    const currentStockRes = await client.query('SELECT stock_actual FROM inventario_sucursales WHERE producto_id = $1 AND sucursal_id = $2', [id, sucursalId]);
+    const currentStock = currentStockRes.rows.length > 0 ? parseInt(currentStockRes.rows[0].stock_actual) : 0;
 
     // Check price change
-    if (req.body.precio_venta !== undefined) {
-      const currentRes = await client.query('SELECT precio_venta FROM productos WHERE id = $1', [id]);
-      if (currentRes.rows.length > 0) {
-        const currentPrice = parseFloat(currentRes.rows[0].precio_venta);
-        const newPrice = parseFloat(req.body.precio_venta);
-        if (currentPrice !== newPrice) {
-          await client.query(
-            'INSERT INTO historial_precios (producto_id, precio_anterior, precio_nuevo) VALUES ($1, $2, $3)',
-            [id, currentPrice, newPrice]
-          );
-        }
+    if (req.body.precio_venta !== undefined && currentProd.rows.length > 0) {
+      const currentPrice = parseFloat(currentProd.rows[0].precio_venta);
+      const newPrice = parseFloat(req.body.precio_venta);
+      if (currentPrice !== newPrice) {
+        await client.query(
+          'INSERT INTO historial_precios (producto_id, precio_anterior, precio_nuevo) VALUES ($1, $2, $3)',
+          [id, currentPrice, newPrice]
+        );
       }
     }
 
+    // Update global product fields
     const fields = [];
     const values = [];
     let paramIdx = 1;
     
     const allowed = ['codigo', 'nombre', 'descripcion', 'categoria_id', 'material_id',
-      'peso_gramos', 'precio_compra', 'precio_venta', 'stock_actual', 'stock_minimo',
-      'descuento_porcentaje', 'imagen_path', 'activo'];
+      'peso_gramos', 'precio_compra', 'precio_venta', 'descuento_porcentaje', 'imagen_path', 'activo'];
 
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
@@ -288,20 +297,29 @@ router.put('/:id', async (req, res, next) => {
       await client.query(`UPDATE productos SET ${fields.join(', ')} WHERE id = $${paramIdx}`, values);
     }
 
+    // Update branch specific stock
+    if (req.body.stock_actual !== undefined || req.body.stock_minimo !== undefined) {
+      const newStock = req.body.stock_actual !== undefined ? parseInt(req.body.stock_actual) : currentStock;
+      const newMin = req.body.stock_minimo !== undefined ? parseInt(req.body.stock_minimo) : 1;
+      
+      await client.query(`
+        INSERT INTO inventario_sucursales (producto_id, sucursal_id, stock_actual, stock_minimo)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (producto_id, sucursal_id) 
+        DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo, updated_at = NOW()
+      `, [id, sucursalId, newStock, newMin]);
+
+      // Log stock update if changed manually
+      if (req.body.stock_actual !== undefined && currentStock !== newStock && currentProd.rows.length > 0) {
+        await logActivity(db, req.user.id, 'STOCK_ACTUALIZADO', `'${currentProd.rows[0].nombre}' — Stock Tienda ${sucursalId}: ${currentStock} → ${newStock} (ajuste manual)`);
+      }
+    }
+
     await client.query('COMMIT');
     
     // Emit real-time event
     const io = req.app.get('io');
     if (io) io.emit('product:updated', { id });
-
-    // Log stock update if changed manually
-    if (req.body.stock_actual !== undefined && currentProd.rows.length > 0) {
-      const oldStock = parseInt(currentProd.rows[0].stock_actual);
-      const newStock = parseInt(req.body.stock_actual);
-      if (oldStock !== newStock) {
-        await logActivity(db, req.user.id, 'STOCK_ACTUALIZADO', `'${currentProd.rows[0].nombre}' — Stock: ${oldStock} → ${newStock} (ajuste manual)`);
-      }
-    }
 
     res.json({ success: true });
   } catch (err) {
