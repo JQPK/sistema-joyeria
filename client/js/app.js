@@ -77,13 +77,14 @@ window.app = {
       select.addEventListener('change', (e) => {
         this.activeSucursal = e.target.value;
         localStorage.setItem('activeSucursal', this.activeSucursal);
-        this.showToast('Cambiaste de tienda. Actualizando vista...', 'success');
-        // Recargar el módulo actual
-        const hash = window.location.hash || '#dashboard';
-        const pageId = hash.replace('#', '');
-        if (this.pages[pageId] && typeof this.pages[pageId].load === 'function') {
-          this.pages[pageId].load();
-        }
+        this.showToast('Cambiando de tienda. Reiniciando módulos...', 'info');
+        
+        // Forzamos la recarga completa para asegurar que:
+        // 1. Se vacíen los carritos del POS
+        // 2. Se actualicen todos los inventarios y tablas
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
       });
     } catch (err) {
       console.error('Error cargando sucursales:', err);
