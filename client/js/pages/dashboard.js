@@ -6,9 +6,17 @@ export default {
 
   async init(container) {
     this.container = container;
+    // Default to the globally selected store
+    this.currentViewId = localStorage.getItem('activeSucursal') || '';
+    
     this.container.innerHTML = `
       <div class="flex-col gap-4">
-        <h2 class="text-gold" style="margin-bottom: 1rem">Resumen de Hoy</h2>
+        
+        <div id="dash-admin-tabs" class="flex flex-wrap gap-2" style="display: none; margin-bottom: 0.5rem">
+          <!-- Inject tabs here -->
+        </div>
+
+        <h2 class="text-gold" style="margin-bottom: 1rem" id="dash-title">Resumen de Hoy</h2>
         
         <div class="stats-grid">
           <div class="card stat-card">
@@ -77,8 +85,45 @@ export default {
 
   async load() {
     try {
+      // 1. Render Admin Tabs if applicable
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const tabsContainer = document.getElementById('dash-admin-tabs');
+      
+      if (user.rol === 'admin' && app.sucursales) {
+        tabsContainer.style.display = 'flex';
+        let tabsHtml = `<button class="btn btn-sm ${this.currentViewId === 'todas' ? 'btn-primary' : 'btn-secondary'} dash-tab" data-id="todas">🌐 Vista Global (Todas)</button>`;
+        app.sucursales.forEach(s => {
+          const isActive = String(this.currentViewId) === String(s.id) || (!this.currentViewId && String(s.id) === '1');
+          if (isActive) this.currentViewId = s.id; // sync string/int
+          tabsHtml += `<button class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-secondary'} dash-tab" data-id="${s.id}">🏪 ${s.nombre}</button>`;
+        });
+        tabsContainer.innerHTML = tabsHtml;
+
+        // Bind clicks
+        tabsContainer.querySelectorAll('.dash-tab').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            this.currentViewId = e.target.dataset.id;
+            this.load(); // reload data
+          });
+        });
+      }
+
+      // Update Title
+      let titleSuffix = '';
+      if (user.rol === 'admin') {
+        if (this.currentViewId === 'todas') titleSuffix = ' (Global)';
+        else {
+          const suc = app.sucursales?.find(s => String(s.id) === String(this.currentViewId));
+          if (suc) titleSuffix = ` (${suc.nombre})`;
+        }
+      }
+      document.getElementById('dash-title').textContent = `Resumen de Hoy${titleSuffix}`;
+
+      // 2. Load Data (force sucursal_id parameter to override api.js auto-injector)
+      const params = { sucursal_id: this.currentViewId };
+
       // Load today's stats
-      const statsRes = await api.get('/ventas/stats/today');
+      const statsRes = await api.get('/ventas/stats/today', params);
       if (statsRes.success) {
         document.getElementById('dash-total-ventas').textContent = `S/ ${parseFloat(statsRes.data.total_monto).toFixed(2)}`;
         document.getElementById('dash-operaciones').textContent = statsRes.data.total_ventas;
@@ -86,13 +131,13 @@ export default {
       }
 
       // Load weekly chart
-      const chartRes = await api.get('/ventas/daily-stats');
+      const chartRes = await api.get('/ventas/daily-stats', params);
       if (chartRes.success) {
         this.renderChart(chartRes.data);
       }
 
       // Load recent sales
-      const recentRes = await api.get('/ventas', { limit: true });
+      const recentRes = await api.get('/ventas', { limit: true, ...params });
       if (recentRes.success) {
         this.renderRecentSales(recentRes.data.slice(0, 5));
       }

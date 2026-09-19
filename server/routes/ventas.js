@@ -37,6 +37,14 @@ router.get('/', async (req, res, next) => {
       params.push(req.query.tipo_comprobante);
     }
 
+    if (req.query.sucursal_id && req.query.sucursal_id !== 'todas') {
+      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      params.push(req.query.sucursal_id);
+    } else if (req.user.rol !== 'admin') {
+      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      params.push(req.user.sucursal_id || 1);
+    }
+
     if (req.query.limit !== 'false') {
       query += ' ORDER BY v.fecha DESC LIMIT 100';
     } else {
@@ -54,24 +62,34 @@ router.get('/', async (req, res, next) => {
 router.get('/stats/:period', async (req, res, next) => {
   try {
     const { period } = req.params;
-    let dateFilter = '';
-    
-    if (period === 'today') {
-      dateFilter = "AND v.fecha::date = NOW()::date";
-    } else if (period === 'week') {
-      dateFilter = "AND v.fecha >= NOW() - INTERVAL '7 days'";
-    } else if (period === 'month') {
-      dateFilter = "AND v.fecha >= NOW() - INTERVAL '30 days'";
-    }
-
-    const result = await db.query(`
+    let query = `
       SELECT
         COUNT(*) as total_ventas,
         COALESCE(SUM(CASE WHEN estado = 'completada' THEN total ELSE 0 END), 0) as total_monto,
         COALESCE(AVG(CASE WHEN estado = 'completada' THEN total ELSE NULL END), 0) as ticket_promedio
       FROM ventas v
-      WHERE estado = 'completada' ${dateFilter}
-    `);
+      WHERE estado = 'completada'
+    `;
+    const params = [];
+    let paramIdx = 1;
+
+    if (period === 'today') {
+      query += ` AND v.fecha::date = NOW()::date`;
+    } else if (period === 'week') {
+      query += ` AND v.fecha >= NOW() - INTERVAL '7 days'`;
+    } else if (period === 'month') {
+      query += ` AND v.fecha >= NOW() - INTERVAL '30 days'`;
+    }
+
+    if (req.query.sucursal_id && req.query.sucursal_id !== 'todas') {
+      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      params.push(req.query.sucursal_id);
+    } else if (req.user.rol !== 'admin') {
+      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      params.push(req.user.sucursal_id || 1);
+    }
+
+    const result = await db.query(query, params);
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
     next(err);
@@ -89,12 +107,24 @@ router.get('/daily-stats', async (req, res, next) => {
       FROM ventas v
     `;
     const params = [];
-    
+    let paramIdx = 1;
+    let whereAdded = false;
+
     if (req.query.fechaInicio && req.query.fechaFin) {
-      query += ` WHERE v.fecha >= $1 AND v.fecha <= $2`;
+      query += ` WHERE v.fecha >= $${paramIdx++} AND v.fecha <= $${paramIdx++}`;
       params.push(req.query.fechaInicio, req.query.fechaFin + ' 23:59:59');
+      whereAdded = true;
     } else {
       query += ` WHERE v.fecha >= NOW() - INTERVAL '7 days'`;
+      whereAdded = true;
+    }
+    
+    if (req.query.sucursal_id && req.query.sucursal_id !== 'todas') {
+      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      params.push(req.query.sucursal_id);
+    } else if (req.user.rol !== 'admin') {
+      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      params.push(req.user.sucursal_id || 1);
     }
     
     query += ` GROUP BY v.fecha::date ORDER BY dia ASC`;
