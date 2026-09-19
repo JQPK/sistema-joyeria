@@ -2,7 +2,7 @@
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 export const API_URL = isLocal 
   ? 'http://localhost:3000/api' 
-  : 'https://joyeria-marine-dev.onrender.com/api';
+  : 'https://sistema-joyeria-dev.onrender.com/api';
 
 function getHeaders() {
   const token = localStorage.getItem('token');

@@ -169,7 +169,10 @@ window.app = {
 
   connectRealtime() {
     if (typeof io !== 'undefined') {
-      this.socket = io('https://joyeria-marine-server.onrender.com');
+      const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+        ? 'http://localhost:3000' 
+        : 'https://sistema-joyeria-dev.onrender.com';
+      this.socket = io(socketUrl);
       
       this.socket.on('connect', () => {
         const badge = document.getElementById('connection-status');
