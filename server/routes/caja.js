@@ -18,6 +18,10 @@ router.get('/', async (req, res, next) => {
     const params = [];
     let paramIdx = 1;
 
+    if (req.query.sucursal_id) {
+      query += ` AND m.sucursal_id = $${paramIdx++}`;
+      params.push(req.query.sucursal_id);
+    }
     if (req.query.fecha_inicio) {
       query += ` AND (m.fecha AT TIME ZONE 'America/Lima')::date >= $${paramIdx++}::date`;
       params.push(req.query.fecha_inicio);
@@ -52,6 +56,10 @@ router.get('/resumen', async (req, res, next) => {
     const params = [];
     let paramIdx = 1;
 
+    if (req.query.sucursal_id) {
+      query += ` AND sucursal_id = $${paramIdx++}`;
+      params.push(req.query.sucursal_id);
+    }
     if (req.query.fechaInicio) {
       query += ` AND (fecha AT TIME ZONE 'America/Lima')::date >= $${paramIdx++}::date`;
       params.push(req.query.fechaInicio);
@@ -79,6 +87,10 @@ router.get('/resumen', async (req, res, next) => {
     const pagoParams = [];
     let pagoIdx = 1;
 
+    if (req.query.sucursal_id) {
+      pagoQuery += ` AND v.sucursal_id = $${pagoIdx++}`;
+      pagoParams.push(req.query.sucursal_id);
+    }
     if (req.query.fechaInicio) {
       pagoQuery += ` AND (v.fecha AT TIME ZONE 'America/Lima')::date >= $${pagoIdx++}::date`;
       pagoParams.push(req.query.fechaInicio);
@@ -105,15 +117,17 @@ router.get('/resumen', async (req, res, next) => {
 // POST create
 router.post('/', async (req, res, next) => {
   try {
-    const { tipo, concepto, monto, notas } = req.body;
+    const { tipo, concepto, monto, notas, sucursal_id } = req.body;
     if (!monto || monto <= 0) {
       return res.status(400).json({ success: false, message: 'El monto debe ser mayor a 0' });
     }
 
+    const branchId = sucursal_id || req.user.sucursal_id || 1;
+
     const result = await db.query(`
-      INSERT INTO movimientos_caja (tipo, concepto, monto, notas, usuario_id)
-      VALUES ($1, $2, $3, $4, $5) RETURNING id
-    `, [tipo, concepto, monto, notas || '', req.user.id]);
+      INSERT INTO movimientos_caja (tipo, concepto, monto, notas, usuario_id, sucursal_id)
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+    `, [tipo, concepto, monto, notas || '', req.user.id, branchId]);
 
     const io = req.app.get('io');
     if (io) io.emit('caja:updated');
