@@ -19,8 +19,8 @@ export default {
               <input type="text" id="comp-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar por comprobante o cliente...">
             </div>
           </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.75rem">
-            <div class="form-group mb-0">
+          <div class="mobile-filter-row" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; align-items: flex-end;">
+            <div class="form-group mb-0 flex-1">
               <label class="form-label">Estado</label>
               <select id="comp-filter-estado" class="form-control">
                 <option value="">Todos</option>
@@ -28,16 +28,25 @@ export default {
                 <option value="anulada">Anulada</option>
               </select>
             </div>
-            <div class="form-group mb-0">
+            <div class="form-group mb-0 flex-1">
+              <label class="form-label">Método Pago</label>
+              <select id="comp-filter-metodo" class="form-control">
+                <option value="">Todos</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+                <option value="transferencia">Yape / Plin / Transf.</option>
+              </select>
+            </div>
+            <div class="form-group mb-0 flex-1">
               <label class="form-label">Desde</label>
               <input type="date" id="comp-fecha-inicio" class="form-control">
             </div>
-            <div class="form-group mb-0">
+            <div class="form-group mb-0 flex-1">
               <label class="form-label">Hasta</label>
               <input type="date" id="comp-fecha-fin" class="form-control">
             </div>
-            <div class="form-group mb-0" style="display:flex; align-items:flex-end">
-              <button class="btn btn-primary w-full" onclick="window.compLoad()">Filtrar</button>
+            <div class="form-group mb-0">
+              <button class="btn btn-primary" onclick="window.compLoad()">Filtrar</button>
             </div>
           </div>
 
@@ -93,9 +102,11 @@ export default {
   bindEvents() {
     const search = document.getElementById('comp-search');
     const estado = document.getElementById('comp-filter-estado');
+    const metodo = document.getElementById('comp-filter-metodo');
 
     search.addEventListener('input', () => this.filterTable());
     estado.addEventListener('change', () => this.filterTable());
+    metodo.addEventListener('change', () => this.filterTable());
   },
 
   async loadData() {
@@ -116,12 +127,14 @@ export default {
   filterTable() {
     const term = document.getElementById('comp-search').value.toLowerCase();
     const estado = document.getElementById('comp-filter-estado').value;
+    const metodo = document.getElementById('comp-filter-metodo').value;
 
     const filtered = this.ventas.filter(v => {
       const matchTerm = (v.numero_comprobante && v.numero_comprobante.toLowerCase().includes(term)) || 
                         (v.cliente_nombre && v.cliente_nombre.toLowerCase().includes(term));
       const matchEstado = estado ? v.estado === estado : true;
-      return matchTerm && matchEstado;
+      const matchMetodo = metodo ? (v.metodo_pago || 'efectivo') === metodo : true;
+      return matchTerm && matchEstado && matchMetodo;
     });
 
     this.renderTable(filtered);

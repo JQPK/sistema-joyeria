@@ -19,17 +19,23 @@ export default {
           <h2 class="text-gold">Reporte de Ventas</h2>
         </div>
         <div class="card-body">
-          <div class="mobile-filter-row" style="margin-bottom: 1.5rem">
-            <div class="form-group mb-0">
+          <div class="mobile-filter-row" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div class="form-group mb-0 flex-1">
               <label class="form-label">Desde</label>
               <input type="date" id="rep-fecha-inicio" class="form-control" value="${firstDay}">
             </div>
-            <div class="form-group mb-0">
+            <div class="form-group mb-0 flex-1">
               <label class="form-label">Hasta</label>
               <input type="date" id="rep-fecha-fin" class="form-control" value="${lastDay}">
             </div>
-            <div class="form-group mb-0" style="display:flex; align-items:flex-end">
-              <button class="btn btn-primary w-full" onclick="window.repLoad()">Generar Reporte</button>
+            <div class="form-group mb-0 flex-1 admin-only" style="display: none;">
+              <label class="form-label">Sucursal</label>
+              <select id="rep-sucursal" class="form-control">
+                <option value="todas">Todas las tiendas</option>
+              </select>
+            </div>
+            <div class="form-group mb-0">
+              <button class="btn btn-primary" onclick="window.repLoad()" style="padding: 0.6rem 1.5rem;">Filtrar</button>
             </div>
           </div>
 
@@ -51,6 +57,27 @@ export default {
       </div>
     `;
 
+    window.repLoad = this.loadData.bind(this);
+
+    // Populate sucursales for admin
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (user.rol === 'admin') {
+      const els = this.container.querySelectorAll('.admin-only');
+      els.forEach(e => e.style.display = '');
+      try {
+        const res = await api.get('/sucursales');
+        const select = document.getElementById('rep-sucursal');
+        if (res.data) {
+          res.data.forEach(s => {
+            select.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.nombre}</option>`);
+          });
+          // pre-select current active sucursal
+          const activeId = localStorage.getItem('activeSucursal');
+          if (activeId) select.value = activeId;
+        }
+      } catch (e) { console.error('Error loading sucursales', e); }
+    }
+
     await this.loadData();
   },
 
@@ -58,10 +85,15 @@ export default {
     try {
       const start = document.getElementById('rep-fecha-inicio').value;
       const end   = document.getElementById('rep-fecha-fin').value;
+      const sucSelect = document.getElementById('rep-sucursal');
+      const sucursalId = sucSelect ? sucSelect.value : localStorage.getItem('activeSucursal');
+
+      const params = { fechaInicio: start, fechaFin: end, sucursal_id: sucursalId };
+      const ventasParams = { fecha_inicio: start, fecha_fin: end, limit: 'false', sucursal_id: sucursalId };
 
       const [resStats, resVentas] = await Promise.all([
-        api.get('/ventas/daily-stats', { fechaInicio: start, fechaFin: end }),
-        api.get('/ventas', { fecha_inicio: start, fecha_fin: end, limit: 'false' })
+        api.get('/ventas/daily-stats', params),
+        api.get('/ventas', ventasParams)
       ]);
 
       if (resStats.success)  this.renderCharts(resStats.data);

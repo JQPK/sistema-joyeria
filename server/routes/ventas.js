@@ -256,9 +256,9 @@ router.post('/', async (req, res, next) => {
 
     // 5. Register in caja
     await client.query(`
-      INSERT INTO movimientos_caja (tipo, concepto, monto, usuario_id)
-      VALUES ('ingreso', $1, $2, $3)
-    `, [`Venta ${numero}`, data.total, data.usuario_id]);
+      INSERT INTO movimientos_caja (tipo, concepto, monto, usuario_id, sucursal_id)
+      VALUES ('ingreso', $1, $2, $3, $4)
+    `, [`Venta ${numero}`, data.total, data.usuario_id, data.sucursal_id]);
 
     await client.query('COMMIT');
 
@@ -308,9 +308,9 @@ router.post('/:id/anular', async (req, res, next) => {
 
     // Register cash refund (egreso)
     await client.query(`
-      INSERT INTO movimientos_caja (tipo, concepto, monto, usuario_id)
-      VALUES ('egreso', $1, $2, $3)
-    `, [`Boleta ${venta.numero_comprobante} anulada`, venta.total, req.user.id]);
+      INSERT INTO movimientos_caja (tipo, concepto, monto, usuario_id, sucursal_id)
+      VALUES ('egreso', $1, $2, $3, $4)
+    `, [`Anulación ${venta.numero_comprobante}`, venta.total, req.user.id, venta.sucursal_id]);
 
     await client.query('COMMIT');
     
