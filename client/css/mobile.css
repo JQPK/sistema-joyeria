@@ -58,6 +58,11 @@
     height: 100%;
   }
 
+  /* On mobile the cart is full-screen so no backdrop needed */
+  .pos-cart-backdrop {
+    display: none !important;
+  }
+
 
   /* Cart toggle FAB button */
   .cart-toggle-btn {

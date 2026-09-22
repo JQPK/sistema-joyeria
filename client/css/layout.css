@@ -204,9 +204,9 @@
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  right: 380px; /* leave space for the cart panel on desktop */
+  background: rgba(0, 0, 0, 0.4);
   z-index: 399;
-  backdrop-filter: blur(2px);
   animation: fadeIn 0.2s ease;
 }
 
