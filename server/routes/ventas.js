@@ -248,7 +248,10 @@ router.post('/', async (req, res, next) => {
       `, [ventaId, item.producto_id, item.variante_id || null, item.cantidad, item.precio_unitario, item.descuento_item || 0, item.subtotal_item]);
       
       if (item.variante_id) {
+        // Reducir stock de la variante
         await client.query('UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual - $1 WHERE variante_id = $2 AND sucursal_id = $3', [item.cantidad, item.variante_id, data.sucursal_id]);
+        // Reducir stock del producto padre
+        await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual - $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, data.sucursal_id]);
       } else {
         await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual - $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, data.sucursal_id]);
       }
@@ -297,7 +300,10 @@ router.post('/:id/anular', async (req, res, next) => {
     const itemsRes = await client.query('SELECT producto_id, variante_id, cantidad FROM detalle_ventas WHERE venta_id = $1', [id]);
     for (const item of itemsRes.rows) {
       if (item.variante_id) {
+        // Restaurar stock de la variante
         await client.query('UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual + $1 WHERE variante_id = $2 AND sucursal_id = $3', [item.cantidad, item.variante_id, venta.sucursal_id]);
+        // Restaurar stock del producto padre
+        await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual + $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, venta.sucursal_id]);
       } else {
         await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual + $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, venta.sucursal_id]);
       }

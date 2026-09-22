@@ -11,6 +11,10 @@ export default {
     this.container.innerHTML = `
       <div class="flex-col gap-4">
         <h2 class="text-gold" style="margin-bottom: 1rem">Estado del Inventario</h2>
+
+        <div id="inv-admin-tabs" class="flex flex-wrap gap-2" style="display: none; margin-bottom: 0.5rem">
+          <!-- Inject tabs here -->
+        </div>
         
         <div class="stats-grid">
           <div class="card stat-card" style="border-left: 4px solid var(--color-info)">
@@ -252,8 +256,37 @@ export default {
 
   async loadData() {
     try {
+      if (!this.currentViewId) {
+        this.currentViewId = localStorage.getItem('activeSucursal') || '';
+      }
+
+      // Render Admin Tabs if applicable
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const tabsContainer = document.getElementById('inv-admin-tabs');
+      
+      if (user.rol === 'admin' && app.sucursales) {
+        tabsContainer.style.display = 'flex';
+        let tabsHtml = `<button class="btn btn-sm ${this.currentViewId === 'todas' ? 'btn-primary' : 'btn-secondary'} inv-tab" data-id="todas">🌐 Vista Global (Todas)</button>`;
+        app.sucursales.forEach(s => {
+          const isActive = String(this.currentViewId) === String(s.id) || (!this.currentViewId && String(s.id) === '1');
+          if (isActive) this.currentViewId = s.id;
+          tabsHtml += `<button class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-secondary'} inv-tab" data-id="${s.id}">🏪 ${s.nombre}</button>`;
+        });
+        tabsContainer.innerHTML = tabsHtml;
+
+        // Bind clicks
+        tabsContainer.querySelectorAll('.inv-tab').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            this.currentViewId = e.target.dataset.id;
+            this.loadData();
+          });
+        });
+      }
+
+      const params = { sucursal_id: this.currentViewId };
+
       // Load Stats
-      const statsRes = await api.get('/inventario/stats');
+      const statsRes = await api.get('/inventario/stats', params);
       if (statsRes.success) {
         document.getElementById('inv-total-prod').textContent = statsRes.data.total_productos;
         document.getElementById('inv-total-unidades').textContent = statsRes.data.total_unidades;
@@ -261,7 +294,7 @@ export default {
       }
 
       // Load Top Selling
-      const topRes = await api.get('/inventario/top-selling', { limit: 10 });
+      const topRes = await api.get('/inventario/top-selling', { limit: 10, ...params });
       if (topRes.success) {
         const tbody = document.querySelector('#inv-top-table tbody');
         if (topRes.data.length === 0) {
@@ -281,7 +314,7 @@ export default {
       }
 
       // Load Low Rotation
-      const lowRes = await api.get('/inventario/low-rotation', { limit: 10, days: 90 });
+      const lowRes = await api.get('/inventario/low-rotation', { limit: 10, days: 90, ...params });
       if (lowRes.success) {
         const tbody = document.querySelector('#inv-low-table tbody');
         if (lowRes.data.length === 0) {
@@ -301,7 +334,7 @@ export default {
       }
 
       // Load Full Inventory List
-      const fullRes = await api.get('/productos', { estado: 'activo' });
+      const fullRes = await api.get('/productos', { estado: 'activo', ...params });
       if (fullRes.success) {
         this.productos = fullRes.data;
         this.renderFullTable(this.productos);
