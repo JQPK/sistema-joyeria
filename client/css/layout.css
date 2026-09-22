@@ -136,6 +136,35 @@
 #menu-toggle { display: none; }
 .mobile-title { display: none; font-family: var(--font-heading); font-weight: 600; font-size: 1.1rem; }
 
+/* Store selector in topbar */
+#topbar-store-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-surface);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+#topbar-store-selector .store-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+#topbar-store-selector select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-family: var(--font-body);
+  outline: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  max-width: 160px;
+}
+
 /* Main Content — The actual scrollable area */
 #main-content {
   flex: 1;

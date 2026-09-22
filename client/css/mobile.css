@@ -38,6 +38,32 @@
     padding-bottom: calc(0.75rem + var(--bottom-nav-height));
   }
 
+  /* ---- Topbar mobile: compact store selector ---- */
+  #topbar {
+    padding: 0 0.75rem;
+  }
+
+  /* Hide the "Operando en:" text label on mobile — just show the store name */
+  #topbar-store-selector .store-label {
+    display: none;
+  }
+
+  #topbar-store-selector {
+    padding: 4px 8px;
+    gap: 0.25rem;
+  }
+
+  /* Shorten select max-width on mobile */
+  #topbar-store-selector select {
+    max-width: 120px;
+    font-size: 0.8rem;
+  }
+
+  /* Hide the Online/Offline badge on mobile to save space */
+  #connection-status {
+    display: none !important;
+  }
+
   /* POS: Single column on mobile */
   .pos-layout {
     display: block;
@@ -61,6 +87,15 @@
   /* On mobile the cart is full-screen so no backdrop needed */
   .pos-cart-backdrop {
     display: none !important;
+  }
+
+  /* Raise FAB above bottom nav bar */
+  .pos-cart-fab {
+    bottom: calc(var(--bottom-nav-height) + 0.75rem);
+    right: 0.75rem;
+    width: 52px;
+    height: 52px;
+    z-index: 100;
   }
 
 
