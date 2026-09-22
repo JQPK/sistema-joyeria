@@ -13,21 +13,30 @@ router.use(auth);
 // GET all with filters
 router.get('/', async (req, res, next) => {
   try {
-    const sucursalId = req.query.sucursal_id || req.user.sucursal_id || 1;
+    const isTodas = req.query.sucursal_id === 'todas';
+    const sucursalId = isTodas ? null : (req.query.sucursal_id || req.user.sucursal_id || 1);
+    
+    let stockQuery = isTodas 
+      ? `(SELECT COALESCE(SUM(stock_actual), 0) FROM inventario_sucursales WHERE producto_id = p.id)` 
+      : `(SELECT COALESCE(stock_actual, 0) FROM inventario_sucursales WHERE producto_id = p.id AND sucursal_id = $1)`;
+      
+    let minStockQuery = isTodas
+      ? `(SELECT COALESCE(MAX(stock_minimo), 1) FROM inventario_sucursales WHERE producto_id = p.id)`
+      : `(SELECT COALESCE(stock_minimo, 1) FROM inventario_sucursales WHERE producto_id = p.id AND sucursal_id = $1)`;
+
     let query = `
       SELECT p.*, c.nombre as categoria_nombre, m.nombre as material_nombre,
-             COALESCE(inv.stock_actual, 0) as stock_actual,
-             COALESCE(inv.stock_minimo, 1) as stock_minimo,
+             ${stockQuery} as stock_actual,
+             ${minStockQuery} as stock_minimo,
              (SELECT json_agg(json_build_object('sucursal_id', inv_all.sucursal_id, 'stock_actual', inv_all.stock_actual)) 
               FROM inventario_sucursales inv_all WHERE inv_all.producto_id = p.id) as stock_por_sucursal
       FROM productos p
       LEFT JOIN categorias c ON p.categoria_id = c.id
       LEFT JOIN materiales m ON p.material_id = m.id
-      LEFT JOIN inventario_sucursales inv ON p.id = inv.producto_id AND inv.sucursal_id = $1
       WHERE 1=1
     `;
-    const params = [sucursalId];
-    let paramIndex = 2;
+    const params = isTodas ? [] : [sucursalId];
+    let paramIndex = isTodas ? 1 : 2;
 
     if (req.query.categoria_id) {
       query += ` AND p.categoria_id = $${paramIndex++}`;
@@ -38,7 +47,7 @@ router.get('/', async (req, res, next) => {
       params.push(req.query.material_id);
     }
     if (req.query.stock_bajo === 'true') {
-      query += ` AND COALESCE(inv.stock_actual, 0) <= COALESCE(inv.stock_minimo, 1)`;
+      query += ` AND ${stockQuery} <= ${minStockQuery}`;
     }
     if (req.query.precio_min) {
       query += ` AND p.precio_venta >= $${paramIndex++}`;
@@ -62,15 +71,24 @@ router.get('/', async (req, res, next) => {
     // Fetch variants for products that have them
     const prodIdsWithVariants = productos.filter(p => p.tiene_variantes).map(p => p.id);
     if (prodIdsWithVariants.length > 0) {
+      let varStockQuery = isTodas 
+        ? `(SELECT COALESCE(SUM(stock_actual), 0) FROM inventario_variantes_sucursales WHERE variante_id = v.id)`
+        : `(SELECT COALESCE(stock_actual, 0) FROM inventario_variantes_sucursales WHERE variante_id = v.id AND sucursal_id = $2)`;
+      let varMinStockQuery = isTodas
+        ? `(SELECT COALESCE(MAX(stock_minimo), 1) FROM inventario_variantes_sucursales WHERE variante_id = v.id)`
+        : `(SELECT COALESCE(stock_minimo, 1) FROM inventario_variantes_sucursales WHERE variante_id = v.id AND sucursal_id = $2)`;
+
+      const varParams = isTodas ? [prodIdsWithVariants] : [prodIdsWithVariants, sucursalId];
       const varRes = await db.query(`
-        SELECT v.*, COALESCE(inv.stock_actual, 0) as stock_actual, COALESCE(inv.stock_minimo, 1) as stock_minimo,
+        SELECT v.*, 
+               ${varStockQuery} as stock_actual, 
+               ${varMinStockQuery} as stock_minimo,
                (SELECT json_agg(json_build_object('sucursal_id', inv_all.sucursal_id, 'stock_actual', inv_all.stock_actual)) 
                 FROM inventario_variantes_sucursales inv_all WHERE inv_all.variante_id = v.id) as stock_por_sucursal
         FROM producto_variantes v
-        LEFT JOIN inventario_variantes_sucursales inv ON v.id = inv.variante_id AND inv.sucursal_id = $2
         WHERE v.producto_id = ANY($1) AND v.activo = true 
         ORDER BY v.nombre_variante ASC
-      `, [prodIdsWithVariants, sucursalId]);
+      `, varParams);
       const variantesMap = {};
       varRes.rows.forEach(v => {
         if (!variantesMap[v.producto_id]) variantesMap[v.producto_id] = [];
