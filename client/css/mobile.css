@@ -43,27 +43,21 @@
     display: block;
     height: auto;
     min-height: auto;
-    gap: 0.5rem;
+    overflow-x: hidden;
   }
 
-  /* On mobile the cart drawer becomes full-screen instead of right-panel */
+  /* On mobile the cart fills the full screen */
   .pos-cart {
     width: 100%;
-    right: -100%;
-    top: 0;
-    height: 100vh;
-  }
-
-  .pos-cart.active {
-    right: 0;
+    max-width: 100vw;
   }
 
   /* Inner card fills the screen on mobile */
   .pos-cart > .pos-cart-inner {
     border-radius: 0;
-    max-height: 100vh;
     height: 100%;
   }
+
 
   /* Cart toggle FAB button */
   .cart-toggle-btn {

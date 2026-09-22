@@ -187,10 +187,16 @@ export default {
 
     this.bindEvents();
 
-    // Inject floating cart FAB button into body
-    let fab = document.getElementById('pos-cart-fab');
-    if (!fab) {
-      fab = document.createElement('button');
+    // Inject backdrop + FAB into body (only once)
+    if (!document.getElementById('pos-cart-backdrop')) {
+      const backdrop = document.createElement('div');
+      backdrop.id = 'pos-cart-backdrop';
+      backdrop.className = 'pos-cart-backdrop';
+      document.body.appendChild(backdrop);
+    }
+
+    if (!document.getElementById('pos-cart-fab')) {
+      const fab = document.createElement('button');
       fab.id = 'pos-cart-fab';
       fab.className = 'pos-cart-fab';
       fab.title = 'Ver pedido';
@@ -232,30 +238,38 @@ export default {
       this.handleScannedCode(code);
     });
 
-    // Cart drawer open/close
+    // Cart drawer open/close helpers
     const cartPanel = document.getElementById('pos-cart-panel');
     const closeBtn  = document.getElementById('btn-close-cart');
-    const inlineToggle = document.getElementById('btn-toggle-cart'); // small btn in search bar
+    const inlineToggle = document.getElementById('btn-toggle-cart');
 
-    const openCart  = () => cartPanel && cartPanel.classList.add('active');
-    const closeCart = () => cartPanel && cartPanel.classList.remove('active');
+    const openCart = () => {
+      const panel = document.getElementById('pos-cart-panel');
+      const bd = document.getElementById('pos-cart-backdrop');
+      if (panel) panel.classList.add('active');
+      if (bd) bd.classList.add('active');
+    };
+    const closeCart = () => {
+      const panel = document.getElementById('pos-cart-panel');
+      const bd = document.getElementById('pos-cart-backdrop');
+      if (panel) panel.classList.remove('active');
+      if (bd) bd.classList.remove('active');
+    };
 
-    // Inline toggle button (in search bar, visible on all sizes)
+    // Inline toggle (cart icon in search bar)
     if (inlineToggle) inlineToggle.addEventListener('click', openCart);
-    if (closeBtn)     closeBtn.addEventListener('click', closeCart);
+    // X button inside drawer
+    if (closeBtn) closeBtn.addEventListener('click', closeCart);
 
-    // FAB button (wired after it's created; use event delegation on body)
+    // FAB button — event delegation so it works even before FAB is in DOM
     document.body.addEventListener('click', (e) => {
       if (e.target.closest('#pos-cart-fab')) openCart();
+      // Clicking backdrop closes drawer
+      if (e.target.id === 'pos-cart-backdrop') closeCart();
     });
 
-    // Close when clicking the backdrop (the ::before pseudo is not clickable from JS,
-    // so we detect clicks on the panel itself outside the inner card)
-    if (cartPanel) {
-      cartPanel.addEventListener('click', (e) => {
-        if (!e.target.closest('.pos-cart-inner')) closeCart();
-      });
-    }
+    // Store closeCart so newSale() can call it
+    this._closeCart = closeCart;
 
     // Checkout
     document.getElementById('btn-checkout').addEventListener('click', () => {
@@ -687,9 +701,8 @@ export default {
     this.cart = [];
     this.renderCart();
     
-    // Hide mobile cart if open
-    const cartPanel = document.getElementById('pos-cart-panel');
-    if (cartPanel) cartPanel.classList.remove('active');
+    // Close cart drawer and backdrop
+    if (this._closeCart) this._closeCart();
     
     this.loadData();
   },

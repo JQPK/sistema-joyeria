@@ -180,13 +180,14 @@
 }
 
 /* ==========================================
-   POS LAYOUT — Full width products, drawer cart
+   POS LAYOUT — Full width products, popup cart
    ========================================== */
 .pos-layout {
   display: block;
   height: calc(100vh - var(--topbar-height) - 3rem);
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .pos-products {
@@ -197,51 +198,61 @@
   min-width: 0;
 }
 
-/* Cart drawer: hidden off-screen right by default */
+/* ---- Cart drawer ---- */
+/* Backdrop: hidden by default, shown when cart is active */
+.pos-cart-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 399;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.2s ease;
+}
+
+.pos-cart-backdrop.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* The drawer panel itself */
 .pos-cart {
   position: fixed;
-  top: var(--topbar-height);
-  right: -400px;
+  top: 0;
+  right: 0;
   width: 380px;
-  height: calc(100vh - var(--topbar-height));
+  max-width: 100vw;
+  height: 100vh;
   background: var(--bg-card);
   border-left: 1px solid var(--bg-secondary);
-  box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  z-index: 300;
-  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Backdrop overlay when drawer is open */
-.pos-cart::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0);
-  pointer-events: none;
-  transition: background 0.3s;
-  z-index: -1;
+  z-index: 400;
+  /* Hidden off-screen to the right */
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  visibility: hidden;
 }
 
 .pos-cart.active {
-  right: 0;
+  transform: translateX(0);
+  visibility: visible;
 }
 
-.pos-cart.active::before {
-  background: rgba(0,0,0,0.35);
-  pointer-events: all;
-}
-
-/* Floating cart button */
+/* Floating cart FAB button */
 .pos-cart-fab {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 200;
-  width: 56px;
-  height: 56px;
+  z-index: 300;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: var(--accent-gold);
   color: #000;
@@ -269,7 +280,7 @@
   min-width: 18px;
   height: 18px;
   border-radius: 9px;
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   font-weight: 700;
