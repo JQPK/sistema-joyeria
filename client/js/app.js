@@ -262,6 +262,12 @@ window.app = {
       if (this.pages[pageId] && typeof this.pages[pageId].load === 'function') {
         this.pages[pageId].load();
       }
+
+      // Manage POS FAB visibility
+      const fab = document.getElementById('pos-cart-fab');
+      if (fab) {
+        fab.style.display = pageId === 'pos' ? 'flex' : 'none';
+      }
     } else {
       // 404
       window.location.hash = '#dashboard';

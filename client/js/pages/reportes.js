@@ -19,7 +19,7 @@ export default {
           <h2 class="text-gold">Reporte de Ventas</h2>
         </div>
         <div class="card-body">
-          <div class="mobile-filter-row" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; align-items: flex-end;">
             <div class="form-group mb-0 flex-1">
               <label class="form-label">Desde</label>
               <input type="date" id="rep-fecha-inicio" class="form-control" value="${firstDay}">

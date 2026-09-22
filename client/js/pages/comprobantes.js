@@ -19,7 +19,7 @@ export default {
               <input type="text" id="comp-search" class="search-input w-full" style="border:none; height:100%" placeholder="Buscar por comprobante o cliente...">
             </div>
           </div>
-          <div class="mobile-filter-row" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; align-items: flex-end;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; align-items: flex-end;">
             <div class="form-group mb-0 flex-1">
               <label class="form-label">Estado</label>
               <select id="comp-filter-estado" class="form-control">
