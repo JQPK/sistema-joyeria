@@ -1,5 +1,6 @@
-// Detectar automáticamente si estamos en local o en la nube (Render)
-const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+// Detectar automáticamente si estamos en local o en la nube (Render) o en app móvil (Capacitor)
+const isCapacitor = !!window.Capacitor;
+const isLocal = !isCapacitor && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 export const API_URL = isLocal 
   ? 'http://localhost:3000/api' 
   : 'https://sistema-joyeria-dev.onrender.com/api';
