@@ -12,29 +12,28 @@ export default {
 
   render() {
     this.container.innerHTML = `
-      <div class="card p-lg mb">
-        <div class="flex justify-between items-center mb">
-          <h2 class="text-gold" style="margin:0">Gestión de Sucursales</h2>
-          <button class="btn btn-primary" id="btn-nueva-sucursal">+ Nueva Sucursal</button>
+      <!-- Header -->
+      <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 class="text-gold" style="margin: 0 0 0.25rem 0; font-size: 1.6rem;">Gestión de Sucursales</h2>
+          <p class="text-muted" style="margin: 0; font-size: 0.875rem;">
+            Administra tus tiendas físicas. El catálogo es compartido, pero el inventario es independiente por sucursal.
+          </p>
         </div>
-        <p class="text-muted mb">Administra las tiendas físicas. El catálogo de productos es el mismo para todas, pero el inventario se maneja de forma independiente por sucursal.</p>
-        
-        <div class="table-responsive">
-          <table class="table" id="table-sucursales">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Dirección</th>
-                <th>Teléfono</th>
-                <th>Estado</th>
-                <th class="text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td colspan="6" class="text-center">Cargando sucursales...</td></tr>
-            </tbody>
-          </table>
+        <button class="btn btn-primary" id="btn-nueva-sucursal" style="white-space:nowrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" style="margin-right:6px;vertical-align:middle"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Nueva Sucursal
+        </button>
+      </div>
+
+      <!-- Cards grid -->
+      <div id="sucursales-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+        <!-- Cards inyectadas por load() -->
+        <div class="text-muted text-center" style="grid-column:1/-1; padding:3rem 0;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:48px;height:48px;opacity:0.3;margin-bottom:1rem">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <p>Cargando sucursales...</p>
         </div>
       </div>
 
@@ -52,13 +51,15 @@ export default {
                 <label class="form-label">Nombre de la Tienda *</label>
                 <input type="text" id="sucursal-nombre" class="form-control" required placeholder="Ej: Tienda Principal">
               </div>
-              <div class="form-group">
-                <label class="form-label">Dirección</label>
-                <input type="text" id="sucursal-direccion" class="form-control" placeholder="Dirección física">
-              </div>
-              <div class="form-group">
-                <label class="form-label">Teléfono</label>
-                <input type="text" id="sucursal-telefono" class="form-control" placeholder="Teléfono de contacto">
+              <div class="form-row flex gap-4">
+                <div class="form-group flex-1">
+                  <label class="form-label">Dirección</label>
+                  <input type="text" id="sucursal-direccion" class="form-control" placeholder="Dirección física">
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label">Teléfono</label>
+                  <input type="text" id="sucursal-telefono" class="form-control" placeholder="Teléfono de contacto">
+                </div>
               </div>
               <div class="form-group" id="grupo-estado" style="display:none">
                 <label class="form-label">Estado</label>
@@ -69,7 +70,7 @@ export default {
               </div>
               <div class="flex justify-end gap" style="margin-top:1.5rem">
                 <button type="button" class="btn btn-secondary" onclick="app.closeModal('modal-sucursal')">Cancelar</button>
-                <button type="submit" class="btn btn-primary">Guardar</button>
+                <button type="submit" class="btn btn-primary">Guardar Sucursal</button>
               </div>
             </form>
           </div>
@@ -116,7 +117,7 @@ export default {
     });
 
     // Delegación de eventos para botones editar
-    this.container.querySelector('#table-sucursales').addEventListener('click', (e) => {
+    this.container.querySelector('#sucursales-grid').addEventListener('click', (e) => {
       const btnEdit = e.target.closest('.btn-edit');
       if (btnEdit) {
         const id = btnEdit.dataset.id;
@@ -130,26 +131,70 @@ export default {
       const res = await api.get('/sucursales');
       const sucursales = res.data || [];
       this.data = sucursales;
-      const tbody = this.container.querySelector('#table-sucursales tbody');
+      const grid = this.container.querySelector('#sucursales-grid');
       
       if (sucursales.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No hay sucursales registradas</td></tr>';
+        grid.innerHTML = `
+          <div class="text-muted text-center" style="grid-column:1/-1; padding:3rem 0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="width:48px;height:48px;opacity:0.3;margin-bottom:1rem">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <p>No hay sucursales registradas</p>
+          </div>`;
         return;
       }
 
-      tbody.innerHTML = sucursales.map(s => `
-        <tr>
-          <td>${s.id}</td>
-          <td class="font-bold">${s.nombre}</td>
-          <td>${s.direccion || '-'}</td>
-          <td>${s.telefono || '-'}</td>
-          <td><span class="badge ${s.activo ? 'badge-success' : 'badge-danger'}">${s.activo ? 'Activa' : 'Inactiva'}</span></td>
-          <td class="text-right">
-            <button class="btn-icon btn-secondary btn-edit" data-id="${s.id}" title="Editar">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-            </button>
-          </td>
-        </tr>
+      grid.innerHTML = sucursales.map(s => `
+        <div class="card" style="border: 1px solid var(--bg-secondary); border-radius: var(--border-radius-md); overflow: hidden; transition: box-shadow 0.2s;">
+          <!-- Card Header con color de estado -->
+          <div style="background: ${s.activo ? 'var(--accent-gold)' : 'var(--bg-secondary)'}; height: 5px;"></div>
+          <div class="card-body" style="padding: 1.25rem;">
+            <!-- Nombre + Badge -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 42px; height: 42px; border-radius: 10px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-gold)" stroke-width="2" width="22">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-weight: 700; font-size: 1rem; color: var(--text-primary);">${s.nombre}</div>
+                  <div style="font-size: 0.75rem; color: var(--text-secondary);">ID #${s.id}</div>
+                </div>
+              </div>
+              <span class="badge ${s.activo ? 'badge-success' : 'badge-danger'}" style="font-size: 0.7rem;">
+                ${s.activo ? '● Activa' : '○ Inactiva'}
+              </span>
+            </div>
+
+            <!-- Info -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" style="flex-shrink:0">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle>
+                </svg>
+                <span>${s.direccion || '<em style="opacity:.5">Sin dirección registrada</em>'}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-secondary);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" style="flex-shrink:0">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.56 2.77h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.09a16 16 0 0 0 6 6l.72-.72a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.22 17.7"></path>
+                </svg>
+                <span>${s.telefono || '<em style="opacity:.5">Sin teléfono registrado</em>'}</span>
+              </div>
+            </div>
+
+            <!-- Footer / Acciones -->
+            <div style="border-top: 1px solid var(--bg-secondary); padding-top: 1rem; display: flex; justify-content: flex-end;">
+              <button class="btn btn-secondary btn-edit" data-id="${s.id}" style="font-size: 0.8rem; padding: 0.4rem 1rem; display: flex; align-items: center; gap: 0.4rem;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Editar
+              </button>
+            </div>
+          </div>
+        </div>
       `).join('');
     } catch (err) {
       app.showToast('Error cargando sucursales', 'error');

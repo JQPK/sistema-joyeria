@@ -187,10 +187,22 @@ export default {
 
     this.bindEvents();
 
-    // Move cart panel to document.body so position:fixed is relative
-    // to the real viewport (not the animated page-view container)
-    const cartPanel = document.getElementById('pos-cart-panel');
-    if (cartPanel) document.body.appendChild(cartPanel);
+    // Inject floating cart FAB button into body
+    let fab = document.getElementById('pos-cart-fab');
+    if (!fab) {
+      fab = document.createElement('button');
+      fab.id = 'pos-cart-fab';
+      fab.className = 'pos-cart-fab';
+      fab.title = 'Ver pedido';
+      fab.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24">
+          <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        <span class="pos-cart-fab-badge" id="fab-cart-count">0</span>
+      `;
+      document.body.appendChild(fab);
+    }
 
     await this.loadData();
   },
@@ -220,21 +232,28 @@ export default {
       this.handleScannedCode(code);
     });
 
-    // Mobile cart toggle — click backdrop or X to close
-    const toggleBtn = document.getElementById('btn-toggle-cart');
-    const closeBtn  = document.getElementById('btn-close-cart');
+    // Cart drawer open/close
     const cartPanel = document.getElementById('pos-cart-panel');
+    const closeBtn  = document.getElementById('btn-close-cart');
+    const inlineToggle = document.getElementById('btn-toggle-cart'); // small btn in search bar
 
-    const openCart  = () => cartPanel.classList.add('active');
-    const closeCart = () => cartPanel.classList.remove('active');
+    const openCart  = () => cartPanel && cartPanel.classList.add('active');
+    const closeCart = () => cartPanel && cartPanel.classList.remove('active');
 
-    if (toggleBtn) toggleBtn.addEventListener('click', openCart);
-    if (closeBtn)  closeBtn.addEventListener('click', closeCart);
+    // Inline toggle button (in search bar, visible on all sizes)
+    if (inlineToggle) inlineToggle.addEventListener('click', openCart);
+    if (closeBtn)     closeBtn.addEventListener('click', closeCart);
 
-    // Close when clicking the dark backdrop (not the inner card)
+    // FAB button (wired after it's created; use event delegation on body)
+    document.body.addEventListener('click', (e) => {
+      if (e.target.closest('#pos-cart-fab')) openCart();
+    });
+
+    // Close when clicking the backdrop (the ::before pseudo is not clickable from JS,
+    // so we detect clicks on the panel itself outside the inner card)
     if (cartPanel) {
       cartPanel.addEventListener('click', (e) => {
-        if (e.target === cartPanel) closeCart();
+        if (!e.target.closest('.pos-cart-inner')) closeCart();
       });
     }
 
@@ -498,12 +517,17 @@ export default {
     const container = document.getElementById('pos-cart-items');
     const btnCheckout = document.getElementById('btn-checkout');
     
-    // Update mobile counter
+    // Update cart counter badges (inline btn + FAB)
+    const totalItems = this.cart.reduce((s, i) => s + i.cantidad, 0);
     const mobileCount = document.getElementById('mobile-cart-count');
     if (mobileCount) {
-      const totalItems = this.cart.reduce((s, i) => s + i.cantidad, 0);
       mobileCount.textContent = totalItems;
       mobileCount.style.display = totalItems > 0 ? 'inline-block' : 'none';
+    }
+    const fabCount = document.getElementById('fab-cart-count');
+    if (fabCount) {
+      fabCount.textContent = totalItems;
+      fabCount.style.display = totalItems > 0 ? 'flex' : 'none';
     }
 
     if (this.cart.length === 0) {
