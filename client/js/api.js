@@ -1,11 +1,12 @@
-const isCapacitor = !!window.Capacitor;
-const isLocal = !isCapacitor && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+// Detectar si estamos en Capacitor (app móvil) o web. 
+// En Android, Capacitor levanta un servidor local en https://localhost
+const isCapacitor = !!window.Capacitor || (window.location.protocol === 'https:' && window.location.hostname === 'localhost');
+const isLocalDesktop = !isCapacitor && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
 // Si es Capacitor (móvil) debe apuntar a tu backend de PRD real.
-// Si es web, usa un path relativo para que funcione tanto en -dev como en PRD sin cruzar bases de datos.
 export const API_URL = isCapacitor 
-  ? 'https://sistema-joyeria-dev.onrender.com/api'  // <-- Ojo: deberías cambiar esto a la URL de PRD si tienes una.
-  : isLocal ? 'http://localhost:3000/api' : '/api';
+  ? 'https://sistema-joyeria-dev.onrender.com/api'  // <-- PON AQUÍ LA URL DE TU BACKEND
+  : isLocalDesktop ? 'http://localhost:3000/api' : '/api';
 
 function getHeaders() {
   const token = localStorage.getItem('token');
