@@ -19,7 +19,7 @@ router.get('/', async (req, res, next) => {
     let paramIdx = 1;
 
     if (req.query.sucursal_id) {
-      query += ` AND m.sucursal_id = $${paramIdx++}`;
+      query += ` AND COALESCE(m.sucursal_id, 1) = $${paramIdx++}`;
       params.push(req.query.sucursal_id);
     }
     if (req.query.fecha_inicio) {

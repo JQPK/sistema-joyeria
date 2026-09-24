@@ -38,10 +38,10 @@ router.get('/', async (req, res, next) => {
     }
 
     if (req.query.sucursal_id && req.query.sucursal_id !== 'todas') {
-      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      query += ` AND COALESCE(v.sucursal_id, 1) = $${paramIdx++}`;
       params.push(req.query.sucursal_id);
     } else if (req.user.rol !== 'admin') {
-      query += ` AND v.sucursal_id = $${paramIdx++}`;
+      query += ` AND COALESCE(v.sucursal_id, 1) = $${paramIdx++}`;
       params.push(req.user.sucursal_id || 1);
     }
 
