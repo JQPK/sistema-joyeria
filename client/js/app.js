@@ -64,12 +64,19 @@ window.app = {
       const user = auth.getUser();
       // Si el usuario tiene una tienda asignada, o si ya seleccionamos una antes
       const savedSucursal = localStorage.getItem('activeSucursal');
-      if (savedSucursal && this.sucursales.find(s => s.id == savedSucursal)) {
+      const savedSucursalValid = savedSucursal && this.sucursales.find(s => s.id == savedSucursal);
+      if (savedSucursalValid) {
         this.activeSucursal = savedSucursal;
-      } else if (user && user.sucursal_id) {
-        this.activeSucursal = user.sucursal_id;
-      } else if (this.sucursales.length > 0) {
-        this.activeSucursal = this.sucursales[0].id;
+      } else {
+        // Si el valor guardado no existe en este entorno (ej: vino de Dev y PRD no tiene esa sucursal),
+        // lo limpiamos y usamos la sucursal del usuario o la primera disponible.
+        localStorage.removeItem('activeSucursal');
+        if (user && user.sucursal_id && this.sucursales.find(s => s.id == user.sucursal_id)) {
+          this.activeSucursal = user.sucursal_id;
+        } else if (this.sucursales.length > 0) {
+          this.activeSucursal = this.sucursales[0].id;
+        }
+        localStorage.setItem('activeSucursal', this.activeSucursal);
       }
       
       select.value = this.activeSucursal;
