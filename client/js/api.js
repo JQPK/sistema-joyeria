@@ -5,7 +5,7 @@ const isLocalDesktop = !isCapacitor && (window.location.hostname === 'localhost'
 
 // Si es Capacitor (móvil) debe apuntar a tu backend de PRD real.
 export const API_URL = isCapacitor 
-  ? 'https://sistema-joyeria-dev.onrender.com/api'  // <-- PON AQUÍ LA URL DE TU BACKEND
+  ? 'https://joyeria-marine-server.onrender.com/api'  // <-- URL DE BACKEND PRD
   : isLocalDesktop ? 'http://localhost:3000/api' : '/api';
 
 function getHeaders() {
