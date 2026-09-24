@@ -1,9 +1,11 @@
-// Detectar automáticamente si estamos en local o en la nube (Render) o en app móvil (Capacitor)
 const isCapacitor = !!window.Capacitor;
 const isLocal = !isCapacitor && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-export const API_URL = isLocal 
-  ? 'http://localhost:3000/api' 
-  : 'https://sistema-joyeria-dev.onrender.com/api';
+
+// Si es Capacitor (móvil) debe apuntar a tu backend de PRD real.
+// Si es web, usa un path relativo para que funcione tanto en -dev como en PRD sin cruzar bases de datos.
+export const API_URL = isCapacitor 
+  ? 'https://sistema-joyeria-dev.onrender.com/api'  // <-- Ojo: deberías cambiar esto a la URL de PRD si tienes una.
+  : isLocal ? 'http://localhost:3000/api' : '/api';
 
 function getHeaders() {
   const token = localStorage.getItem('token');
