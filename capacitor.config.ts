@@ -4,6 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.joyeriamarine.pos',
   appName: 'JoyeriaMarine',
   webDir: 'client',
+  plugins: {
+    CapacitorHttp: {
+      enabled: true,
+    }
+  },
   android: {
     backgroundColor: '#00000000' // Transparent background so camera shows through
   }
