@@ -219,7 +219,7 @@ export default {
                 ${v.items.map(i => `
                   <tr>
                     <td>${i.cantidad}</td>
-                    <td>${i.producto_nombre} <br><small class="text-muted">${i.producto_codigo}</small></td>
+                    <td>${i.producto_nombre} <br><small class="text-muted">${i.producto_codigo || '—'}${i.atributo_1_valor ? ` · ${i.atributo_1_valor}` : ''}${i.atributo_2_valor ? ` · ${i.atributo_2_valor}` : ''}</small></td>
                     <td class="text-right">S/ ${parseFloat(i.subtotal_item).toFixed(2)}</td>
                   </tr>
                 `).join('')}

@@ -152,9 +152,15 @@ router.get('/:id', async (req, res, next) => {
     if (ventaRes.rows.length === 0) return res.status(404).json({ success: false, message: 'Venta no encontrada' });
     
     const itemsRes = await db.query(`
-      SELECT dv.*, p.nombre as producto_nombre, p.codigo as producto_codigo
+      SELECT dv.*, 
+             p.nombre as producto_nombre, 
+             COALESCE(pv.sku, p.codigo) as producto_codigo,
+             pv.nombre_variante,
+             pv.atributo_1_nombre, pv.atributo_1_valor,
+             pv.atributo_2_nombre, pv.atributo_2_valor
       FROM detalle_ventas dv
       JOIN productos p ON dv.producto_id = p.id
+      LEFT JOIN producto_variantes pv ON dv.variante_id = pv.id
       WHERE dv.venta_id = $1
     `, [id]);
     
