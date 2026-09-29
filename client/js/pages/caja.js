@@ -55,7 +55,7 @@ export default {
               <div style="display:flex; align-items:center; gap: 0.5rem">
                 <div style="font-size:1.3rem">💵</div>
                 <div>
-                  <div class="text-muted" style="font-size: 0.78rem">Ingresos Efectivo</div>
+                  <div class="text-muted" style="font-size: 0.78rem">Efectivo Neto</div>
                   <div class="fw-bold" style="font-size: 1.05rem; color:#16a34a" id="caja-efectivo">S/ 0.00</div>
                 </div>
               </div>

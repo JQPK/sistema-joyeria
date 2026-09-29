@@ -108,6 +108,10 @@ router.get('/resumen', async (req, res, next) => {
     data.ingresos_tarjeta       = parseFloat(pagoData.ingresos_tarjeta       || 0);
     data.ingresos_transferencia = parseFloat(pagoData.ingresos_transferencia || 0);
 
+    // Los egresos manuales (Pasaje, Menú, etc.) siempre se pagan en efectivo.
+    // Se descuentan del saldo de Efectivo.
+    data.ingresos_efectivo = Math.max(0, data.ingresos_efectivo - parseFloat(data.total_egresos));
+
     res.json({ success: true, data });
   } catch (err) {
     next(err);
