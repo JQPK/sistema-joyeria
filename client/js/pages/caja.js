@@ -246,14 +246,14 @@ export default {
       }
     } catch(e) {}
 
-    // --- Fila principal de movimientos ---
-    const rows = this.movimientos.map(m => {
+    // --- Fila principal de movimientos (una fila por ítem de venta) ---
+    const rows = [];
+    for (const m of this.movimientos) {
       // Determinar método de pago
       let metodoPago = '';
       if (m.tipo === 'egreso') {
-        metodoPago = 'Efectivo'; // Los egresos siempre son en efectivo
+        metodoPago = 'Efectivo';
       } else {
-        // Para ingresos de venta, buscar en el detalle
         const comprobante = m.concepto?.replace('Venta ', '');
         const ventaDet = ventasDetalle[comprobante];
         if (ventaDet) {
@@ -265,31 +265,42 @@ export default {
         }
       }
 
-      // Productos vendidos (solo para ingresos de venta)
-      let productosTexto = '';
-      let cantidadTexto = '';
       const comprobante = m.concepto?.replace('Venta ', '');
       const ventaDet = ventasDetalle[comprobante];
-      if (ventaDet && ventaDet.items) {
-        productosTexto = ventaDet.items.map(i => {
-          const cod = i.producto_codigo || i.sku || '—';
-          return `${cod}${i.atributo_1_valor ? ' · ' + i.atributo_1_valor : ''}`;
-        }).join(' | ');
-        cantidadTexto = ventaDet.items.map(i => i.cantidad).join(' | ');
-      }
+      const items = ventaDet?.items;
 
-      return {
-        'Fecha y Hora':     fmtFecha(m.fecha),
-        'Tipo':             m.tipo.toUpperCase(),
-        'Concepto':         m.concepto,
-        'Usuario':          m.usuario_nombre,
-        'Método de Pago':   metodoPago,
-        'Productos (SKU)':  productosTexto,
-        'Cantidades':       cantidadTexto,
-        'Monto (S/)':       parseFloat(m.monto).toFixed(2),
-        'Notas':            m.notas || ''
-      };
-    });
+      if (items && items.length > 0) {
+        // Una fila por cada ítem de la venta
+        items.forEach((item, idx) => {
+          const cod = item.producto_codigo || item.sku || '—';
+          const productoStr = `${cod}${item.atributo_1_valor ? ' · ' + item.atributo_1_valor : ''}${item.atributo_2_valor ? ' · ' + item.atributo_2_valor : ''}`;
+          rows.push({
+            'Fecha y Hora':   idx === 0 ? fmtFecha(m.fecha) : '',   // solo en la primera fila
+            'Tipo':           idx === 0 ? m.tipo.toUpperCase() : '',
+            'Concepto':       idx === 0 ? m.concepto : '',
+            'Usuario':        idx === 0 ? m.usuario_nombre : '',
+            'Método de Pago': idx === 0 ? metodoPago : '',
+            'Producto (SKU)': productoStr,
+            'Cantidad':       item.cantidad,
+            'Monto (S/)':     idx === 0 ? parseFloat(m.monto).toFixed(2) : '',
+            'Notas':          idx === 0 ? (m.notas || '') : ''
+          });
+        });
+      } else {
+        // Egresos manuales o movimientos sin productos — una sola fila
+        rows.push({
+          'Fecha y Hora':   fmtFecha(m.fecha),
+          'Tipo':           m.tipo.toUpperCase(),
+          'Concepto':       m.concepto,
+          'Usuario':        m.usuario_nombre,
+          'Método de Pago': metodoPago,
+          'Producto (SKU)': '',
+          'Cantidad':       '',
+          'Monto (S/)':     parseFloat(m.monto).toFixed(2),
+          'Notas':          m.notas || ''
+        });
+      }
+    }
 
     // --- Calcular cierre de caja ---
     const totalIngresos  = this.movimientos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + parseFloat(m.monto), 0);
