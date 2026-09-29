@@ -224,26 +224,103 @@ export default {
     }
   },
 
-  exportExcel() {
+  async exportExcel() {
     if (!this.movimientos || this.movimientos.length === 0) {
       return app.showToast('No hay datos para exportar', 'warning');
     }
 
-    const data = this.movimientos.map(m => ({
-      'Fecha y Hora': fmtFecha(m.fecha),
-      'Tipo': m.tipo.toUpperCase(),
-      'Concepto': m.concepto,
-      'Usuario': m.usuario_nombre,
-      'Monto (S/)': parseFloat(m.monto).toFixed(2),
-      'Notas': m.notas || ''
-    }));
+    const fecha = document.getElementById('caja-fecha').value || new Date().toISOString().split('T')[0];
 
-    const ws = XLSX.utils.json_to_sheet(data);
+    // --- Obtener detalle de ventas del día para los productos ---
+    let ventasDetalle = {};
+    try {
+      const ventasRes = await api.get('/ventas', { fecha_inicio: fecha, fecha_fin: fecha, sucursal_id: 'todas' });
+      if (ventasRes.success) {
+        // Para cada venta del día, buscamos sus ítems
+        await Promise.all(ventasRes.data.map(async v => {
+          try {
+            const det = await api.get(`/ventas/${v.id}`);
+            if (det.success) ventasDetalle[v.numero_comprobante] = det.data;
+          } catch(e) {}
+        }));
+      }
+    } catch(e) {}
+
+    // --- Fila principal de movimientos ---
+    const rows = this.movimientos.map(m => {
+      // Determinar método de pago
+      let metodoPago = '';
+      if (m.tipo === 'egreso') {
+        metodoPago = 'Efectivo'; // Los egresos siempre son en efectivo
+      } else {
+        // Para ingresos de venta, buscar en el detalle
+        const comprobante = m.concepto?.replace('Venta ', '');
+        const ventaDet = ventasDetalle[comprobante];
+        if (ventaDet) {
+          const mp = ventaDet.metodo_pago;
+          metodoPago = mp === 'efectivo' ? 'Efectivo'
+                     : mp === 'transferencia' ? 'Yape / Transferencia'
+                     : mp === 'tarjeta' ? 'Tarjeta'
+                     : mp || 'Efectivo';
+        }
+      }
+
+      // Productos vendidos (solo para ingresos de venta)
+      let productosTexto = '';
+      let cantidadTexto = '';
+      const comprobante = m.concepto?.replace('Venta ', '');
+      const ventaDet = ventasDetalle[comprobante];
+      if (ventaDet && ventaDet.items) {
+        productosTexto = ventaDet.items.map(i => {
+          const cod = i.producto_codigo || i.sku || '—';
+          return `${cod}${i.atributo_1_valor ? ' · ' + i.atributo_1_valor : ''}`;
+        }).join(' | ');
+        cantidadTexto = ventaDet.items.map(i => i.cantidad).join(' | ');
+      }
+
+      return {
+        'Fecha y Hora':     fmtFecha(m.fecha),
+        'Tipo':             m.tipo.toUpperCase(),
+        'Concepto':         m.concepto,
+        'Usuario':          m.usuario_nombre,
+        'Método de Pago':   metodoPago,
+        'Productos (SKU)':  productosTexto,
+        'Cantidades':       cantidadTexto,
+        'Monto (S/)':       parseFloat(m.monto).toFixed(2),
+        'Notas':            m.notas || ''
+      };
+    });
+
+    // --- Calcular cierre de caja ---
+    const totalIngresos  = this.movimientos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + parseFloat(m.monto), 0);
+    const totalEgresos   = this.movimientos.filter(m => m.tipo === 'egreso').reduce((s, m) => s + parseFloat(m.monto), 0);
+    const saldoNeto      = totalIngresos - totalEgresos;
+
+    // Ingresos por método de pago
+    let ingEfectivo = 0, ingYape = 0;
+    Object.values(ventasDetalle).forEach(v => {
+      if (v.estado === 'anulada') return;
+      if (v.metodo_pago === 'efectivo') ingEfectivo += parseFloat(v.total);
+      else if (v.metodo_pago === 'transferencia' || v.metodo_pago === 'tarjeta') ingYape += parseFloat(v.total);
+    });
+    const efectivoNeto = Math.max(0, ingEfectivo - totalEgresos);
+
+    // --- Filas del cierre de caja (se agregan al final) ---
+    rows.push({});   // fila vacía separadora
+    rows.push({ 'Fecha y Hora': '══════════════ CIERRE DE CAJA ══════════════' });
+    rows.push({ 'Fecha y Hora': 'Fecha',            'Tipo': fecha });
+    rows.push({ 'Fecha y Hora': 'Total Ingresos',   'Tipo': `S/ ${totalIngresos.toFixed(2)}` });
+    rows.push({ 'Fecha y Hora': 'Total Egresos',    'Tipo': `S/ ${totalEgresos.toFixed(2)}` });
+    rows.push({ 'Fecha y Hora': 'Saldo Neto',       'Tipo': `S/ ${saldoNeto.toFixed(2)}` });
+    rows.push({});
+    rows.push({ 'Fecha y Hora': 'Ingresos Efectivo (ventas)',       'Tipo': `S/ ${ingEfectivo.toFixed(2)}` });
+    rows.push({ 'Fecha y Hora': 'Ingresos Yape / Transferencia',   'Tipo': `S/ ${ingYape.toFixed(2)}` });
+    rows.push({ 'Fecha y Hora': 'Efectivo Neto (descontando egresos)', 'Tipo': `S/ ${efectivoNeto.toFixed(2)}` });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Reporte_Caja");
-
-    const dateStr = document.getElementById('caja-fecha').value || new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `Reporte_Caja_${dateStr}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'Cierre_Caja');
+    XLSX.writeFile(wb, `Cierre_Caja_${fecha}.xlsx`);
   },
 
   load() {
