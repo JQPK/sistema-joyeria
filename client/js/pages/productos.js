@@ -120,6 +120,20 @@ export default {
                 </div>
               </div>
               
+              <div class="form-group" style="margin-top:-.5rem">
+                <label style="display:flex; align-items:center; gap:.5rem; font-size:.9rem; cursor:pointer; color:var(--text-muted)">
+                  <input type="checkbox" id="prod-enable-stock-original" onchange="document.getElementById('prod-stock-original-container').style.display = this.checked ? 'block' : 'none'">
+                  Habilitar Stock Original
+                </label>
+              </div>
+              
+              <div class="flex gap-4" id="prod-stock-original-container" style="display:none; margin-bottom: 1rem;">
+                <div class="form-group flex-1">
+                  <label class="form-label text-gold">Stock Original</label>
+                  <input type="number" id="prod-stock-original" class="form-control" min="0" placeholder="Mismo que actual si se deja vacío">
+                </div>
+              </div>
+              
               <div class="form-group">
                 <label class="form-label">Descripción</label>
                 <textarea id="prod-desc" class="form-control" rows="2"></textarea>
@@ -195,6 +209,20 @@ export default {
               <div class="form-group flex-1">
                 <label class="form-label">Precio (S/)</label>
                 <input type="number" id="edit-var-precio" class="form-control" step="0.10" min="0">
+              </div>
+            </div>
+            
+            <div class="form-group" style="margin-top:.5rem">
+              <label style="display:flex; align-items:center; gap:.5rem; font-size:.9rem; cursor:pointer; color:var(--text-muted)">
+                <input type="checkbox" id="edit-var-enable-stock-original" onchange="document.getElementById('edit-var-stock-original-container').style.display = this.checked ? 'block' : 'none'">
+                Habilitar Stock Original
+              </label>
+            </div>
+            
+            <div class="flex gap-4" id="edit-var-stock-original-container" style="display:none; margin-top: .5rem;">
+              <div class="form-group flex-1">
+                <label class="form-label text-gold">Stock Original</label>
+                <input type="number" id="edit-var-stock-original" class="form-control" min="0" placeholder="Mismo que actual si se deja vacío">
               </div>
             </div>
           </div>
@@ -310,6 +338,7 @@ export default {
             <span class="badge ${p.stock_actual <= p.stock_minimo ? 'badge-danger' : 'badge-success'}">
               ${p.stock_actual}
             </span>
+            ${p.stock_original !== null && p.stock_original !== undefined ? `<br><small class="text-gold" style="font-size: 0.75rem;">Orig: ${p.stock_original}</small>` : ''}
           </td>
           <td class="fw-bold text-gold">S/ ${priceStr}</td>
           <td class="text-right flex justify-end gap-2">
@@ -351,11 +380,26 @@ export default {
         document.getElementById('prod-minimo').value = p.stock_minimo;
         document.getElementById('prod-desc').value = p.descripcion || '';
         
+        const chkOriginal = document.getElementById('prod-enable-stock-original');
+        const contOriginal = document.getElementById('prod-stock-original-container');
+        const inputOriginal = document.getElementById('prod-stock-original');
+        if (p.stock_original !== null && p.stock_original !== undefined) {
+          chkOriginal.checked = true;
+          contOriginal.style.display = 'block';
+          inputOriginal.value = p.stock_original;
+        } else {
+          chkOriginal.checked = false;
+          contOriginal.style.display = 'none';
+          inputOriginal.value = '';
+        }
+
         // Block fields if it has variants
         if (p.tiene_variantes) {
           document.getElementById('prod-precio').disabled = true;
           document.getElementById('prod-stock').disabled = true;
           document.getElementById('prod-codigo').disabled = true;
+          chkOriginal.disabled = true;
+          inputOriginal.disabled = true;
           
           // Render variants
           const tbody = document.getElementById('prod-variantes-tbody');
@@ -365,10 +409,13 @@ export default {
                 <td>${v.sku}</td>
                 <td>${v.nombre_variante}</td>
                 <td>${p.material_nombre || '-'}</td>
-                <td>${v.stock_actual}</td>
+                <td>
+                  ${v.stock_actual}
+                  ${v.stock_original !== null && v.stock_original !== undefined ? `<br><small class="text-gold" style="font-size: 0.75rem;">Orig: ${v.stock_original}</small>` : ''}
+                </td>
                 <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
                 <td style="display: flex; gap: 0.25rem;">
-                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodEditVariant(${v.id}, '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.stock_actual}, ${v.precio_venta || p.precio_venta})" title="Editar Variante">
+                  <button type="button" class="btn-icon btn-secondary" onclick="window.prodEditVariant(${v.id}, '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.stock_actual}, ${v.precio_venta || p.precio_venta}, ${v.stock_original === null ? 'null' : v.stock_original})" title="Editar Variante">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                   </button>
                   <button type="button" class="btn-icon btn-secondary" onclick="window.prodShowBarcode('${v.sku}', '${v.nombre_variante.replace(/'/g, "\\'")}', ${v.precio_venta || p.precio_venta})" title="Imprimir Código">
@@ -393,6 +440,15 @@ export default {
       document.getElementById('prod-stock').disabled = false;
       document.getElementById('prod-codigo').disabled = false;
       
+      const chkOriginal = document.getElementById('prod-enable-stock-original');
+      const contOriginal = document.getElementById('prod-stock-original-container');
+      const inputOriginal = document.getElementById('prod-stock-original');
+      chkOriginal.checked = false;
+      chkOriginal.disabled = false;
+      contOriginal.style.display = 'none';
+      inputOriginal.value = '';
+      inputOriginal.disabled = false;
+      
       document.getElementById('prod-padre-row').style.display = 'flex';
       const padreSelect = document.getElementById('prod-padre');
       padreSelect.innerHTML = '<option value="">No, es un producto nuevo</option>' + 
@@ -411,6 +467,13 @@ export default {
     const id = document.getElementById('prod-id').value;
     const isEdit = !!id;
     
+    const enableStockOriginal = document.getElementById('prod-enable-stock-original').checked;
+    let stock_original = null;
+    if (enableStockOriginal) {
+      const val = document.getElementById('prod-stock-original').value;
+      stock_original = val !== '' ? val : document.getElementById('prod-stock').value;
+    }
+
     const payload = {
       codigo: document.getElementById('prod-codigo').value || undefined,
       nombre: document.getElementById('prod-nombre').value,
@@ -419,8 +482,14 @@ export default {
       precio_venta: document.getElementById('prod-precio').value,
       stock_actual: document.getElementById('prod-stock').value,
       stock_minimo: document.getElementById('prod-minimo').value,
+      stock_original: stock_original,
       descripcion: document.getElementById('prod-desc').value
     };
+
+    // If it's an edit and the checkbox is OFF, we should explicitly send an empty string or null to clear it
+    if (isEdit && !enableStockOriginal) {
+      payload.stock_original = '';
+    }
 
     if (!payload.nombre || !payload.precio_venta) {
       return app.showToast('Nombre y Precio son obligatorios', 'error');
@@ -440,7 +509,8 @@ export default {
             nombre_variante: payload.nombre,
             precio_venta: payload.precio_venta,
             stock_actual: payload.stock_actual,
-            stock_minimo: payload.stock_minimo
+            stock_minimo: payload.stock_minimo,
+            stock_original: payload.stock_original
           };
           await api.post('/variantes', varPayload);
           app.showToast('Variante agregada', 'success');
@@ -468,11 +538,26 @@ export default {
     }
   },
 
-  editVariant(id, currentName, currentStock, currentPrice) {
+  editVariant(id, currentName, currentStock, currentPrice, currentOriginal) {
     document.getElementById('edit-var-id').value = id;
     document.getElementById('edit-var-nombre').value = currentName;
     document.getElementById('edit-var-stock').value = currentStock;
     document.getElementById('edit-var-precio').value = currentPrice;
+    
+    const chk = document.getElementById('edit-var-enable-stock-original');
+    const cont = document.getElementById('edit-var-stock-original-container');
+    const input = document.getElementById('edit-var-stock-original');
+    
+    if (currentOriginal !== null && currentOriginal !== undefined) {
+      chk.checked = true;
+      cont.style.display = 'block';
+      input.value = currentOriginal;
+    } else {
+      chk.checked = false;
+      cont.style.display = 'none';
+      input.value = '';
+    }
+
     app.openModal('modal-edit-variant');
   },
 
@@ -484,11 +569,21 @@ export default {
 
     if (!nombre) return app.showToast('El nombre de la variante es requerido', 'warning');
 
+    const chk = document.getElementById('edit-var-enable-stock-original').checked;
+    let originalToSave = undefined;
+    if (chk) {
+      const val = document.getElementById('edit-var-stock-original').value;
+      originalToSave = val !== '' ? parseInt(val) : parseInt(stock);
+    } else {
+      originalToSave = '';
+    }
+
     try {
       await api.put(`/variantes/${id}`, {
         nombre_variante: nombre,
         stock_actual: parseInt(stock) || 0,
-        precio_venta: parseFloat(precio) || 0
+        precio_venta: parseFloat(precio) || 0,
+        stock_original: originalToSave
       });
       app.showToast('Variante actualizada correctamente', 'success');
       app.closeModal('modal-edit-variant');

@@ -242,6 +242,16 @@ export default {
               <input id="inv-edit-stock" type="number" min="0" class="form-control" style="width:100%" placeholder="0">
             </div>
           </div>
+          <div>
+            <label style="display:flex; align-items:center; gap:.5rem; font-size:.85rem; cursor:pointer; color:var(--text-muted)">
+              <input type="checkbox" id="inv-edit-enable-original" onchange="document.getElementById('inv-edit-original-container').style.display = this.checked ? 'block' : 'none'">
+              Habilitar Stock Original
+            </label>
+          </div>
+          <div id="inv-edit-original-container" style="display:none;">
+            <label style="font-size:.8rem; color:var(--text-gold); display:block; margin-bottom:.3rem">Stock Original</label>
+            <input id="inv-edit-original" type="number" min="0" class="form-control" style="width:50%" placeholder="Igual al actual">
+          </div>
         </div>
         <div style="padding:.75rem 1.25rem 1.25rem; display:flex; gap:.5rem; justify-content:flex-end;">
           <button class="btn btn-secondary" onclick="window.invCloseEditModal()">Cancelar</button>
@@ -600,6 +610,21 @@ export default {
     document.getElementById('inv-edit-stock').value       = variant
       ? (variant.stock_actual ?? 0)
       : (prod.stock_actual ?? 0);
+      
+    const originalValue = variant ? variant.stock_original : prod.stock_original;
+    const chk = document.getElementById('inv-edit-enable-original');
+    const container = document.getElementById('inv-edit-original-container');
+    const inputOriginal = document.getElementById('inv-edit-original');
+    
+    if (originalValue !== undefined && originalValue !== null) {
+      chk.checked = true;
+      container.style.display = 'block';
+      inputOriginal.value = originalValue;
+    } else {
+      chk.checked = false;
+      container.style.display = 'none';
+      inputOriginal.value = '';
+    }
 
     // Abrir modal de edición
     const em = document.getElementById('inv-edit-modal');
@@ -620,15 +645,25 @@ export default {
     if (isNaN(precio)) return app.showToast('Precio inválido', 'error');
     if (isNaN(stock))  return app.showToast('Stock inválido', 'error');
 
+    const chk = document.getElementById('inv-edit-enable-original').checked;
+    let originalToSave = undefined;
+    if (chk) {
+      const val = document.getElementById('inv-edit-original').value;
+      originalToSave = val !== '' ? parseInt(val) : stock;
+    } else {
+      originalToSave = '';
+    }
+
     try {
       if (variant) {
         // Con variante: actualizar nombre_variante, descripcion, precio y stock de la variante
         // El producto padre NO se toca
-        await api.put(`/variantes/${variant.id}`, {
+        await api.put(`/variantes/${variant.variant_id || variant.id}`, {
           nombre_variante: nombre,
           descripcion:     descripcion,
           precio_venta:    precio,
-          stock_actual:    stock
+          stock_actual:    stock,
+          stock_original:  originalToSave
         });
       } else {
         // Sin variante: actualizar directamente el producto
@@ -636,7 +671,8 @@ export default {
           nombre,
           descripcion,
           precio_venta: precio,
-          stock_actual: stock
+          stock_actual: stock,
+          stock_original: originalToSave
         });
       }
 

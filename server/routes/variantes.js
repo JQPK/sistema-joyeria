@@ -54,10 +54,14 @@ router.post('/', async (req, res, next) => {
 
     // Insert initial stock into current branch
     const sucursalId = req.body.sucursal_id || req.user.sucursal_id || 1;
+    let originalToSave = null;
+    if (req.body.stock_original !== undefined && req.body.stock_original !== null && req.body.stock_original !== '') {
+      originalToSave = parseInt(req.body.stock_original);
+    }
     await client.query(`
-      INSERT INTO inventario_variantes_sucursales (variante_id, sucursal_id, stock_actual, stock_minimo)
-      VALUES ($1, $2, $3, $4)
-    `, [newVarId, sucursalId, stock_actual || 0, stock_minimo || 1]);
+      INSERT INTO inventario_variantes_sucursales (variante_id, sucursal_id, stock_actual, stock_minimo, stock_original)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [newVarId, sucursalId, stock_actual || 0, stock_minimo || 1, originalToSave]);
 
     // Update parent product flag and recalculate stock for branch
     await client.query(`
@@ -136,17 +140,47 @@ router.put('/:id', async (req, res, next) => {
       await client.query(`UPDATE producto_variantes SET ${fields.join(', ')} WHERE id = $${paramIdx}`, values);
     }
 
-    // Update branch specific stock
-    if (req.body.stock_actual !== undefined || req.body.stock_minimo !== undefined) {
-      const newStock = req.body.stock_actual !== undefined ? parseInt(req.body.stock_actual) : oldStock;
-      const newMin = req.body.stock_minimo !== undefined ? parseInt(req.body.stock_minimo) : 1;
-      
-      await client.query(`
-        INSERT INTO inventario_variantes_sucursales (variante_id, sucursal_id, stock_actual, stock_minimo)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (variante_id, sucursal_id) 
-        DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo
-      `, [req.params.id, sucursalId, newStock, newMin]);
+    // Update branch specific stock and original stock
+    let updateBranchStock = false;
+    let newStock = oldStock;
+    let newMin = 1;
+    let newOriginal = null;
+    let originalIncluded = false;
+    
+    if (req.body.stock_actual !== undefined) {
+      newStock = parseInt(req.body.stock_actual);
+      updateBranchStock = true;
+    }
+    if (req.body.stock_minimo !== undefined) {
+      newMin = parseInt(req.body.stock_minimo);
+      updateBranchStock = true;
+    }
+    if (req.body.stock_original !== undefined) {
+      if (req.body.stock_original === null || req.body.stock_original === '') {
+        newOriginal = null;
+      } else {
+        newOriginal = parseInt(req.body.stock_original);
+      }
+      originalIncluded = true;
+      updateBranchStock = true;
+    }
+
+    if (updateBranchStock) {
+      if (originalIncluded) {
+        await client.query(`
+          INSERT INTO inventario_variantes_sucursales (variante_id, sucursal_id, stock_actual, stock_minimo, stock_original)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (variante_id, sucursal_id) 
+          DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo, stock_original = EXCLUDED.stock_original
+        `, [req.params.id, sucursalId, newStock, newMin, newOriginal]);
+      } else {
+        await client.query(`
+          INSERT INTO inventario_variantes_sucursales (variante_id, sucursal_id, stock_actual, stock_minimo)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (variante_id, sucursal_id) 
+          DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo
+        `, [req.params.id, sucursalId, newStock, newMin]);
+      }
       
       // Recalculate parent stock for this branch
       await client.query(`

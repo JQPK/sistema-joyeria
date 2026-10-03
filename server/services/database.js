@@ -19,6 +19,11 @@ async function initializeDatabase() {
     const sucursalesSql = fs.readFileSync(sucursalesPath, 'utf8');
     await db.query(sucursalesSql);
 
+    // Execute stock_original schema
+    const stockOriginalPath = path.join(__dirname, '../migrations/004_stock_original.sql');
+    const stockOriginalSql = fs.readFileSync(stockOriginalPath, 'utf8');
+    await db.query(stockOriginalSql);
+
     console.log('Database schema initialized.');
 
     // Read and execute seeds

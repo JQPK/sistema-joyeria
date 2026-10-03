@@ -24,10 +24,15 @@ router.get('/', async (req, res, next) => {
       ? `(SELECT COALESCE(MAX(stock_minimo), 1) FROM inventario_sucursales WHERE producto_id = p.id)`
       : `(SELECT COALESCE(stock_minimo, 1) FROM inventario_sucursales WHERE producto_id = p.id AND sucursal_id = $1)`;
 
+    let originalStockQuery = isTodas
+      ? `(SELECT SUM(stock_original) FROM inventario_sucursales WHERE producto_id = p.id)`
+      : `(SELECT stock_original FROM inventario_sucursales WHERE producto_id = p.id AND sucursal_id = $1)`;
+
     let query = `
       SELECT p.*, c.nombre as categoria_nombre, m.nombre as material_nombre,
              ${stockQuery} as stock_actual,
              ${minStockQuery} as stock_minimo,
+             ${originalStockQuery} as stock_original,
              (SELECT json_agg(json_build_object('sucursal_id', inv_all.sucursal_id, 'stock_actual', inv_all.stock_actual)) 
               FROM inventario_sucursales inv_all WHERE inv_all.producto_id = p.id) as stock_por_sucursal
       FROM productos p
@@ -78,11 +83,16 @@ router.get('/', async (req, res, next) => {
         ? `(SELECT COALESCE(MAX(stock_minimo), 1) FROM inventario_variantes_sucursales WHERE variante_id = v.id)`
         : `(SELECT COALESCE(stock_minimo, 1) FROM inventario_variantes_sucursales WHERE variante_id = v.id AND sucursal_id = $2)`;
 
+      let varOriginalStockQuery = isTodas
+        ? `(SELECT SUM(stock_original) FROM inventario_variantes_sucursales WHERE variante_id = v.id)`
+        : `(SELECT stock_original FROM inventario_variantes_sucursales WHERE variante_id = v.id AND sucursal_id = $2)`;
+
       const varParams = isTodas ? [prodIdsWithVariants] : [prodIdsWithVariants, sucursalId];
       const varRes = await db.query(`
         SELECT v.*, 
                ${varStockQuery} as stock_actual, 
                ${varMinStockQuery} as stock_minimo,
+               ${varOriginalStockQuery} as stock_original,
                (SELECT json_agg(json_build_object('sucursal_id', inv_all.sucursal_id, 'stock_actual', inv_all.stock_actual)) 
                 FROM inventario_variantes_sucursales inv_all WHERE inv_all.variante_id = v.id) as stock_por_sucursal
         FROM producto_variantes v
@@ -130,14 +140,18 @@ router.get('/search', async (req, res, next) => {
 router.get('/sku/:sku', async (req, res, next) => {
   try {
     const sku = req.params.sku;
+    const sucursalId = req.query.sucursal_id || req.user.sucursal_id || 1;
     
     // First check variants
     const varRes = await db.query(`
-      SELECT v.*, p.nombre as producto_nombre
+      SELECT v.*, p.nombre as producto_nombre,
+             COALESCE(inv.stock_actual, 0) as branch_stock,
+             inv.stock_original
       FROM producto_variantes v
       JOIN productos p ON v.producto_id = p.id
+      LEFT JOIN inventario_variantes_sucursales inv ON v.id = inv.variante_id AND inv.sucursal_id = $2
       WHERE v.sku ILIKE $1 AND v.activo = true AND p.activo = true
-    `, [sku]);
+    `, [sku, sucursalId]);
     
     if (varRes.rows.length > 0) {
       const v = varRes.rows[0];
@@ -150,7 +164,8 @@ router.get('/sku/:sku', async (req, res, next) => {
           nombre: `${v.producto_nombre} - ${v.nombre_variante}`,
           codigo: v.sku,
           precio_venta: v.precio_venta || (await db.query('SELECT precio_venta FROM productos WHERE id=$1', [v.producto_id])).rows[0].precio_venta,
-          stock_actual: v.stock_actual,
+          stock_actual: v.branch_stock,
+          stock_original: v.stock_original,
           descuento_porcentaje: 0 // Simplification
         }
       });
@@ -158,14 +173,21 @@ router.get('/sku/:sku', async (req, res, next) => {
 
     // Then check base products
     const prodRes = await db.query(`
-      SELECT * FROM productos WHERE codigo ILIKE $1 AND activo = true
-    `, [sku]);
+      SELECT p.*,
+             COALESCE(inv.stock_actual, 0) as branch_stock,
+             inv.stock_original
+      FROM productos p 
+      LEFT JOIN inventario_sucursales inv ON p.id = inv.producto_id AND inv.sucursal_id = $2
+      WHERE p.codigo ILIKE $1 AND p.activo = true
+    `, [sku, sucursalId]);
 
     if (prodRes.rows.length > 0) {
+      const p = prodRes.rows[0];
+      p.stock_actual = p.branch_stock; // replace global stock with branch stock
       return res.json({
         success: true,
         type: 'product',
-        data: prodRes.rows[0]
+        data: p
       });
     }
 
@@ -182,7 +204,8 @@ router.get('/:id', async (req, res, next) => {
     const result = await db.query(`
       SELECT p.*, c.nombre as categoria_nombre, m.nombre as material_nombre,
              COALESCE(inv.stock_actual, 0) as stock_actual,
-             COALESCE(inv.stock_minimo, 1) as stock_minimo
+             COALESCE(inv.stock_minimo, 1) as stock_minimo,
+             inv.stock_original
       FROM productos p
       LEFT JOIN categorias c ON p.categoria_id = c.id
       LEFT JOIN materiales m ON p.material_id = m.id
@@ -197,7 +220,7 @@ router.get('/:id', async (req, res, next) => {
     // Fetch variants
     if (product.tiene_variantes) {
       const variantsRes = await db.query(`
-        SELECT v.*, COALESCE(inv.stock_actual, 0) as stock_actual, COALESCE(inv.stock_minimo, 1) as stock_minimo
+        SELECT v.*, COALESCE(inv.stock_actual, 0) as stock_actual, COALESCE(inv.stock_minimo, 1) as stock_minimo, inv.stock_original
         FROM producto_variantes v
         LEFT JOIN inventario_variantes_sucursales inv ON v.id = inv.variante_id AND inv.sucursal_id = $2
         WHERE v.producto_id = $1 AND v.activo = true 
@@ -250,6 +273,24 @@ router.post('/', async (req, res, next) => {
       const newCodigo = `${prefix}-${String(newId).padStart(4, '0')}`;
       await client.query('UPDATE productos SET codigo = $1 WHERE id = $2', [newCodigo, newId]);
     }
+
+    // Guardar stock inicial e stock original por sucursal
+    const sucursalId = req.body.sucursal_id || req.user.sucursal_id || 1;
+    let originalToSave = null;
+    if (req.body.stock_original !== undefined && req.body.stock_original !== null && req.body.stock_original !== '') {
+      originalToSave = parseInt(req.body.stock_original);
+    }
+    
+    await client.query(`
+      INSERT INTO inventario_sucursales (sucursal_id, producto_id, stock_actual, stock_minimo, stock_original)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [
+      sucursalId, 
+      newId, 
+      stock_actual || 0, 
+      stock_minimo || 1, 
+      originalToSave
+    ]);
 
     await client.query('COMMIT');
     
@@ -315,17 +356,47 @@ router.put('/:id', async (req, res, next) => {
       await client.query(`UPDATE productos SET ${fields.join(', ')} WHERE id = $${paramIdx}`, values);
     }
 
-    // Update branch specific stock
-    if (req.body.stock_actual !== undefined || req.body.stock_minimo !== undefined) {
-      const newStock = req.body.stock_actual !== undefined ? parseInt(req.body.stock_actual) : currentStock;
-      const newMin = req.body.stock_minimo !== undefined ? parseInt(req.body.stock_minimo) : 1;
-      
-      await client.query(`
-        INSERT INTO inventario_sucursales (producto_id, sucursal_id, stock_actual, stock_minimo)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (producto_id, sucursal_id) 
-        DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo
-      `, [id, sucursalId, newStock, newMin]);
+    // Update branch specific stock and original stock
+    let updateBranchStock = false;
+    let newStock = currentStock;
+    let newMin = 1;
+    let newOriginal = null;
+    let originalIncluded = false;
+    
+    if (req.body.stock_actual !== undefined) {
+      newStock = parseInt(req.body.stock_actual);
+      updateBranchStock = true;
+    }
+    if (req.body.stock_minimo !== undefined) {
+      newMin = parseInt(req.body.stock_minimo);
+      updateBranchStock = true;
+    }
+    if (req.body.stock_original !== undefined) {
+      if (req.body.stock_original === null || req.body.stock_original === '') {
+        newOriginal = null;
+      } else {
+        newOriginal = parseInt(req.body.stock_original);
+      }
+      originalIncluded = true;
+      updateBranchStock = true;
+    }
+
+    if (updateBranchStock) {
+      if (originalIncluded) {
+        await client.query(`
+          INSERT INTO inventario_sucursales (producto_id, sucursal_id, stock_actual, stock_minimo, stock_original)
+          VALUES ($1, $2, $3, $4, $5)
+          ON CONFLICT (producto_id, sucursal_id) 
+          DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo, stock_original = EXCLUDED.stock_original
+        `, [id, sucursalId, newStock, newMin, newOriginal]);
+      } else {
+        await client.query(`
+          INSERT INTO inventario_sucursales (producto_id, sucursal_id, stock_actual, stock_minimo)
+          VALUES ($1, $2, $3, $4)
+          ON CONFLICT (producto_id, sucursal_id) 
+          DO UPDATE SET stock_actual = EXCLUDED.stock_actual, stock_minimo = EXCLUDED.stock_minimo
+        `, [id, sucursalId, newStock, newMin]);
+      }
 
       // Log stock update if changed manually
       if (req.body.stock_actual !== undefined && currentStock !== newStock && currentProd.rows.length > 0) {
