@@ -491,7 +491,8 @@ export default {
                 sku: res.data.codigo,
                 nombre_variante: res.data.nombre,
                 precio_venta: res.data.precio_venta,
-                stock_actual: res.data.stock_actual
+                stock_actual: res.data.stock_actual,
+                stock_original: res.data.stock_original
               };
             }
           }
@@ -546,6 +547,25 @@ export default {
     if (stockActual <= 0)           { stockColor = '#f87171'; stockLabel = 'Sin stock'; }
     else if (stockActual <= stockMin) { stockColor = '#fbbf24'; stockLabel = 'Stock bajo'; }
 
+    const stockOriginal = variantData ? variantData.stock_original : prod.stock_original;
+    let originalHtml = '';
+    if (stockOriginal !== null && stockOriginal !== undefined) {
+      const huecos = Math.max(0, stockOriginal - stockActual); // Just in case stockActual > stockOriginal somehow
+      originalHtml = `
+      <!-- Stock Original y Huecos -->
+      <div style="background:var(--bg-secondary); border-radius:12px; padding:1rem; margin-bottom:1rem; border: 1px solid rgba(251,191,36,.3)">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem">
+          <span style="font-size:.85rem; color:var(--text-gold)">Stock Original</span>
+          <span style="font-weight:700; font-size:1.1rem; color:var(--text-primary)">${stockOriginal}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:.85rem; color:var(--text-muted)">Vendidos (Huecos)</span>
+          <span style="font-weight:700; font-size:1.1rem; color:${huecos > 0 ? '#60a5fa' : 'var(--text-muted)'}">${huecos}</span>
+        </div>
+      </div>
+      `;
+    }
+
     document.getElementById('inv-scan-content').innerHTML = `
       <!-- Nombre y SKU -->
       <div style="margin-bottom:1rem">
@@ -566,6 +586,8 @@ export default {
         </div>
         <div style="font-size:.75rem; color:var(--text-muted); margin-top:.35rem">Mínimo requerido: ${stockMin} unidades</div>
       </div>
+
+      ${originalHtml}
 
       <!-- Ficha de detalles -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem">
