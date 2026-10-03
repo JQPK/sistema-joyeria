@@ -305,6 +305,7 @@ export default {
     // --- Calcular cierre de caja ---
     const totalIngresos  = this.movimientos.filter(m => m.tipo === 'ingreso').reduce((s, m) => s + parseFloat(m.monto), 0);
     const totalEgresos   = this.movimientos.filter(m => m.tipo === 'egreso').reduce((s, m) => s + parseFloat(m.monto), 0);
+    const egresosManuales = this.movimientos.filter(m => m.tipo === 'egreso' && !(m.concepto || '').startsWith('Anulación')).reduce((s, m) => s + parseFloat(m.monto), 0);
     const saldoNeto      = totalIngresos - totalEgresos;
 
     // Ingresos por método de pago
@@ -314,7 +315,7 @@ export default {
       if (v.metodo_pago === 'efectivo') ingEfectivo += parseFloat(v.total);
       else if (v.metodo_pago === 'transferencia' || v.metodo_pago === 'tarjeta') ingYape += parseFloat(v.total);
     });
-    const efectivoNeto = Math.max(0, ingEfectivo - totalEgresos);
+    const efectivoNeto = ingEfectivo - egresosManuales;
 
     // --- Filas del cierre de caja (se agregan al final) ---
     rows.push({});   // fila vacía separadora

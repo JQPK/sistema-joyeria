@@ -50,7 +50,8 @@ router.get('/resumen', async (req, res, next) => {
     let query = `
       SELECT
         COALESCE(SUM(CASE WHEN tipo = 'ingreso' THEN monto ELSE 0 END), 0) as total_ingresos,
-        COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto ELSE 0 END), 0) as total_egresos
+        COALESCE(SUM(CASE WHEN tipo = 'egreso' THEN monto ELSE 0 END), 0) as total_egresos,
+        COALESCE(SUM(CASE WHEN tipo = 'egreso' AND concepto NOT LIKE 'Anulación %' THEN monto ELSE 0 END), 0) as egresos_manuales
       FROM movimientos_caja WHERE 1=1
     `;
     const params = [];
@@ -109,8 +110,10 @@ router.get('/resumen', async (req, res, next) => {
     data.ingresos_transferencia = parseFloat(pagoData.ingresos_transferencia || 0);
 
     // Los egresos manuales (Pasaje, Menú, etc.) siempre se pagan en efectivo.
-    // Se descuentan del saldo de Efectivo.
-    data.ingresos_efectivo = Math.max(0, data.ingresos_efectivo - parseFloat(data.total_egresos));
+    // Se descuentan del saldo de Efectivo. Los egresos automáticos por "Anulación"
+    // NO se restan aquí, porque la venta anulada ya queda excluida de las ventas completadas
+    // (restarlos de nuevo duplicaría el descuento).
+    data.ingresos_efectivo = data.ingresos_efectivo - parseFloat(data.egresos_manuales || 0);
 
     res.json({ success: true, data });
   } catch (err) {
