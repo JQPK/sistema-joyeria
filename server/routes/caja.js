@@ -136,17 +136,25 @@ router.get('/resumen', async (req, res, next) => {
 // POST create
 router.post('/', async (req, res, next) => {
   try {
-    const { tipo, concepto, monto, notas, sucursal_id } = req.body;
+    const { tipo, concepto, monto, notas, sucursal_id, fecha } = req.body;
     if (!monto || monto <= 0) {
       return res.status(400).json({ success: false, message: 'El monto debe ser mayor a 0' });
     }
 
     const branchId = sucursal_id || req.user.sucursal_id || 1;
 
-    const result = await db.query(`
-      INSERT INTO movimientos_caja (tipo, concepto, monto, notas, usuario_id, sucursal_id)
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
-    `, [tipo, concepto, monto, notas || '', req.user.id, branchId]);
+    let result;
+    if (fecha && req.user.rol === 'admin') {
+      result = await db.query(`
+        INSERT INTO movimientos_caja (tipo, concepto, monto, notas, usuario_id, sucursal_id, fecha)
+        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
+      `, [tipo, concepto, monto, notas || '', req.user.id, branchId, fecha]);
+    } else {
+      result = await db.query(`
+        INSERT INTO movimientos_caja (tipo, concepto, monto, notas, usuario_id, sucursal_id)
+        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
+      `, [tipo, concepto, monto, notas || '', req.user.id, branchId]);
+    }
 
     const io = req.app.get('io');
     if (io) io.emit('caja:updated');

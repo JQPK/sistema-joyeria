@@ -255,6 +255,7 @@ window.app = {
           const module = await import(`./pages/${pageId}.js`);
           this.pages[pageId] = module.default;
           await this.pages[pageId].init(pageEl);
+          this.setupUserUI(); // Applica RBAC a la nueva vista cargada
         } catch (err) {
           console.warn(`No module found for page: ${pageId} or error loading`, err);
           pageEl.innerHTML = `<div class="empty-state">

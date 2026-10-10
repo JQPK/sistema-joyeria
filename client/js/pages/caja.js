@@ -110,6 +110,12 @@ export default {
             <form id="caja-form">
               <input type="hidden" id="caja-tipo" value="egreso">
               
+              <div class="form-group admin-only">
+                <label class="form-label">Fecha del Egreso (Solo Admin)</label>
+                <input type="datetime-local" id="caja-fecha-egreso" class="form-control" title="Si se deja vacío, se usará la fecha actual">
+                <small class="text-muted" style="font-size: 0.75rem;">Útil para registrar egresos pasados. Si se deja vacío usa el día de hoy.</small>
+              </div>
+
               <div class="form-group">
                 <label class="form-label">Concepto *</label>
                 <input type="text" id="caja-concepto" class="form-control" required placeholder="Ej: Pago de servicios, limpieza...">
@@ -203,11 +209,14 @@ export default {
   },
 
   async save() {
+    const fechaVal = document.getElementById('caja-fecha-egreso') ? document.getElementById('caja-fecha-egreso').value : null;
+
     const payload = {
       tipo: 'egreso',
       concepto: document.getElementById('caja-concepto').value,
       monto: document.getElementById('caja-monto').value,
-      notas: document.getElementById('caja-notas').value
+      notas: document.getElementById('caja-notas').value,
+      fecha: fechaVal || null
     };
 
     if (!payload.concepto || !payload.monto) {
