@@ -24,6 +24,11 @@ async function initializeDatabase() {
     const stockOriginalSql = fs.readFileSync(stockOriginalPath, 'utf8');
     await db.query(stockOriginalSql);
 
+    // Execute pago_cruzado schema
+    const pagoCruzadoPath = path.join(__dirname, '../migrations/005_pago_cruzado.sql');
+    const pagoCruzadoSql = fs.readFileSync(pagoCruzadoPath, 'utf8');
+    await db.query(pagoCruzadoSql);
+
     console.log('Database schema initialized.');
 
     // Read and execute seeds

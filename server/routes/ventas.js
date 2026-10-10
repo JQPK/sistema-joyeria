@@ -204,12 +204,13 @@ router.post('/', async (req, res, next) => {
     // 3. Insert sale
     const ventaRes = await client.query(`
       INSERT INTO ventas (numero_comprobante, tipo_comprobante, cliente_id, subtotal, descuento, total,
-        metodo_pago, monto_pagado, cambio, notas, usuario_id, sucursal_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id
+        metodo_pago, monto_pagado, cambio, notas, usuario_id, sucursal_id, monto_efectivo, monto_yape)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING id
     `, [
       numero, data.tipo_comprobante || 'boleta', data.cliente_id || null, data.subtotal, 
       data.descuento || 0, data.total, data.metodo_pago || 'efectivo', 
-      data.monto_pagado || data.total, data.cambio || 0, data.notas || '', data.usuario_id, data.sucursal_id
+      data.monto_pagado || data.total, data.cambio || 0, data.notas || '', data.usuario_id, data.sucursal_id,
+      data.monto_efectivo || null, data.monto_yape || null
     ]);
     const ventaId = ventaRes.rows[0].id;
 

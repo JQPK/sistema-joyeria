@@ -78,8 +78,20 @@ router.get('/resumen', async (req, res, next) => {
     // Los ingresos de venta tienen concepto "Venta BXXX-NNNN" o "Venta FXXX-NNNN"
     let pagoQuery = `
       SELECT
-        COALESCE(SUM(CASE WHEN v.metodo_pago = 'efectivo' THEN v.total ELSE 0 END), 0)       as ingresos_efectivo,
-        COALESCE(SUM(CASE WHEN v.metodo_pago IN ('transferencia', 'tarjeta') THEN v.total ELSE 0 END), 0) as ingresos_yape,
+        COALESCE(SUM(
+          CASE 
+            WHEN v.metodo_pago = 'efectivo' THEN v.total
+            WHEN v.metodo_pago = 'mixto'    THEN COALESCE(v.monto_efectivo, 0)
+            ELSE 0 
+          END
+        ), 0) as ingresos_efectivo,
+        COALESCE(SUM(
+          CASE 
+            WHEN v.metodo_pago IN ('transferencia', 'tarjeta') THEN v.total
+            WHEN v.metodo_pago = 'mixto'                       THEN COALESCE(v.monto_yape, 0)
+            ELSE 0 
+          END
+        ), 0) as ingresos_yape,
         COALESCE(SUM(CASE WHEN v.metodo_pago = 'tarjeta' THEN v.total ELSE 0 END), 0)        as ingresos_tarjeta,
         COALESCE(SUM(CASE WHEN v.metodo_pago = 'transferencia' THEN v.total ELSE 0 END), 0)  as ingresos_transferencia
       FROM ventas v

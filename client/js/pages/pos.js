@@ -96,15 +96,41 @@ export default {
                   <option value="factura">Factura</option>
                 </select>
               </div>
-              <div class="form-group flex-1">
-                <label class="form-label">Método de Pago</label>
-                <select id="checkout-pago" class="form-control">
-                  <option value="efectivo">Efectivo</option>
-                  <option value="tarjeta">Tarjeta (POS)</option>
-                  <option value="transferencia">Transferencia / Yape</option>
-                </select>
-              </div>
             </div>
+
+            <!-- Toggle pago cruzado -->
+            <div class="form-group" style="margin-top:.75rem">
+              <label style="display:flex; align-items:center; gap:.6rem; cursor:pointer; user-select:none">
+                <input type="checkbox" id="checkout-pago-cruzado" onchange="window.posTogglePagoCruzado()" style="width:18px;height:18px;cursor:pointer">
+                <span class="form-label" style="margin:0; font-size:.9rem">Pago cruzado <span style="color:var(--text-muted)">(Efectivo + Yape)</span></span>
+              </label>
+            </div>
+
+            <!-- Método simple -->
+            <div id="checkout-metodo-simple">
+              <label class="form-label">Método de Pago</label>
+              <select id="checkout-pago" class="form-control">
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta (POS)</option>
+                <option value="transferencia">Transferencia / Yape</option>
+              </select>
+            </div>
+
+            <!-- Desglose pago cruzado -->
+            <div id="checkout-metodo-cruzado" style="display:none">
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem">
+                <div class="form-group">
+                  <label class="form-label">💵 Efectivo (S/)</label>
+                  <input type="number" id="checkout-efectivo" class="form-control" min="0" step="0.01" placeholder="0.00" oninput="window.posUpdatePagoCruzado()">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">📱 Yape / Transfer. (S/)</label>
+                  <input type="number" id="checkout-yape" class="form-control" min="0" step="0.01" placeholder="0.00" oninput="window.posUpdatePagoCruzado()">
+                </div>
+              </div>
+              <div id="checkout-cruzado-status" style="font-size:.85rem; font-weight:600; text-align:right; margin-top:.25rem; min-height:1.2rem"></div>
+            </div>
+
             <div class="form-group" style="margin-top: 1rem;">
               <label class="form-label">Descuento Global Adicional (S/)</label>
               <input type="number" id="checkout-descuento-manual" class="form-control" placeholder="Ej. 6.00" min="0" step="0.10" value="0.00" oninput="window.posUpdateTotalCheckout()">
@@ -112,7 +138,7 @@ export default {
             <div class="card" style="background: var(--bg-secondary); margin-top: 1rem">
               <div class="card-body flex justify-between items-center">
                 <span style="font-size: 1.2rem; font-weight: 600">Total a Cobrar:</span>
-                <span id="checkout-total-display" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-gold-dark)">S/ 0.00</span>
+                <span id="checkout-total-display" style="font-size: 1.5rem; font-weight: 700; color: var(--accent-gold-dark)" data-total="0">S/ 0.00</span>
               </div>
             </div>
           </div>
@@ -267,7 +293,18 @@ export default {
     // Checkout
     document.getElementById('btn-checkout').addEventListener('click', () => {
       document.getElementById('checkout-descuento-manual').value = '0.00';
-      document.getElementById('checkout-total-display').textContent = `S/ ${this.getTotal().toFixed(2)}`;
+      const total = this.getTotal();
+      const displayEl = document.getElementById('checkout-total-display');
+      displayEl.textContent = `S/ ${total.toFixed(2)}`;
+      displayEl.dataset.total = total.toFixed(2);
+      // Reset pago cruzado state
+      document.getElementById('checkout-pago-cruzado').checked = false;
+      document.getElementById('checkout-metodo-simple').style.display  = 'block';
+      document.getElementById('checkout-metodo-cruzado').style.display = 'none';
+      document.getElementById('checkout-efectivo').value = '';
+      document.getElementById('checkout-yape').value = '';
+      document.getElementById('checkout-cruzado-status').textContent = '';
+      document.getElementById('btn-confirm-checkout').disabled = false;
       app.openModal('modal-checkout');
     });
 
@@ -585,11 +622,14 @@ export default {
       // Let's pass the cart items directly.
       const descManualInput = document.getElementById('checkout-descuento-manual');
       const descManual = parseFloat(descManualInput.value) || 0;
+      const esCruzado = document.getElementById('checkout-pago-cruzado').checked;
       
       const payload = {
         cliente_id: document.getElementById('checkout-cliente').value || null,
         tipo_comprobante: document.getElementById('checkout-tipo').value,
-        metodo_pago: document.getElementById('checkout-pago').value,
+        metodo_pago: esCruzado ? 'mixto' : document.getElementById('checkout-pago').value,
+        monto_efectivo: esCruzado ? (parseFloat(document.getElementById('checkout-efectivo').value) || 0) : null,
+        monto_yape:     esCruzado ? (parseFloat(document.getElementById('checkout-yape').value)     || 0) : null,
         subtotal: this.getSubtotal(),
         descuento: this.getDescuentoTotal() + descManual,
         total: Math.max(0, this.getTotal() - descManual),
@@ -686,7 +726,13 @@ export default {
     const descManualInput = document.getElementById('checkout-descuento-manual');
     const descManual = parseFloat(descManualInput.value) || 0;
     const finalTotal = Math.max(0, this.getTotal() - descManual);
-    document.getElementById('checkout-total-display').textContent = `S/ ${finalTotal.toFixed(2)}`;
+    const displayEl = document.getElementById('checkout-total-display');
+    displayEl.textContent = `S/ ${finalTotal.toFixed(2)}`;
+    displayEl.dataset.total = finalTotal.toFixed(2);
+    // Re-validate cruzado if active
+    if (document.getElementById('checkout-pago-cruzado').checked) {
+      window.posUpdatePagoCruzado();
+    }
   },
 
   newSale() {
@@ -764,5 +810,42 @@ export default {
     window.posUpdateQty = this.updateQuantity.bind(this);
     window.posUpdateTotalCheckout = this.updateTotalCheckout.bind(this);
     window.posNewSale = this.newSale.bind(this);
+
+    window.posTogglePagoCruzado = () => {
+      const activo = document.getElementById('checkout-pago-cruzado').checked;
+      document.getElementById('checkout-metodo-simple').style.display  = activo ? 'none'  : 'block';
+      document.getElementById('checkout-metodo-cruzado').style.display = activo ? 'block' : 'none';
+      if (activo) {
+        document.getElementById('checkout-efectivo').value = '';
+        document.getElementById('checkout-yape').value     = '';
+        document.getElementById('checkout-cruzado-status').textContent = '';
+        document.getElementById('btn-confirm-checkout').disabled = true;
+      } else {
+        document.getElementById('checkout-cruzado-status').textContent = '';
+        document.getElementById('btn-confirm-checkout').disabled = false;
+      }
+    };
+
+    window.posUpdatePagoCruzado = () => {
+      const totalEl  = document.getElementById('checkout-total-display');
+      const total    = parseFloat(totalEl.dataset.total) || parseFloat(this.getTotal());
+      const efectivo = parseFloat(document.getElementById('checkout-efectivo').value) || 0;
+      const yape     = parseFloat(document.getElementById('checkout-yape').value)     || 0;
+      const suma     = parseFloat((efectivo + yape).toFixed(2));
+      const status   = document.getElementById('checkout-cruzado-status');
+      const btnOk    = document.getElementById('btn-confirm-checkout');
+
+      if (suma > total) {
+        status.innerHTML = `<span style="color:#f87171">⚠️ Excede el total: S/ ${suma.toFixed(2)} / S/ ${total.toFixed(2)}</span>`;
+        btnOk.disabled = true;
+      } else if (Math.abs(suma - total) > 0.009) {
+        const faltante = (total - suma).toFixed(2);
+        status.innerHTML = `<span style="color:#fbbf24">❌ Faltan: S/ ${faltante}</span>`;
+        btnOk.disabled = true;
+      } else {
+        status.innerHTML = `<span style="color:#4ade80">✅ Correcto: S/ ${suma.toFixed(2)}</span>`;
+        btnOk.disabled = false;
+      }
+    };
   }
 };
