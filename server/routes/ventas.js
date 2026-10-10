@@ -436,6 +436,11 @@ router.get('/:id/ticket', async (req, res, next) => {
             <tr><td>Subtotal:</td><td class="text-right">S/ ${parseFloat(venta.subtotal).toFixed(2)}</td></tr>
             ${venta.descuento > 0 ? `<tr><td>Desc:</td><td class="text-right">- S/ ${parseFloat(venta.descuento).toFixed(2)}</td></tr>` : ''}
             <tr class="bold"><td>Total:</td><td class="text-right">S/ ${parseFloat(venta.total).toFixed(2)}</td></tr>
+            ${venta.metodo_pago === 'mixto' ? `
+            <tr><td colspan="2" style="padding-top:4px;"></td></tr>
+            <tr style="font-size:0.9em; color:#555"><td>Efctv:</td><td class="text-right">S/ ${parseFloat(venta.monto_efectivo || 0).toFixed(2)}</td></tr>
+            <tr style="font-size:0.9em; color:#555"><td>Yape:</td><td class="text-right">S/ ${parseFloat(venta.monto_yape || 0).toFixed(2)}</td></tr>
+            ` : ''}
           </table>
           <div class="text-center mb" style="font-size: 0.9em;">
             ${config.mensaje_ticket || '¡Gracias por su compra!'}
@@ -555,6 +560,15 @@ router.get('/:id/pdf', async (req, res, next) => {
     doc.font('Helvetica-Bold');
     doc.text('Total:', 100, doc.y, { continued: true });
     doc.text(total, { align: 'right' });
+    
+    if (venta.metodo_pago === 'mixto') {
+      doc.moveDown(0.5);
+      doc.font('Helvetica').fontSize(9);
+      doc.text('Efctv:', 100, doc.y, { continued: true });
+      doc.text(`S/ ${parseFloat(venta.monto_efectivo || 0).toFixed(2)}`, { align: 'right' });
+      doc.text('Yape:', 100, doc.y, { continued: true });
+      doc.text(`S/ ${parseFloat(venta.monto_yape || 0).toFixed(2)}`, { align: 'right' });
+    }
     
     doc.moveDown(2);
     doc.font('Helvetica').fontSize(9).text(config.mensaje_ticket || '¡Gracias por su compra!', { align: 'center' });
