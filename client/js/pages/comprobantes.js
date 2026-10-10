@@ -201,6 +201,16 @@ export default {
                 <span class="text-muted">Método de pago:</span>
                 <span class="badge" style="${_pagoColor(v.metodo_pago)}">${_pagoLabel(v.metodo_pago)}</span>
               </div>
+              ${v.metodo_pago === 'mixto' ? `
+              <div class="flex justify-between" style="margin-bottom:0.25rem; font-size:0.85rem">
+                <span class="text-muted" style="padding-left:1rem">└ Efectivo:</span>
+                <span class="fw-bold text-muted">S/ ${parseFloat(v.monto_efectivo || 0).toFixed(2)}</span>
+              </div>
+              <div class="flex justify-between" style="margin-bottom:0.5rem; font-size:0.85rem">
+                <span class="text-muted" style="padding-left:1rem">└ Yape:</span>
+                <span class="fw-bold text-muted">S/ ${parseFloat(v.monto_yape || 0).toFixed(2)}</span>
+              </div>
+              ` : ''}
               <div class="flex justify-between">
                 <span class="text-muted">Estado:</span> 
                 <span class="badge ${v.estado === 'completada' ? 'badge-success' : 'badge-danger'}">${v.estado}</span>
