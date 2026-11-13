@@ -1,7 +1,7 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const http = require('http');
-const path = require('path');
 const cors = require('cors');
 const { Server } = require('socket.io');
 
@@ -46,6 +46,7 @@ const actividadRoutes = require('./routes/actividad');
 const licenciasRoutes = require('./routes/licencias');
 const variantesRoutes = require('./routes/variantes');
 const sucursalesRoutes = require('./routes/sucursales');
+const opticaRoutes = require('./routes/optica');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/productos', productosRoutes);
@@ -61,6 +62,7 @@ app.use('/api/actividad', actividadRoutes);
 app.use('/api/licencias', licenciasRoutes);
 app.use('/api/variantes', variantesRoutes);
 app.use('/api/sucursales', sucursalesRoutes);
+app.use('/api/optica', opticaRoutes);
 
 // Handle SPA routing
 app.get('*', (req, res) => {

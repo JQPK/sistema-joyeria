@@ -29,6 +29,22 @@ async function initializeDatabase() {
     const pagoCruzadoSql = fs.readFileSync(pagoCruzadoPath, 'utf8');
     await db.query(pagoCruzadoSql);
 
+    // Execute Power BI analytical views
+    const biViewsPath = path.join(__dirname, '../migrations/006_bi_views.sql');
+    if (fs.existsSync(biViewsPath)) {
+      const biViewsSql = fs.readFileSync(biViewsPath, 'utf8');
+      await db.query(biViewsSql);
+      console.log('Power BI analytical views initialized.');
+    }
+
+    // Execute Óptica module schema
+    const opticaPath = path.join(__dirname, '../migrations/007_optica_module.sql');
+    if (fs.existsSync(opticaPath)) {
+      const opticaSql = fs.readFileSync(opticaPath, 'utf8');
+      await db.query(opticaSql);
+      console.log('Óptica module schema initialized.');
+    }
+
     console.log('Database schema initialized.');
 
     // Read and execute seeds
