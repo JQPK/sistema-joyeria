@@ -385,7 +385,7 @@ export default {
               <td>${v.stock_actual}</td>
               <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
               <td class="text-right admin-only" style="${isAdmin ? '' : 'display:none'}">
-                <button class="btn btn-secondary btn-sm" onclick="import('../kardexModal.js').then(m => m.kardexModal.abrir(${p.id}, ${v.id}))" title="Ver Kárdex Físico">
+                <button class="btn btn-secondary btn-sm" onclick="window.abrirKardexProducto(${p.id}, ${v.id})" title="Ver Kárdex Físico">
                   📜 Kárdex
                 </button>
               </td>
@@ -402,7 +402,7 @@ export default {
             <td>${p.stock_actual}</td>
             <td>S/ ${parseFloat(p.precio_venta).toFixed(2)}</td>
             <td class="text-right admin-only" style="${isAdmin ? '' : 'display:none'}">
-              <button class="btn btn-secondary btn-sm" onclick="import('../kardexModal.js').then(m => m.kardexModal.abrir(${p.id}, null))" title="Ver Kárdex Físico">
+              <button class="btn btn-secondary btn-sm" onclick="window.abrirKardexProducto(${p.id}, null)" title="Ver Kárdex Físico">
                 📜 Kárdex
               </button>
             </td>
@@ -813,7 +813,7 @@ export default {
     window.invAbrirKardex     = () => {
       if (!this._currentProd) return;
       const varId = this._currentVariant ? this._currentVariant.id : null;
-      import('../kardexModal.js').then(m => m.kardexModal.abrir(this._currentProd.id, varId));
+      window.abrirKardexProducto(this._currentProd.id, varId);
     };
     window.invCloseModal      = () => {
       const m = document.getElementById('inv-scan-modal');

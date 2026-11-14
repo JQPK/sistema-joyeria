@@ -31,6 +31,11 @@ io.on('connection', (socket) => {
 // Serve static files from client folder
 app.use(express.static(path.join(__dirname, '../client')));
 
+// Alias para evitar errores de rutas relativas desde inline onclick handlers
+app.get('/kardexModal.js', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/js/kardexModal.js'));
+});
+
 // Mount routes
 const authRoutes = require('./routes/auth');
 const productosRoutes = require('./routes/productos');

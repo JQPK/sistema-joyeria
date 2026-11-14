@@ -22,7 +22,8 @@ const auth = (req, res, next) => {
 };
 
 const adminOnly = (req, res, next) => {
-  if (req.user && req.user.rol === 'admin') {
+  const rol = req.user?.rol ? String(req.user.rol).toLowerCase() : '';
+  if (rol === 'admin' || rol === 'administrador') {
     next();
   } else {
     res.status(403).json({ success: false, message: 'Admin access required' });

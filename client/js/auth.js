@@ -51,6 +51,8 @@ export const auth = {
 
   isAdmin() {
     const user = this.getUser();
-    return user && user.rol === 'admin';
+    if (!user || !user.rol) return false;
+    const r = String(user.rol).toLowerCase();
+    return r === 'admin' || r === 'administrador';
   }
 };

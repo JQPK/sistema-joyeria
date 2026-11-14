@@ -1,5 +1,9 @@
 import { auth } from './auth.js';
 import { api } from './api.js';
+import { kardexModal } from './kardexModal.js';
+
+window.kardexModal = kardexModal;
+window.abrirKardexProducto = (prodId, varId) => kardexModal.abrir(prodId, varId);
 
 // ── Helpers de fecha/hora siempre en zona Lima ───────────────────────────────
 const TZ = 'America/Lima';

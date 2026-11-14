@@ -28,11 +28,16 @@ export const kardexModal = {
   },
 
   ensureModalExists() {
-    if (document.getElementById('modal-kardex-producto')) return;
+    let modalEl = document.getElementById('modal-kardex-producto');
+    if (modalEl) {
+      modalEl.style.cssText = 'z-index: 10005 !important;';
+      return;
+    }
 
-    const modalEl = document.createElement('div');
+    modalEl = document.createElement('div');
     modalEl.id = 'modal-kardex-producto';
     modalEl.className = 'modal-overlay';
+    modalEl.style.cssText = 'z-index: 10005 !important;';
     modalEl.innerHTML = `
       <div class="modal" style="max-width: 980px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
         <div class="modal-header flex justify-between items-center" style="border-bottom: 1px solid var(--bg-secondary); padding: 1rem 1.25rem;">
@@ -55,7 +60,7 @@ export const kardexModal = {
               <small class="text-muted" id="kardex-modal-prod-detalles">Historial de entradas, salidas y existencias físicas</small>
             </div>
           </div>
-          <button class="btn-icon btn-secondary" onclick="app.closeModal('modal-kardex-producto')">✕</button>
+          <button class="btn-icon btn-secondary" onclick="window.app.closeModal('modal-kardex-producto')">✕</button>
         </div>
 
         <div class="modal-body" style="padding: 1.25rem; overflow-y: auto; flex: 1;">
@@ -152,7 +157,7 @@ export const kardexModal = {
             </svg>
             Exportar Kárdex (Excel)
           </button>
-          <button class="btn btn-primary" onclick="app.closeModal('modal-kardex-producto')">Cerrar</button>
+          <button class="btn btn-primary" onclick="window.app.closeModal('modal-kardex-producto')">Cerrar</button>
         </div>
       </div>
     `;
