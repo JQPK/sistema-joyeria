@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { auth } from '../auth.js';
 
 export default {
   container: null,
@@ -342,6 +343,11 @@ export default {
           </td>
           <td class="fw-bold text-gold">S/ ${priceStr}</td>
           <td class="text-right flex justify-end gap-2">
+            ${auth.isAdmin() ? `
+            <button class="btn-icon btn-secondary admin-only" onclick="import('../kardexModal.js').then(m => m.kardexModal.abrir(${p.id}))" title="Ver Kárdex Físico">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </button>
+            ` : ''}
             ${!isVariants ? `
             <button class="btn-icon btn-secondary" onclick="window.prodShowBarcode('${p.codigo || ''}', '${p.nombre.replace(/'/g, "\\'")}', ${p.precio_venta})" title="Imprimir Etiqueta">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M3 12h18M3 19h18"></path></svg>

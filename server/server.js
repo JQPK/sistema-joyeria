@@ -47,6 +47,7 @@ const licenciasRoutes = require('./routes/licencias');
 const variantesRoutes = require('./routes/variantes');
 const sucursalesRoutes = require('./routes/sucursales');
 const opticaRoutes = require('./routes/optica');
+const kardexRoutes = require('./routes/kardex');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/productos', productosRoutes);
@@ -63,6 +64,7 @@ app.use('/api/licencias', licenciasRoutes);
 app.use('/api/variantes', variantesRoutes);
 app.use('/api/sucursales', sucursalesRoutes);
 app.use('/api/optica', opticaRoutes);
+app.use('/api/kardex', kardexRoutes);
 
 // Handle SPA routing
 app.get('*', (req, res) => {

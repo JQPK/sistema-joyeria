@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { auth } from '../auth.js';
 import { scanner } from '../scanner.js';
 
 export default {
@@ -122,6 +123,7 @@ export default {
                     <th>Material</th>
                     <th>Stock Actual</th>
                     <th>Precio</th>
+                    <th class="text-right admin-only">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -184,6 +186,10 @@ export default {
           <button class="btn btn-warning" onclick="window.invAbrirEdicion()" id="inv-btn-editar"
                   style="background:rgba(251,191,36,.15);color:#d97706;border:1px solid rgba(251,191,36,.4);display:none;width:100%">
             ✏️ Actualizar
+          </button>
+          <button class="btn btn-secondary admin-only" onclick="window.invAbrirKardex()" id="inv-btn-kardex"
+                  style="background:rgba(201,169,110,.15);color:var(--accent-gold-dark);border:1px solid rgba(201,169,110,.4);display:none;width:100%">
+            📜 Kárdex
           </button>
           <button class="btn btn-primary" onclick="window.invCloseModal()" style="width:100%">Cerrar</button>
         </div>
@@ -363,6 +369,7 @@ export default {
     }
 
     let html = '';
+    const isAdmin = auth.isAdmin();
     data.forEach(p => {
       const isVariants = p.tiene_variantes && p.variantes && p.variantes.length > 0;
       
@@ -377,6 +384,11 @@ export default {
               <td>${p.material_nombre || '-'}</td>
               <td>${v.stock_actual}</td>
               <td>S/ ${parseFloat(v.precio_venta || p.precio_venta).toFixed(2)}</td>
+              <td class="text-right admin-only" style="${isAdmin ? '' : 'display:none'}">
+                <button class="btn btn-secondary btn-sm" onclick="import('../kardexModal.js').then(m => m.kardexModal.abrir(${p.id}, ${v.id}))" title="Ver Kárdex Físico">
+                  📜 Kárdex
+                </button>
+              </td>
             </tr>
           `;
         });
@@ -389,6 +401,11 @@ export default {
             <td>${p.material_nombre || '-'}</td>
             <td>${p.stock_actual}</td>
             <td>S/ ${parseFloat(p.precio_venta).toFixed(2)}</td>
+            <td class="text-right admin-only" style="${isAdmin ? '' : 'display:none'}">
+              <button class="btn btn-secondary btn-sm" onclick="import('../kardexModal.js').then(m => m.kardexModal.abrir(${p.id}, null))" title="Ver Kárdex Físico">
+                📜 Kárdex
+              </button>
+            </td>
           </tr>
         `;
       }
@@ -532,8 +549,10 @@ export default {
     // Mostrar botones de edición e impresión
     const btnEditar = document.getElementById('inv-btn-editar');
     const btnPrint  = document.getElementById('inv-btn-print');
+    const btnKardex = document.getElementById('inv-btn-kardex');
     if (btnEditar) btnEditar.style.display = 'inline-flex';
     if (btnPrint)  btnPrint.style.display  = 'inline-flex';
+    if (btnKardex) btnKardex.style.display = auth.isAdmin() ? 'inline-flex' : 'none';
 
     const stockActual = variantData ? variantData.stock_actual : prod.stock_actual;
     const stockMin    = prod.stock_minimo || 1;
@@ -791,6 +810,11 @@ export default {
     window.invAbrirEdicion    = () => this.abrirEdicion();
     window.invGuardarEdicion  = () => this.guardarEdicion();
     window.invImprimirEtiqueta = () => this.imprimirEtiqueta();
+    window.invAbrirKardex     = () => {
+      if (!this._currentProd) return;
+      const varId = this._currentVariant ? this._currentVariant.id : null;
+      import('../kardexModal.js').then(m => m.kardexModal.abrir(this._currentProd.id, varId));
+    };
     window.invCloseModal      = () => {
       const m = document.getElementById('inv-scan-modal');
       if (m) m.style.display = 'none';

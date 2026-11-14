@@ -45,6 +45,14 @@ async function initializeDatabase() {
       console.log('Óptica module schema initialized.');
     }
 
+    // Execute Kárdex Físico schema
+    const kardexPath = path.join(__dirname, '../migrations/008_kardex_fisico.sql');
+    if (fs.existsSync(kardexPath)) {
+      const kardexSql = fs.readFileSync(kardexPath, 'utf8');
+      await db.query(kardexSql);
+      console.log('Kárdex Físico schema initialized.');
+    }
+
     console.log('Database schema initialized.');
 
     // Read and execute seeds

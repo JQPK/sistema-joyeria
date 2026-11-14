@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/database');
 const { auth } = require('../middleware/auth');
 const { logActivity } = require('../utils/logger');
+const { registrarMovimiento } = require('../services/kardexService');
 
 router.use(auth);
 
@@ -255,12 +256,50 @@ router.post('/', async (req, res, next) => {
       `, [ventaId, item.producto_id, item.variante_id || null, item.cantidad, item.precio_unitario, item.descuento_item || 0, item.subtotal_item]);
       
       if (item.variante_id) {
+        const curRes = await client.query('SELECT stock_actual FROM inventario_variantes_sucursales WHERE variante_id = $1 AND sucursal_id = $2', [item.variante_id, data.sucursal_id]);
+        const stockAnt = curRes.rows.length > 0 ? parseInt(curRes.rows[0].stock_actual, 10) : 0;
+        const stockNuevo = stockAnt - item.cantidad;
+
         // Reducir stock de la variante
         await client.query('UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual - $1 WHERE variante_id = $2 AND sucursal_id = $3', [item.cantidad, item.variante_id, data.sucursal_id]);
         // Reducir stock del producto padre
         await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual - $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, data.sucursal_id]);
+
+        await registrarMovimiento({
+          client,
+          producto_id: item.producto_id,
+          variante_id: item.variante_id,
+          sucursal_id: data.sucursal_id,
+          usuario_id: data.usuario_id,
+          tipo_movimiento: 'VENTA',
+          tipo_documento: (data.tipo_comprobante || 'BOLETA').toUpperCase(),
+          documento_referencia: numero,
+          cantidad_salida: item.cantidad,
+          stock_anterior: stockAnt,
+          stock_saldo: stockNuevo,
+          motivo: `Venta POS (${numero})`
+        });
       } else {
+        const curRes = await client.query('SELECT stock_actual FROM inventario_sucursales WHERE producto_id = $1 AND sucursal_id = $2', [item.producto_id, data.sucursal_id]);
+        const stockAnt = curRes.rows.length > 0 ? parseInt(curRes.rows[0].stock_actual, 10) : 0;
+        const stockNuevo = stockAnt - item.cantidad;
+
         await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual - $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, data.sucursal_id]);
+
+        await registrarMovimiento({
+          client,
+          producto_id: item.producto_id,
+          variante_id: null,
+          sucursal_id: data.sucursal_id,
+          usuario_id: data.usuario_id,
+          tipo_movimiento: 'VENTA',
+          tipo_documento: (data.tipo_comprobante || 'BOLETA').toUpperCase(),
+          documento_referencia: numero,
+          cantidad_salida: item.cantidad,
+          stock_anterior: stockAnt,
+          stock_saldo: stockNuevo,
+          motivo: `Venta POS (${numero})`
+        });
       }
     }
 
@@ -307,12 +346,50 @@ router.post('/:id/anular', async (req, res, next) => {
     const itemsRes = await client.query('SELECT producto_id, variante_id, cantidad FROM detalle_ventas WHERE venta_id = $1', [id]);
     for (const item of itemsRes.rows) {
       if (item.variante_id) {
+        const curRes = await client.query('SELECT stock_actual FROM inventario_variantes_sucursales WHERE variante_id = $1 AND sucursal_id = $2', [item.variante_id, venta.sucursal_id]);
+        const stockAnt = curRes.rows.length > 0 ? parseInt(curRes.rows[0].stock_actual, 10) : 0;
+        const stockNuevo = stockAnt + item.cantidad;
+
         // Restaurar stock de la variante
         await client.query('UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual + $1 WHERE variante_id = $2 AND sucursal_id = $3', [item.cantidad, item.variante_id, venta.sucursal_id]);
         // Restaurar stock del producto padre
         await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual + $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, venta.sucursal_id]);
+
+        await registrarMovimiento({
+          client,
+          producto_id: item.producto_id,
+          variante_id: item.variante_id,
+          sucursal_id: venta.sucursal_id,
+          usuario_id: req.user.id,
+          tipo_movimiento: 'ANULACION_VENTA',
+          tipo_documento: 'ANULACION',
+          documento_referencia: venta.numero_comprobante,
+          cantidad_entrada: item.cantidad,
+          stock_anterior: stockAnt,
+          stock_saldo: stockNuevo,
+          motivo: `Anulación de Venta: ${motivo || 'Sin motivo especificado'}`
+        });
       } else {
+        const curRes = await client.query('SELECT stock_actual FROM inventario_sucursales WHERE producto_id = $1 AND sucursal_id = $2', [item.producto_id, venta.sucursal_id]);
+        const stockAnt = curRes.rows.length > 0 ? parseInt(curRes.rows[0].stock_actual, 10) : 0;
+        const stockNuevo = stockAnt + item.cantidad;
+
         await client.query('UPDATE inventario_sucursales SET stock_actual = stock_actual + $1 WHERE producto_id = $2 AND sucursal_id = $3', [item.cantidad, item.producto_id, venta.sucursal_id]);
+
+        await registrarMovimiento({
+          client,
+          producto_id: item.producto_id,
+          variante_id: null,
+          sucursal_id: venta.sucursal_id,
+          usuario_id: req.user.id,
+          tipo_movimiento: 'ANULACION_VENTA',
+          tipo_documento: 'ANULACION',
+          documento_referencia: venta.numero_comprobante,
+          cantidad_entrada: item.cantidad,
+          stock_anterior: stockAnt,
+          stock_saldo: stockNuevo,
+          motivo: `Anulación de Venta: ${motivo || 'Sin motivo especificado'}`
+        });
       }
     }
 

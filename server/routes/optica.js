@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/database');
 const { auth } = require('../middleware/auth');
 const { logActivity } = require('../utils/logger');
+const { registrarMovimiento } = require('../services/kardexService');
 const PDFDocument = require('pdfkit');
 
 router.use(auth);
@@ -310,6 +311,7 @@ router.post('/contratos', async (req, res, next) => {
           throw new Error(`No hay stock suficiente de la montura '${stkVar.rows[0]?.nombre_variante || 'seleccionada'}' en esta sucursal.`);
         }
         // Descontar preventivamente de la variante y producto padre
+        const curStk = parseInt(stkVar.rows[0].stock_actual, 10);
         await client.query(
           'UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual - 1 WHERE variante_id = $1 AND sucursal_id = $2',
           [b.montura_variante_id, sucursalId]
@@ -320,6 +322,21 @@ router.post('/contratos', async (req, res, next) => {
             [b.montura_producto_id, sucursalId]
           );
         }
+
+        await registrarMovimiento({
+          client,
+          producto_id: b.montura_producto_id,
+          variante_id: b.montura_variante_id,
+          sucursal_id: sucursalId,
+          usuario_id: usuarioId,
+          tipo_movimiento: 'OPTICA_RESERVA',
+          tipo_documento: 'CONTRATO_OPTICA',
+          documento_referencia: codigoContrato,
+          cantidad_salida: 1,
+          stock_anterior: curStk,
+          stock_saldo: curStk - 1,
+          motivo: `Reserva de montura para Orden ${codigoContrato}`
+        });
       } else if (b.montura_producto_id) {
         const stkProd = await client.query(`
           SELECT isuc.stock_actual, p.nombre 
@@ -331,10 +348,26 @@ router.post('/contratos', async (req, res, next) => {
         if (stkProd.rows.length === 0 || stkProd.rows[0].stock_actual < 1) {
           throw new Error(`No hay stock suficiente de la montura '${stkProd.rows[0]?.nombre || 'seleccionada'}' en esta sucursal.`);
         }
+        const curStk = parseInt(stkProd.rows[0].stock_actual, 10);
         await client.query(
           'UPDATE inventario_sucursales SET stock_actual = stock_actual - 1 WHERE producto_id = $1 AND sucursal_id = $2',
           [b.montura_producto_id, sucursalId]
         );
+
+        await registrarMovimiento({
+          client,
+          producto_id: b.montura_producto_id,
+          variante_id: null,
+          sucursal_id: sucursalId,
+          usuario_id: usuarioId,
+          tipo_movimiento: 'OPTICA_RESERVA',
+          tipo_documento: 'CONTRATO_OPTICA',
+          documento_referencia: codigoContrato,
+          cantidad_salida: 1,
+          stock_anterior: curStk,
+          stock_saldo: curStk - 1,
+          motivo: `Reserva de montura para Orden ${codigoContrato}`
+        });
       }
     }
 
@@ -595,16 +628,57 @@ router.put('/contratos/:id/estado', async (req, res, next) => {
     if (estado === 'cancelado') {
       if (contrato.montura_tipo === 'inventario_local') {
         if (contrato.montura_variante_id) {
+          const curRes = await client.query('SELECT stock_actual FROM inventario_variantes_sucursales WHERE variante_id = $1 AND sucursal_id = $2', [contrato.montura_variante_id, contrato.sucursal_id]);
+          const stockAnt = curRes.rows.length > 0 ? parseInt(curRes.rows[0].stock_actual, 10) : 0;
+
           await client.query(
             'UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual + 1 WHERE variante_id = $1 AND sucursal_id = $2',
             [contrato.montura_variante_id, contrato.sucursal_id]
           );
-        }
-        if (contrato.montura_producto_id) {
+          if (contrato.montura_producto_id) {
+            await client.query(
+              'UPDATE inventario_sucursales SET stock_actual = stock_actual + 1 WHERE producto_id = $1 AND sucursal_id = $2',
+              [contrato.montura_producto_id, contrato.sucursal_id]
+            );
+          }
+
+          await registrarMovimiento({
+            client,
+            producto_id: contrato.montura_producto_id,
+            variante_id: contrato.montura_variante_id,
+            sucursal_id: contrato.sucursal_id,
+            usuario_id: usuarioId,
+            tipo_movimiento: 'OPTICA_CANCELACION',
+            tipo_documento: 'CANCELACION',
+            documento_referencia: contrato.codigo_contrato,
+            cantidad_entrada: 1,
+            stock_anterior: stockAnt,
+            stock_saldo: stockAnt + 1,
+            motivo: `Cancelación de Contrato ${contrato.codigo_contrato}: ${motivo_cancelacion || observaciones || 'Sin motivo'}`
+          });
+        } else if (contrato.montura_producto_id) {
+          const curRes = await client.query('SELECT stock_actual FROM inventario_sucursales WHERE producto_id = $1 AND sucursal_id = $2', [contrato.montura_producto_id, contrato.sucursal_id]);
+          const stockAnt = curRes.rows.length > 0 ? parseInt(curRes.rows[0].stock_actual, 10) : 0;
+
           await client.query(
             'UPDATE inventario_sucursales SET stock_actual = stock_actual + 1 WHERE producto_id = $1 AND sucursal_id = $2',
             [contrato.montura_producto_id, contrato.sucursal_id]
           );
+
+          await registrarMovimiento({
+            client,
+            producto_id: contrato.montura_producto_id,
+            variante_id: null,
+            sucursal_id: contrato.sucursal_id,
+            usuario_id: usuarioId,
+            tipo_movimiento: 'OPTICA_CANCELACION',
+            tipo_documento: 'CANCELACION',
+            documento_referencia: contrato.codigo_contrato,
+            cantidad_entrada: 1,
+            stock_anterior: stockAnt,
+            stock_saldo: stockAnt + 1,
+            motivo: `Cancelación de Contrato ${contrato.codigo_contrato}: ${motivo_cancelacion || observaciones || 'Sin motivo'}`
+          });
         }
       }
 
@@ -882,6 +956,34 @@ router.put('/traslados/:id/estado', async (req, res, next) => {
           'UPDATE inventario_variantes_sucursales SET stock_actual = stock_actual + 1 WHERE variante_id = $1 AND sucursal_id = $2',
           [traslado.variante_id, traslado.sucursal_destino_id]
         );
+
+        // Kárdex salida origen
+        await registrarMovimiento({
+          client,
+          producto_id: traslado.producto_id,
+          variante_id: traslado.variante_id,
+          sucursal_id: traslado.sucursal_origen_id,
+          usuario_id: usuarioId,
+          tipo_movimiento: 'TRASLADO_SALIDA',
+          tipo_documento: 'GUIA_TRASLADO',
+          documento_referencia: `TR-${id}`,
+          cantidad_salida: 1,
+          motivo: `Despacho de traslado hacia sucursal destino`
+        });
+
+        // Kárdex entrada destino
+        await registrarMovimiento({
+          client,
+          producto_id: traslado.producto_id,
+          variante_id: traslado.variante_id,
+          sucursal_id: traslado.sucursal_destino_id,
+          usuario_id: usuarioId,
+          tipo_movimiento: 'TRASLADO_ENTRADA',
+          tipo_documento: 'GUIA_TRASLADO',
+          documento_referencia: `TR-${id}`,
+          cantidad_entrada: 1,
+          motivo: `Recepción de traslado desde sucursal origen`
+        });
       } else {
         await client.query(
           'UPDATE inventario_sucursales SET stock_actual = stock_actual - 1 WHERE producto_id = $1 AND sucursal_id = $2',
@@ -891,6 +993,34 @@ router.put('/traslados/:id/estado', async (req, res, next) => {
           'UPDATE inventario_sucursales SET stock_actual = stock_actual + 1 WHERE producto_id = $1 AND sucursal_id = $2',
           [traslado.producto_id, traslado.sucursal_destino_id]
         );
+
+        // Kárdex salida origen
+        await registrarMovimiento({
+          client,
+          producto_id: traslado.producto_id,
+          variante_id: null,
+          sucursal_id: traslado.sucursal_origen_id,
+          usuario_id: usuarioId,
+          tipo_movimiento: 'TRASLADO_SALIDA',
+          tipo_documento: 'GUIA_TRASLADO',
+          documento_referencia: `TR-${id}`,
+          cantidad_salida: 1,
+          motivo: `Despacho de traslado hacia sucursal destino`
+        });
+
+        // Kárdex entrada destino
+        await registrarMovimiento({
+          client,
+          producto_id: traslado.producto_id,
+          variante_id: null,
+          sucursal_id: traslado.sucursal_destino_id,
+          usuario_id: usuarioId,
+          tipo_movimiento: 'TRASLADO_ENTRADA',
+          tipo_documento: 'GUIA_TRASLADO',
+          documento_referencia: `TR-${id}`,
+          cantidad_entrada: 1,
+          motivo: `Recepción de traslado desde sucursal origen`
+        });
       }
     }
 

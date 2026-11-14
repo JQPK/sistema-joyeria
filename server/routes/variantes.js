@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/database');
 const { auth } = require('../middleware/auth');
 const { logActivity } = require('../utils/logger');
+const { registrarMovimiento } = require('../services/kardexService');
 
 router.use(auth);
 
@@ -199,6 +200,23 @@ router.put('/:id', async (req, res, next) => {
 
       if (req.body.stock_actual !== undefined && oldStock !== newStock) {
         await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — Stock Tienda ${sucursalId}: ${oldStock} → ${newStock}`);
+        
+        const diff = newStock - oldStock;
+        await registrarMovimiento({
+          client,
+          producto_id: producto_id,
+          variante_id: req.params.id,
+          sucursal_id: sucursalId,
+          usuario_id: req.user.id,
+          tipo_movimiento: diff > 0 ? 'AJUSTE_POSITIVO' : 'AJUSTE_NEGATIVO',
+          tipo_documento: 'AJUSTE_MANUAL',
+          documento_referencia: `AJUSTE-V${req.params.id}`,
+          cantidad_entrada: diff > 0 ? diff : 0,
+          cantidad_salida: diff < 0 ? Math.abs(diff) : 0,
+          stock_anterior: oldStock,
+          stock_saldo: newStock,
+          motivo: `Ajuste manual de stock en variante '${varianteName}'`
+        });
       }
     } else {
       await logActivity(db, req.user.id, 'VARIANTE_MODIFICADA', `Variante '${varianteName}' — datos actualizados`);

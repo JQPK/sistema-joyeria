@@ -7,6 +7,7 @@ const { parse } = require('csv-parse');
 const xlsx = require('xlsx');
 const upload = multer({ storage: multer.memoryStorage() });
 const { logActivity } = require('../utils/logger');
+const { registrarMovimiento } = require('../services/kardexService');
 
 router.use(auth);
 
@@ -401,6 +402,23 @@ router.put('/:id', async (req, res, next) => {
       // Log stock update if changed manually
       if (req.body.stock_actual !== undefined && currentStock !== newStock && currentProd.rows.length > 0) {
         await logActivity(db, req.user.id, 'STOCK_ACTUALIZADO', `'${currentProd.rows[0].nombre}' — Stock Tienda ${sucursalId}: ${currentStock} → ${newStock} (ajuste manual)`);
+        
+        const diff = newStock - currentStock;
+        await registrarMovimiento({
+          client,
+          producto_id: id,
+          variante_id: null,
+          sucursal_id: sucursalId,
+          usuario_id: req.user.id,
+          tipo_movimiento: diff > 0 ? 'AJUSTE_POSITIVO' : 'AJUSTE_NEGATIVO',
+          tipo_documento: 'AJUSTE_MANUAL',
+          documento_referencia: `AJUSTE-P${id}`,
+          cantidad_entrada: diff > 0 ? diff : 0,
+          cantidad_salida: diff < 0 ? Math.abs(diff) : 0,
+          stock_anterior: currentStock,
+          stock_saldo: newStock,
+          motivo: 'Ajuste manual de stock en producto'
+        });
       }
     }
 
