@@ -9,6 +9,7 @@ export default {
   recetas: [],
   traslados: [],
   monturasCatalogo: [],
+  todosLosProductos: [],
   clientesCache: [],
   sucursales: [],
   
@@ -59,7 +60,7 @@ export default {
     fecha_estimada_entrega: '',
     responsable_taller: '',
     observaciones: '',
-    itemsAdicionales: []
+    productos_adicionales: []
   },
 
   async init(container) {
@@ -336,69 +337,48 @@ export default {
                 </div>
                 <div class="card-body">
                   <div class="table-responsive" style="margin-bottom: 1rem">
-                    <table class="data-table" style="font-size: 0.9rem; text-align: center">
+                    <table class="data-table" style="font-size: 0.95rem; text-align: center; width: 100%">
                       <thead>
                         <tr style="background: var(--bg-secondary)">
-                          <th style="width: 70px">OJO</th>
-                          <th>ESFERA (SPH)<br><small class="text-muted">Lejos</small></th>
-                          <th>CILINDRO (CYL)<br><small class="text-muted">Astigmatismo</small></th>
-                          <th>EJE (°)<br><small class="text-muted">0 - 180°</small></th>
-                          <th>DP (mm)<br><small class="text-muted">Dist. Pupilar</small></th>
-                          <th style="background: rgba(201, 169, 110, 0.2); color: var(--accent-gold-dark)">ADICIÓN (ADD)<br><small>Cerca (+)</small></th>
-                          <th style="background: rgba(201, 169, 110, 0.15)">ESF. CERCA<br><small class="text-muted">Lejos + ADD</small></th>
-                          <th style="background: rgba(201, 169, 110, 0.15)">DP CERCA</th>
+                          <th style="width: 80px">OJO</th>
+                          <th style="min-width: 140px">ESFERA (SPH)<br><small class="text-muted">Graduación (+ / -)</small></th>
+                          <th style="min-width: 140px">CILINDRO (CYL)<br><small class="text-muted">Astigmatismo (-)</small></th>
+                          <th style="min-width: 130px">EJE (°)<br><small class="text-muted">0° a 180°</small></th>
+                          <th style="min-width: 140px; background: rgba(201, 169, 110, 0.2); color: var(--accent-gold-dark)">ADICIÓN (ADD)<br><small>Graduación Adicional</small></th>
                         </tr>
                       </thead>
                       <tbody>
                         <!-- OJO DERECHO (OD) -->
                         <tr>
-                          <td style="font-weight: 800; color: #1e3a8a; background: rgba(59, 130, 246, 0.08)">OD</td>
-                          <td>
-                            <input type="text" id="rec-od-esfera" class="form-control text-center" placeholder="+0.00" oninput="window.optica.calcularCerca('od')">
+                          <td style="font-weight: 800; font-size: 1.15rem; color: #1e3a8a; background: rgba(59, 130, 246, 0.08); vertical-align: middle">OD</td>
+                          <td style="padding: 0.5rem">
+                            <input type="text" id="rec-od-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal">
                           </td>
-                          <td>
-                            <input type="text" id="rec-od-cilindro" class="form-control text-center" placeholder="-0.00">
+                          <td style="padding: 0.5rem">
+                            <input type="text" id="rec-od-cilindro" class="form-control text-center optica-rx-input" placeholder="-0.00" inputmode="decimal">
                           </td>
-                          <td>
-                            <input type="number" id="rec-od-eje" class="form-control text-center" min="0" max="180" placeholder="0°">
+                          <td style="padding: 0.5rem">
+                            <input type="text" id="rec-od-eje" class="form-control text-center optica-rx-input" placeholder="0° - 180°" inputmode="numeric">
                           </td>
-                          <td>
-                            <input type="text" id="rec-od-dp" class="form-control text-center" placeholder="31.5">
-                          </td>
-                          <td style="background: rgba(201, 169, 110, 0.1)">
-                            <input type="text" id="rec-od-add" class="form-control text-center fw-bold" placeholder="+2.00" oninput="window.optica.calcularCerca('od')" style="color: var(--accent-gold-dark)">
-                          </td>
-                          <td style="background: rgba(201, 169, 110, 0.08)">
-                            <input type="text" id="rec-od-esfera-cerca" class="form-control text-center fw-bold" placeholder="Auto" style="background: #fdfaf5">
-                          </td>
-                          <td style="background: rgba(201, 169, 110, 0.08)">
-                            <input type="text" id="rec-od-dp-cerca" class="form-control text-center" placeholder="29.5">
+                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.1)">
+                            <input type="text" id="rec-od-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800">
                           </td>
                         </tr>
 
                         <!-- OJO IZQUIERDO (OI) -->
                         <tr>
-                          <td style="font-weight: 800; color: #047857; background: rgba(16, 185, 129, 0.08)">OI</td>
-                          <td>
-                            <input type="text" id="rec-oi-esfera" class="form-control text-center" placeholder="+0.00" oninput="window.optica.calcularCerca('oi')">
+                          <td style="font-weight: 800; font-size: 1.15rem; color: #047857; background: rgba(16, 185, 129, 0.08); vertical-align: middle">OI</td>
+                          <td style="padding: 0.5rem">
+                            <input type="text" id="rec-oi-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal">
                           </td>
-                          <td>
-                            <input type="text" id="rec-oi-cilindro" class="form-control text-center" placeholder="-0.00">
+                          <td style="padding: 0.5rem">
+                            <input type="text" id="rec-oi-cilindro" class="form-control text-center optica-rx-input" placeholder="-0.00" inputmode="decimal">
                           </td>
-                          <td>
-                            <input type="number" id="rec-oi-eje" class="form-control text-center" min="0" max="180" placeholder="0°">
+                          <td style="padding: 0.5rem">
+                            <input type="text" id="rec-oi-eje" class="form-control text-center optica-rx-input" placeholder="0° - 180°" inputmode="numeric">
                           </td>
-                          <td>
-                            <input type="text" id="rec-oi-dp" class="form-control text-center" placeholder="31.5">
-                          </td>
-                          <td style="background: rgba(201, 169, 110, 0.1)">
-                            <input type="text" id="rec-oi-add" class="form-control text-center fw-bold" placeholder="+2.00" oninput="window.optica.calcularCerca('oi')" style="color: var(--accent-gold-dark)">
-                          </td>
-                          <td style="background: rgba(201, 169, 110, 0.08)">
-                            <input type="text" id="rec-oi-esfera-cerca" class="form-control text-center fw-bold" placeholder="Auto" style="background: #fdfaf5">
-                          </td>
-                          <td style="background: rgba(201, 169, 110, 0.08)">
-                            <input type="text" id="rec-oi-dp-cerca" class="form-control text-center" placeholder="29.5">
+                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.1)">
+                            <input type="text" id="rec-oi-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800">
                           </td>
                         </tr>
                       </tbody>
@@ -475,7 +455,7 @@ export default {
               </div>
 
               <!-- PASO 4: MONTURA / VITRINA / REPARACIÓN -->
-              <div id="seccion-montura-taller" class="card" style="margin-bottom: 1.25rem; border: 1px solid var(--accent-gold-light)">
+              <div id="seccion-montura-taller" class="card optica-card-overflow" style="margin-bottom: 1.25rem; border: 1px solid var(--accent-gold-light)">
                 <div class="card-header flex justify-between items-center" style="background: var(--bg-primary); border-bottom: 1px solid var(--bg-secondary)">
                   <div class="flex items-center" style="gap: 0.5rem">
                     <span style="background: var(--accent-gold); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem">4</span>
@@ -486,37 +466,49 @@ export default {
                 <div class="card-body">
                   <!-- Caso Montura de Vitrina (Completo y Cambio Montura) -->
                   <div id="box-seleccion-montura">
-                    <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
-                      <div style="flex: 1; position: relative">
-                        <input type="text" id="input-buscar-montura" class="form-control" placeholder="Buscar montura por código, nombre o vitrina..." autocomplete="off">
-                        <div id="lista-resultados-monturas" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius-md); box-shadow: var(--shadow-lg); z-index: 1000; max-height: 250px; overflow-y: auto"></div>
+                    <!-- Buscador de Monturas (Visible cuando NO hay montura elegida) -->
+                    <div id="box-buscador-monturas">
+                      <label class="form-label" style="font-weight: 600; margin-bottom: 6px">Buscar y Seleccionar Montura desde Vitrina</label>
+                      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
+                        <div style="flex: 1; position: relative">
+                          <input type="text" id="input-buscar-montura" class="form-control" placeholder="Escribe para buscar por código, nombre o vitrina (ej. Vitrina 1)..." autocomplete="off" style="height: 44px; font-size: 0.95rem">
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="window.optica.abrirScannerMontura()" title="Escanear código de barras con cámara" style="height: 44px; display: flex; align-items: center; gap: 6px">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                          Escanear
+                        </button>
                       </div>
-                      <button type="button" class="btn btn-secondary" onclick="window.optica.abrirScannerMontura()" title="Escanear código de barras con cámara">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-                        Escanear
-                      </button>
+                      
+                      <!-- Lista de Resultados de Montura (Contenedor destacado, visible y sin cortes) -->
+                      <div id="lista-resultados-monturas" class="hidden" style="margin-top: 0.5rem; margin-bottom: 1rem; background: white; border: 2px solid var(--accent-gold); border-radius: var(--border-radius-md); box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-height: 290px; overflow-y: auto"></div>
                     </div>
 
-                    <!-- Ficha Montura Seleccionada -->
-                    <div id="box-montura-seleccionada" class="hidden" style="background: var(--bg-primary); border: 1px solid var(--bg-secondary); border-radius: var(--border-radius-md); padding: 1rem">
-                      <div class="flex justify-between items-center" style="flex-wrap: wrap; gap: 0.5rem">
-                        <div>
-                          <div id="montura-sel-nombre" style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary)">-</div>
-                          <div style="font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 1rem; margin-top: 4px; flex-wrap: wrap">
-                            <span><strong>Código:</strong> <span id="montura-sel-codigo">-</span></span>
-                            <span><strong>Ubicación:</strong> <span id="montura-sel-vitrina">-</span></span>
-                            <span><strong>Stock en tienda:</strong> <span id="montura-sel-stock" class="badge badge-success">-</span></span>
+                    <!-- Ficha Montura Seleccionada (Destacada, visible y amplia) -->
+                    <div id="box-montura-seleccionada" class="hidden" style="background: linear-gradient(135deg, rgba(201, 169, 110, 0.08) 0%, rgba(201, 169, 110, 0.20) 100%); border: 2px solid var(--accent-gold); border-radius: var(--border-radius-md); padding: 1.25rem; margin-bottom: 0.5rem">
+                      <div class="flex justify-between items-center" style="flex-wrap: wrap; gap: 1rem">
+                        <div style="display: flex; align-items: center; gap: 0.85rem">
+                          <div style="background: var(--accent-gold); color: white; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; box-shadow: var(--shadow-sm); flex-shrink: 0">👓</div>
+                          <div>
+                            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-gold-dark); font-weight: 800">Montura Seleccionada para el Trabajo</div>
+                            <div id="montura-sel-nombre" style="font-weight: 800; font-size: 1.15rem; color: var(--text-primary); margin-top: 2px">-</div>
+                            <div style="font-size: 0.85rem; color: var(--text-secondary); display: flex; gap: 1rem; margin-top: 4px; flex-wrap: wrap">
+                              <span><strong>Código / SKU:</strong> <span id="montura-sel-codigo" style="font-family: monospace; font-weight: 700">-</span></span>
+                              <span><strong>Ubicación:</strong> <span id="montura-sel-vitrina" class="badge badge-secondary">-</span></span>
+                              <span><strong>Stock en tienda:</strong> <span id="montura-sel-stock" class="badge badge-success">-</span></span>
+                            </div>
                           </div>
                         </div>
                         <div class="flex items-center" style="gap: 1rem">
-                          <div style="text-align: right">
-                            <span class="text-muted" style="font-size: 0.75rem">Precio Montura</span>
+                          <div style="background: white; padding: 0.5rem 0.85rem; border-radius: var(--border-radius-sm); border: 1.5px solid var(--accent-gold-light); text-align: right">
+                            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 2px; font-weight: 600">Precio de Montura</label>
                             <div style="display: flex; align-items: center; gap: 4px">
-                              <span class="fw-bold text-gold">S/</span>
-                              <input type="number" id="montura-sel-precio-input" class="form-control" style="width: 95px; text-align: right; font-weight: bold" min="0" step="0.5" oninput="window.optica.actualizarPrecios()">
+                              <span class="fw-bold text-gold" style="font-size: 1.15rem">S/</span>
+                              <input type="number" id="montura-sel-precio-input" class="form-control" style="width: 105px; text-align: right; font-weight: 800; font-size: 1.15rem; height: 38px" min="0" step="0.5" oninput="window.optica.actualizarPrecios()">
                             </div>
                           </div>
-                          <button type="button" class="btn btn-icon btn-sm" onclick="window.optica.deseleccionarMontura()">✕</button>
+                          <button type="button" class="btn btn-outline-danger btn-sm" onclick="window.optica.deseleccionarMontura()" title="Cambiar montura" style="height: 40px; padding: 0 1rem; display: flex; align-items: center; gap: 4px; font-weight: 600">
+                            ✕ Cambiar Montura
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -559,11 +551,71 @@ export default {
                 </div>
               </div>
 
-              <!-- PASO 5: RESUMEN ECONÓMICO Y COBRO DE ADELANTO -->
-              <div class="card" style="margin-bottom: 1.5rem; border: 1px solid var(--accent-gold-light)">
+              <!-- PASO 5: PRODUCTOS Y ACCESORIOS ADICIONALES (NUEVA SECCIÓN) -->
+              <div id="seccion-productos-adicionales" class="card optica-card-overflow" style="margin-bottom: 1.25rem; border: 1px solid var(--accent-gold-light)">
                 <div class="card-header flex justify-between items-center" style="background: var(--bg-primary); border-bottom: 1px solid var(--bg-secondary)">
                   <div class="flex items-center" style="gap: 0.5rem">
                     <span style="background: var(--accent-gold); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem">5</span>
+                    <h3 style="margin: 0; font-size: 1.1rem">Productos y Accesorios Adicionales</h3>
+                  </div>
+                  <span class="badge badge-secondary">Opcional</span>
+                </div>
+                <div class="card-body">
+                  <p class="text-muted" style="margin-top: 0; font-size: 0.88rem; margin-bottom: 0.75rem">
+                    Agrega al contrato productos complementarios (estuches, paños de microfibra, líquidos de limpieza, cordones, etc.).
+                  </p>
+
+                  <!-- Buscador de Adicionales -->
+                  <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
+                    <div style="flex: 1; position: relative">
+                      <input type="text" id="input-buscar-adicional" class="form-control" placeholder="Buscar accesorio o producto por código o nombre..." autocomplete="off" style="height: 44px; font-size: 0.95rem">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="window.optica.abrirScannerAdicional()" title="Escanear código de barras de accesorio" style="height: 44px; display: flex; align-items: center; gap: 6px">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                      Escanear
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="window.optica.abrirModalItemManual()" title="Agregar un producto o servicio manual" style="height: 44px">
+                      + Manual
+                    </button>
+                  </div>
+
+                  <!-- Resultados del buscador de adicionales -->
+                  <div id="lista-resultados-adicionales" class="hidden" style="margin-top: 0.5rem; margin-bottom: 1rem; background: white; border: 2px solid var(--accent-gold); border-radius: var(--border-radius-md); box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-height: 260px; overflow-y: auto"></div>
+
+                  <!-- Tabla de Productos Adicionales Agregados -->
+                  <div id="box-tabla-adicionales" style="margin-top: 0.75rem">
+                    <div id="vacio-adicionales" class="text-center text-muted" style="padding: 1.25rem; border: 1.5px dashed var(--bg-tertiary); border-radius: var(--border-radius-md); font-size: 0.9rem">
+                      📦 No se han agregado productos adicionales a este contrato (opcional).
+                    </div>
+                    <div id="tabla-adicionales-wrapper" class="hidden">
+                      <div class="table-responsive">
+                        <table class="data-table" style="font-size: 0.9rem; width: 100%">
+                          <thead>
+                            <tr style="background: var(--bg-secondary)">
+                              <th>Producto / Accesorio</th>
+                              <th style="width: 130px; text-align: center">Cantidad</th>
+                              <th style="width: 140px; text-align: right">P. Unitario (S/)</th>
+                              <th style="width: 130px; text-align: right">Subtotal</th>
+                              <th style="width: 70px; text-align: center">Quitar</th>
+                            </tr>
+                          </thead>
+                          <tbody id="tbody-adicionales"></tbody>
+                        </table>
+                      </div>
+                      <div style="display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem; margin-top: 0.75rem; padding: 0.75rem 1rem; background: var(--bg-primary); border-radius: var(--border-radius-sm); border: 1px solid var(--bg-secondary)">
+                        <span style="font-size: 0.95rem; font-weight: 700">Total Productos Adicionales:</span>
+                        <span id="lbl-total-adicionales-box" class="fw-bold text-gold" style="font-size: 1.15rem">S/ 0.00</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- PASO 6: RESUMEN ECONÓMICO Y COBRO DE ADELANTO -->
+              <div class="card" style="margin-bottom: 1.5rem; border: 1px solid var(--accent-gold-light)">
+                <div class="card-header flex justify-between items-center" style="background: var(--bg-primary); border-bottom: 1px solid var(--bg-secondary)">
+                  <div class="flex items-center" style="gap: 0.5rem">
+                    <span style="background: var(--accent-gold); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem">6</span>
                     <h3 style="margin: 0; font-size: 1.1rem">Fechas, Resumen Económico y Pago</h3>
                   </div>
                   <div class="text-gold fw-bold" id="resumen-total-preview" style="font-size: 1.25rem">Total: S/ 0.00</div>
@@ -596,6 +648,12 @@ export default {
                         <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
                           <span class="text-muted">Servicio / Reparación / Adaptación:</span>
                           <span class="fw-bold" id="lbl-costo-servicio">S/ 0.00</span>
+                        </div>
+
+                        <!-- PRODUCTOS ADICIONALES -->
+                        <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
+                          <span class="text-muted">Productos Adicionales:</span>
+                          <span class="fw-bold text-gold" id="lbl-costo-adicionales">S/ 0.00</span>
                         </div>
 
                         <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
@@ -1071,6 +1129,18 @@ export default {
       });
     }
 
+    // Buscador de Productos Adicionales
+    const adicInput = document.getElementById('input-buscar-adicional');
+    if (adicInput) {
+      adicInput.addEventListener('input', (e) => this.buscarAdicionales(e.target.value));
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#seccion-productos-adicionales')) {
+          const resEl = document.getElementById('lista-resultados-adicionales');
+          if (resEl) resEl.classList.add('hidden');
+        }
+      });
+    }
+
     // Tratamientos checkboxes
     document.querySelectorAll('.chk-tratamiento').forEach(chk => {
       chk.addEventListener('change', () => this.recolectarTratamientos());
@@ -1108,6 +1178,7 @@ export default {
     else if (tab === 'traslados') this.loadTraslados();
     else if (tab === 'nueva-atencion') {
       this.cargarCatalogoMonturas();
+      this.cargarCatalogoGeneral();
     }
   },
 
@@ -1480,7 +1551,7 @@ export default {
     }
   },
 
-  // Monturas de Vitrina y Escáner
+  // Monturas de Vitrina y Catálogo General
   async cargarCatalogoMonturas() {
     try {
       const activeSucursal = localStorage.getItem('activeSucursal') || 1;
@@ -1490,6 +1561,18 @@ export default {
       }
     } catch (e) {
       console.warn('Error cargando monturas:', e);
+    }
+  },
+
+  async cargarCatalogoGeneral() {
+    try {
+      const activeSucursal = localStorage.getItem('activeSucursal') || 1;
+      const res = await api.get('/productos', { sucursal_id: activeSucursal, limit: 300 });
+      if (res.success) {
+        this.todosLosProductos = res.data || [];
+      }
+    } catch (e) {
+      console.warn('Error cargando catálogo general:', e);
     }
   },
 
@@ -1512,29 +1595,37 @@ export default {
     });
 
     if (matches.length === 0) {
-      resEl.innerHTML = `<div style="padding: 0.75rem; color: var(--text-muted); font-size: 0.85rem">No se encontraron monturas que coincidan.</div>`;
+      resEl.innerHTML = `<div style="padding: 1rem; color: var(--text-muted); font-size: 0.9rem; text-align: center">🔍 No se encontraron monturas que coincidan con "<strong>${termino}</strong>".</div>`;
       resEl.classList.remove('hidden');
       return;
     }
 
-    resEl.innerHTML = matches.slice(0, 10).map(m => {
+    resEl.innerHTML = matches.slice(0, 15).map(m => {
       const nombreCompleto = m.variante_id ? `${m.producto_nombre} · ${m.nombre_variante}` : m.producto_nombre;
       const stockLocal = parseInt(m.stock_actual || 0);
       const stockBadge = stockLocal > 0 
-        ? `<span class="badge badge-success" style="font-size:0.75rem">${stockLocal} en tienda</span>` 
-        : `<span class="badge badge-danger" style="font-size:0.75rem">Agotado local</span>`;
+        ? `<span class="badge badge-success" style="font-size: 0.78rem; padding: 3px 8px">${stockLocal} en tienda</span>` 
+        : `<span class="badge badge-danger" style="font-size: 0.78rem; padding: 3px 8px">Agotado local</span>`;
 
       return `
-        <div class="optica-item-hover" style="padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--bg-secondary); display:flex; justify-content:space-between; align-items:center" onclick="window.optica.seleccionarMontura(${JSON.stringify(m).replace(/"/g, '&quot;')})">
-          <div>
-            <div style="font-weight: 600; font-size: 0.9rem">${nombreCompleto}</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary)">
-              Cód: ${m.variante_sku || m.producto_codigo || '—'} · ${m.categoria_nombre || 'Vitrina'}
+        <div class="optica-item-hover" style="padding: 0.85rem 1rem; border-bottom: 1px solid var(--bg-secondary); display:flex; justify-content:space-between; align-items:center; cursor:pointer" onclick="window.optica.seleccionarMontura(${JSON.stringify(m).replace(/"/g, '&quot;')})">
+          <div style="display:flex; align-items:center; gap:0.75rem">
+            <span style="font-size: 1.4rem">👓</span>
+            <div>
+              <div style="font-weight: 700; font-size: 0.98rem; color: var(--text-primary)">${nombreCompleto}</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px">
+                Cód: <span style="font-family: monospace; font-weight: 600">${m.variante_sku || m.producto_codigo || '—'}</span> · <span class="badge badge-secondary" style="font-size:0.75rem">${m.categoria_nombre || 'Vitrina'}</span>
+              </div>
             </div>
           </div>
-          <div style="text-align: right">
-            <div class="text-gold fw-bold">S/ ${parseFloat(m.precio_venta || 0).toFixed(2)}</div>
-            ${stockBadge}
+          <div style="text-align: right; display:flex; align-items:center; gap:0.85rem">
+            <div>
+              <div class="text-gold fw-bold" style="font-size: 1.05rem">S/ ${parseFloat(m.precio_venta || 0).toFixed(2)}</div>
+              ${stockBadge}
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" style="padding: 4px 12px; font-weight: 700; font-size: 0.82rem">
+              Elegir ➔
+            </button>
           </div>
         </div>
       `;
@@ -1545,7 +1636,6 @@ export default {
   seleccionarMontura(m) {
     const stockLocal = parseInt(m.stock_actual || 0);
     if (stockLocal < 1) {
-      // Analizar si hay stock en otras sucursales
       const enOtras = (m.stock_sucursales || []).filter(s => s.stock_actual > 0);
       let msgOtras = '';
       if (enOtras.length > 0) {
@@ -1561,7 +1651,12 @@ export default {
     this.nuevoContrato.montura_stock_actual = stockLocal;
 
     document.getElementById('lista-resultados-monturas')?.classList.add('hidden');
-    document.getElementById('input-buscar-montura').value = '';
+    const inputBusqueda = document.getElementById('input-buscar-montura');
+    if (inputBusqueda) inputBusqueda.value = '';
+
+    // Ocultar buscador y mostrar ficha de selección prominente
+    const boxBuscador = document.getElementById('box-buscador-monturas');
+    if (boxBuscador) boxBuscador.classList.add('hidden');
 
     const boxSel = document.getElementById('box-montura-seleccionada');
     if (boxSel) boxSel.classList.remove('hidden');
@@ -1588,17 +1683,229 @@ export default {
     this.nuevoContrato.montura_descripcion = '';
     this.nuevoContrato.montura_precio = 0;
     this.nuevoContrato.montura_stock_actual = 0;
-    document.getElementById('box-montura-seleccionada')?.classList.add('hidden');
+
+    // Mostrar de nuevo el buscador y ocultar la ficha
+    const boxBuscador = document.getElementById('box-buscador-monturas');
+    if (boxBuscador) boxBuscador.classList.remove('hidden');
+
+    const boxSel = document.getElementById('box-montura-seleccionada');
+    if (boxSel) boxSel.classList.add('hidden');
+
+    const inputBusqueda = document.getElementById('input-buscar-montura');
+    if (inputBusqueda) {
+      inputBusqueda.value = '';
+      inputBusqueda.focus();
+    }
+
     this.actualizarPrecios();
   },
 
   abrirScannerMontura() {
     scanner.open((codigoDetectado) => {
       if (codigoDetectado) {
-        document.getElementById('input-buscar-montura').value = codigoDetectado;
+        const input = document.getElementById('input-buscar-montura');
+        if (input) input.value = codigoDetectado;
         this.buscarMonturas(codigoDetectado);
       }
     });
+  },
+
+  // ==========================================================================
+  // GESTIÓN DE PRODUCTOS Y ACCESORIOS ADICIONALES AL CONTRATO
+  // ==========================================================================
+  buscarAdicionales(termino) {
+    const resEl = document.getElementById('lista-resultados-adicionales');
+    if (!resEl) return;
+
+    if (!termino || termino.trim().length < 1) {
+      resEl.classList.add('hidden');
+      return;
+    }
+
+    const term = termino.toLowerCase();
+    const source = (this.todosLosProductos && this.todosLosProductos.length > 0) 
+      ? this.todosLosProductos 
+      : this.monturasCatalogo;
+
+    const matches = source.filter(p => {
+      const n = (p.producto_nombre || p.nombre || '').toLowerCase();
+      const v = (p.nombre_variante || '').toLowerCase();
+      const c = (p.variante_sku || p.producto_codigo || p.codigo || '').toLowerCase();
+      const cat = (p.categoria_nombre || '').toLowerCase();
+      return n.includes(term) || v.includes(term) || c.includes(term) || cat.includes(term);
+    });
+
+    if (matches.length === 0) {
+      resEl.innerHTML = `
+        <div style="padding: 1rem; color: var(--text-muted); font-size: 0.88rem; text-align: center">
+          No se encontraron productos con "<strong>${termino}</strong>". Puedes agregarlo manualmente con el botón <strong>+ Manual</strong>.
+        </div>
+      `;
+      resEl.classList.remove('hidden');
+      return;
+    }
+
+    resEl.innerHTML = matches.slice(0, 15).map(m => {
+      const prodId = m.producto_id || m.id;
+      const varId = m.variante_id || null;
+      const nombreCompleto = varId ? `${m.producto_nombre || m.nombre} · ${m.nombre_variante}` : (m.producto_nombre || m.nombre);
+      const stockLocal = parseInt(m.stock_actual || 0);
+      const precio = parseFloat(m.precio_venta || 0);
+      const codigo = m.variante_sku || m.producto_codigo || m.codigo || '—';
+
+      return `
+        <div class="optica-item-hover" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--bg-secondary); display:flex; justify-content:space-between; align-items:center; cursor:pointer" onclick="window.optica.agregarProductoAdicional(${JSON.stringify(m).replace(/"/g, '&quot;')})">
+          <div style="display:flex; align-items:center; gap:0.65rem">
+            <span style="font-size:1.3rem">📦</span>
+            <div>
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary)">${nombreCompleto}</div>
+              <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top:2px">
+                Cód: <span style="font-family:monospace; font-weight:600">${codigo}</span> · ${m.categoria_nombre || 'General'} · <span class="badge ${stockLocal > 0 ? 'badge-success' : 'badge-danger'}" style="font-size:0.75rem">${stockLocal} disp.</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; align-items:center; gap:0.85rem">
+            <span class="text-gold fw-bold" style="font-size: 1.05rem">S/ ${precio.toFixed(2)}</span>
+            <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 10px; font-size: 0.8rem; font-weight: 600">
+              + Agregar
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    resEl.classList.remove('hidden');
+  },
+
+  abrirScannerAdicional() {
+    scanner.open((codigoDetectado) => {
+      if (codigoDetectado) {
+        const input = document.getElementById('input-buscar-adicional');
+        if (input) input.value = codigoDetectado;
+        this.buscarAdicionales(codigoDetectado);
+      }
+    });
+  },
+
+  agregarProductoAdicional(p) {
+    if (!this.nuevoContrato.productos_adicionales) this.nuevoContrato.productos_adicionales = [];
+    const prodId = p.producto_id || p.id;
+    const varId = p.variante_id || null;
+    const desc = varId ? `${p.producto_nombre || p.nombre} · ${p.nombre_variante}` : (p.producto_nombre || p.nombre);
+    const precio = parseFloat(p.precio_venta || 0);
+
+    // Si ya existe en la lista, sumar 1
+    const existente = this.nuevoContrato.productos_adicionales.find(x => x.producto_id === prodId && x.variante_id === varId);
+    if (existente) {
+      existente.cantidad += 1;
+    } else {
+      this.nuevoContrato.productos_adicionales.push({
+        producto_id: prodId,
+        variante_id: varId,
+        descripcion: desc,
+        cantidad: 1,
+        precio_unitario: precio
+      });
+    }
+
+    const inputAdic = document.getElementById('input-buscar-adicional');
+    if (inputAdic) inputAdic.value = '';
+    document.getElementById('lista-resultados-adicionales')?.classList.add('hidden');
+
+    this.renderTablaAdicionales();
+    this.actualizarPrecios();
+  },
+
+  renderTablaAdicionales() {
+    const tbody = document.getElementById('tbody-adicionales');
+    const vacio = document.getElementById('vacio-adicionales');
+    const wrapper = document.getElementById('tabla-adicionales-wrapper');
+    if (!tbody || !vacio || !wrapper) return;
+
+    const lista = this.nuevoContrato.productos_adicionales || [];
+    if (lista.length === 0) {
+      vacio.classList.remove('hidden');
+      wrapper.classList.add('hidden');
+      return;
+    }
+
+    vacio.classList.add('hidden');
+    wrapper.classList.remove('hidden');
+
+    tbody.innerHTML = lista.map((it, idx) => {
+      const subtotal = it.cantidad * it.precio_unitario;
+      return `
+        <tr>
+          <td style="font-weight: 600; vertical-align: middle">
+            <div style="display:flex; align-items:center; gap:6px">
+              <span>📦</span>
+              <span>${it.descripcion}</span>
+            </div>
+          </td>
+          <td style="text-align: center; vertical-align: middle">
+            <div style="display:inline-flex; align-items:center; gap:4px">
+              <button type="button" class="btn btn-secondary btn-sm" style="padding:2px 8px; height:28px; font-weight:bold" onclick="window.optica.cambiarCantAdicional(${idx}, -1)">-</button>
+              <span style="font-weight:bold; min-width:28px; text-align:center; font-size:0.95rem">${it.cantidad}</span>
+              <button type="button" class="btn btn-secondary btn-sm" style="padding:2px 8px; height:28px; font-weight:bold" onclick="window.optica.cambiarCantAdicional(${idx}, 1)">+</button>
+            </div>
+          </td>
+          <td style="text-align: right; vertical-align: middle">
+            <div style="display:inline-flex; align-items:center; gap:4px">
+              <span class="text-muted" style="font-size:0.85rem">S/</span>
+              <input type="number" class="form-control text-right" style="width:85px; height:32px; padding:2px 6px; font-weight:700" value="${it.precio_unitario.toFixed(2)}" min="0" step="0.5" oninput="window.optica.cambiarPrecioAdicional(${idx}, this.value)">
+            </div>
+          </td>
+          <td style="text-align: right; font-weight: 800; color: var(--accent-gold-dark); vertical-align: middle; font-size: 1rem">
+            S/ ${subtotal.toFixed(2)}
+          </td>
+          <td style="text-align: center; vertical-align: middle">
+            <button type="button" class="btn btn-icon btn-sm text-danger" onclick="window.optica.eliminarAdicional(${idx})" title="Quitar ítem" style="height:32px; width:32px">✕</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  },
+
+  cambiarCantAdicional(idx, delta) {
+    const it = this.nuevoContrato.productos_adicionales[idx];
+    if (!it) return;
+    it.cantidad += delta;
+    if (it.cantidad <= 0) {
+      this.nuevoContrato.productos_adicionales.splice(idx, 1);
+    }
+    this.renderTablaAdicionales();
+    this.actualizarPrecios();
+  },
+
+  cambiarPrecioAdicional(idx, nuevoPrecio) {
+    const it = this.nuevoContrato.productos_adicionales[idx];
+    if (!it) return;
+    it.precio_unitario = Math.max(0, parseFloat(nuevoPrecio || 0));
+    this.renderTablaAdicionales();
+    this.actualizarPrecios();
+  },
+
+  eliminarAdicional(idx) {
+    this.nuevoContrato.productos_adicionales.splice(idx, 1);
+    this.renderTablaAdicionales();
+    this.actualizarPrecios();
+  },
+
+  abrirModalItemManual() {
+    const desc = prompt('Nombre o descripción del producto/accesorio adicional (ej. Estuche rígido, Paño microfibra):');
+    if (!desc || !desc.trim()) return;
+    const precioStr = prompt('Precio unitario en Soles (S/.):', '10.00');
+    const precio = parseFloat(precioStr || 0);
+
+    if (!this.nuevoContrato.productos_adicionales) this.nuevoContrato.productos_adicionales = [];
+    this.nuevoContrato.productos_adicionales.push({
+      producto_id: null,
+      variante_id: null,
+      descripcion: desc.trim(),
+      cantidad: 1,
+      precio_unitario: isNaN(precio) ? 0 : Math.max(0, precio)
+    });
+    this.renderTablaAdicionales();
+    this.actualizarPrecios();
   },
 
   recolectarTratamientos() {
@@ -1621,18 +1928,24 @@ export default {
       const inputPr = document.getElementById('montura-sel-precio-input');
       costoMontura = inputPr ? parseFloat(inputPr.value || 0) : this.nuevoContrato.montura_precio;
       costoServicio = parseFloat(document.getElementById('cambio-costo-montaje')?.value || 0);
-      costoLunas = 0; // Lunas son del cliente
+      costoLunas = 0;
     } else if (tipo === 'reparacion') {
       costoMontura = 0;
       costoLunas = 0;
       costoServicio = parseFloat(document.getElementById('rep-costo')?.value || 0);
     } else if (tipo === 'medicion') {
       costoMontura = 0;
-      costoServicio = parseFloat(document.getElementById('w-costo-lunas')?.value || 0); // Costo consulta
+      costoServicio = parseFloat(document.getElementById('w-costo-lunas')?.value || 0);
     }
 
+    // Calcular costo de productos y accesorios adicionales
+    let costoAdicionales = 0;
+    (this.nuevoContrato.productos_adicionales || []).forEach(item => {
+      costoAdicionales += (item.cantidad * item.precio_unitario);
+    });
+
     const descuento = parseFloat(document.getElementById('w-descuento')?.value || 0);
-    const subtotal = costoMontura + costoLunas + costoServicio;
+    const subtotal = costoMontura + costoLunas + costoServicio + costoAdicionales;
     const total = Math.max(0, subtotal - descuento);
 
     // Actualizar etiquetas
@@ -1641,6 +1954,12 @@ export default {
 
     const elLblServicio = document.getElementById('lbl-costo-servicio');
     if (elLblServicio) elLblServicio.textContent = `S/ ${costoServicio.toFixed(2)}`;
+
+    const elLblAdicionales = document.getElementById('lbl-costo-adicionales');
+    if (elLblAdicionales) elLblAdicionales.textContent = `S/ ${costoAdicionales.toFixed(2)}`;
+
+    const elLblTotalAdicBox = document.getElementById('lbl-total-adicionales-box');
+    if (elLblTotalAdicBox) elLblTotalAdicBox.textContent = `S/ ${costoAdicionales.toFixed(2)}`;
 
     const elLblTotal = document.getElementById('lbl-costo-total');
     if (elLblTotal) elLblTotal.textContent = `S/ ${total.toFixed(2)}`;
@@ -1723,17 +2042,17 @@ export default {
           od_esfera: odEsfera || null,
           od_cilindro: document.getElementById('rec-od-cilindro')?.value || null,
           od_eje: parseInt(document.getElementById('rec-od-eje')?.value) || null,
-          od_dp: document.getElementById('rec-od-dp')?.value || null,
+          od_dp: null,
           oi_esfera: oiEsfera || null,
           oi_cilindro: document.getElementById('rec-oi-cilindro')?.value || null,
           oi_eje: parseInt(document.getElementById('rec-oi-eje')?.value) || null,
-          oi_dp: document.getElementById('rec-oi-dp')?.value || null,
+          oi_dp: null,
           od_adicion: document.getElementById('rec-od-add')?.value || null,
           oi_adicion: document.getElementById('rec-oi-add')?.value || null,
-          od_esfera_cerca: document.getElementById('rec-od-esfera-cerca')?.value || null,
-          oi_esfera_cerca: document.getElementById('rec-oi-esfera-cerca')?.value || null,
-          od_dp_cerca: document.getElementById('rec-od-dp-cerca')?.value || null,
-          oi_dp_cerca: document.getElementById('rec-oi-dp-cerca')?.value || null,
+          od_esfera_cerca: null,
+          oi_esfera_cerca: null,
+          od_dp_cerca: null,
+          oi_dp_cerca: null,
           tipo_luna: document.getElementById('rec-tipo-luna')?.value || 'monofocal',
           material_luna: document.getElementById('rec-material-luna')?.value || 'resina_cr39',
           tratamientos: this.nuevoContrato.receta.tratamientos.join(','),
@@ -1810,6 +2129,20 @@ export default {
         });
       }
 
+      // Incorporar productos y accesorios adicionales elegidos
+      (this.nuevoContrato.productos_adicionales || []).forEach(ad => {
+        items.push({
+          tipo_item: 'accesorio',
+          producto_id: ad.producto_id || null,
+          variante_id: ad.variante_id || null,
+          descripcion: ad.descripcion,
+          cantidad: ad.cantidad,
+          precio_unitario: ad.precio_unitario,
+          descuento_item: 0,
+          subtotal_item: ad.cantidad * ad.precio_unitario
+        });
+      });
+
       const totalCalculado = this.nuevoContrato.total || 0;
       const adelanto = parseFloat(document.getElementById('w-adelanto')?.value || 0);
       const metodoPago = document.getElementById('w-metodo-pago')?.value || 'efectivo';
@@ -1870,29 +2203,32 @@ export default {
   resetNuevoContrato() {
     this.deseleccionarCliente();
     this.deseleccionarMontura();
-    document.getElementById('rec-od-esfera').value = '';
-    document.getElementById('rec-od-cilindro').value = '';
-    document.getElementById('rec-od-eje').value = '';
-    document.getElementById('rec-od-dp').value = '';
-    document.getElementById('rec-od-add').value = '';
-    document.getElementById('rec-od-esfera-cerca').value = '';
-    document.getElementById('rec-od-dp-cerca').value = '';
 
-    document.getElementById('rec-oi-esfera').value = '';
-    document.getElementById('rec-oi-cilindro').value = '';
-    document.getElementById('rec-oi-eje').value = '';
-    document.getElementById('rec-oi-dp').value = '';
-    document.getElementById('rec-oi-add').value = '';
-    document.getElementById('rec-oi-esfera-cerca').value = '';
-    document.getElementById('rec-oi-dp-cerca').value = '';
+    // Resetear prescripción
+    const elOdEsf = document.getElementById('rec-od-esfera'); if (elOdEsf) elOdEsf.value = '';
+    const elOdCil = document.getElementById('rec-od-cilindro'); if (elOdCil) elOdCil.value = '';
+    const elOdEje = document.getElementById('rec-od-eje'); if (elOdEje) elOdEje.value = '';
+    const elOdAdd = document.getElementById('rec-od-add'); if (elOdAdd) elOdAdd.value = '';
+
+    const elOiEsf = document.getElementById('rec-oi-esfera'); if (elOiEsf) elOiEsf.value = '';
+    const elOiCil = document.getElementById('rec-oi-cilindro'); if (elOiCil) elOiCil.value = '';
+    const elOiEje = document.getElementById('rec-oi-eje'); if (elOiEje) elOiEje.value = '';
+    const elOiAdd = document.getElementById('rec-oi-add'); if (elOiAdd) elOiAdd.value = '';
+
+    // Resetear productos adicionales
+    this.nuevoContrato.productos_adicionales = [];
+    this.renderTablaAdicionales();
+    const adicIn = document.getElementById('input-buscar-adicional');
+    if (adicIn) adicIn.value = '';
+    document.getElementById('lista-resultados-adicionales')?.classList.add('hidden');
 
     document.querySelectorAll('.chk-tratamiento').forEach(c => c.checked = false);
-    document.getElementById('w-costo-lunas').value = '0.00';
-    document.getElementById('w-descuento').value = '0.00';
-    document.getElementById('w-adelanto').value = '0.00';
-    document.getElementById('w-observaciones').value = '';
-    document.getElementById('rep-descripcion').value = '';
-    document.getElementById('cambio-obs-lunas').value = '';
+    const elLunas = document.getElementById('w-costo-lunas'); if (elLunas) elLunas.value = '0.00';
+    const elDesc = document.getElementById('w-descuento'); if (elDesc) elDesc.value = '0.00';
+    const elAdel = document.getElementById('w-adelanto'); if (elAdel) elAdel.value = '0.00';
+    const elObs = document.getElementById('w-observaciones'); if (elObs) elObs.value = '';
+    const elRep = document.getElementById('rep-descripcion'); if (elRep) elRep.value = '';
+    const elCamb = document.getElementById('cambio-obs-lunas'); if (elCamb) elCamb.value = '';
 
     this.seleccionarTipoServicio('completo');
   },
@@ -2116,16 +2452,14 @@ export default {
             <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--accent-gold-dark)">
               Graduación Visual
             </div>
-            <table class="data-table" style="font-size: 0.82rem; text-align: center">
+            <table class="data-table" style="font-size: 0.85rem; text-align: center">
               <thead>
                 <tr style="background: var(--bg-secondary)">
                   <th>OJO</th>
                   <th>ESF (SPH)</th>
                   <th>CIL (CYL)</th>
-                  <th>EJE</th>
-                  <th>DP</th>
-                  <th>ADD</th>
-                  <th>ESF CERCA</th>
+                  <th>EJE (°)</th>
+                  <th>ADICIÓN (ADD)</th>
                 </tr>
               </thead>
               <tbody>
@@ -2133,19 +2467,15 @@ export default {
                   <td style="font-weight: bold; color: #1e3a8a">OD</td>
                   <td>${c.receta.od_esfera || '—'}</td>
                   <td>${c.receta.od_cilindro || '—'}</td>
-                  <td>${c.receta.od_eje ? `${c.receta.od_eje}°` : '—'}</td>
-                  <td>${c.receta.od_dp || '—'}</td>
+                  <td>${c.receta.od_eje !== null && c.receta.od_eje !== undefined ? `${c.receta.od_eje}°` : '—'}</td>
                   <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.od_adicion || '—'}</td>
-                  <td style="font-weight: bold">${c.receta.od_esfera_cerca || '—'}</td>
                 </tr>
                 <tr>
                   <td style="font-weight: bold; color: #047857">OI</td>
                   <td>${c.receta.oi_esfera || '—'}</td>
                   <td>${c.receta.oi_cilindro || '—'}</td>
-                  <td>${c.receta.oi_eje ? `${c.receta.oi_eje}°` : '—'}</td>
-                  <td>${c.receta.oi_dp || '—'}</td>
+                  <td>${c.receta.oi_eje !== null && c.receta.oi_eje !== undefined ? `${c.receta.oi_eje}°` : '—'}</td>
                   <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.oi_adicion || '—'}</td>
-                  <td style="font-weight: bold">${c.receta.oi_esfera_cerca || '—'}</td>
                 </tr>
               </tbody>
             </table>

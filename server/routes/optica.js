@@ -1138,44 +1138,23 @@ router.get('/contratos/:id/ticket', async (req, res, next) => {
         <div class="bold center">GRADUACIÓN VISUAL</div>
         <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN DE LEJOS ]</b></div>
         <table class="rx-table" style="margin-bottom: 4px;">
-          <tr><th>Ojo</th><th>Esf</th><th>Cil</th><th>Eje</th><th>DP</th></tr>
+          <tr><th>Ojo</th><th>Esf</th><th>Cil</th><th>Eje</th><th>Add</th></tr>
           <tr>
             <td><b>OD</b></td>
             <td>${receta.od_esfera !== null ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—'}</td>
             <td>${receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—'}</td>
             <td>${receta.od_eje !== null ? receta.od_eje + '°' : '—'}</td>
-            <td>${receta.od_dp || '—'}</td>
+            <td>${receta.od_adicion !== null && receta.od_adicion !== undefined ? '+' + receta.od_adicion : '—'}</td>
           </tr>
           <tr>
             <td><b>OI</b></td>
             <td>${receta.oi_esfera !== null ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—'}</td>
             <td>${receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—'}</td>
             <td>${receta.oi_eje !== null ? receta.oi_eje + '°' : '—'}</td>
-            <td>${receta.oi_dp || '—'}</td>
+            <td>${receta.oi_adicion !== null && receta.oi_adicion !== undefined ? '+' + receta.oi_adicion : '—'}</td>
           </tr>
         </table>
       `;
-
-      if (receta.od_adicion || receta.oi_adicion || receta.od_esfera_cerca || receta.oi_esfera_cerca) {
-        html += `
-          <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ CERCA / ADD: OD ${receta.od_adicion || '—'} | OI ${receta.oi_adicion || '—'} ]</b></div>
-          <table class="rx-table" style="margin-bottom: 4px;">
-            <tr><th>Ojo</th><th>Esf Cerca</th><th>Cil</th><th>Eje</th></tr>
-            <tr>
-              <td><b>OD</b></td>
-              <td>${receta.od_esfera_cerca !== null ? (receta.od_esfera_cerca > 0 ? '+' : '') + receta.od_esfera_cerca : '—'}</td>
-              <td>${receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—'}</td>
-              <td>${receta.od_eje !== null ? receta.od_eje + '°' : '—'}</td>
-            </tr>
-            <tr>
-              <td><b>OI</b></td>
-              <td>${receta.oi_esfera_cerca !== null ? (receta.oi_esfera_cerca > 0 ? '+' : '') + receta.oi_esfera_cerca : '—'}</td>
-              <td>${receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—'}</td>
-              <td>${receta.oi_eje !== null ? receta.oi_eje + '°' : '—'}</td>
-            </tr>
-          </table>
-        `;
-      }
 
       if (receta.tipo_luna || receta.material_luna || receta.tratamientos) {
         html += `
@@ -1322,44 +1301,24 @@ router.get('/recetas/:id/ticket', async (req, res, next) => {
           <div><b>Especialista:</b> ${r.optometrista_nombre || 'Optómetra'}</div>
           <div class="divider"></div>
           
-          <div class="bold" style="margin-bottom: 2px;">VISIÓN DE LEJOS:</div>
+          <div class="bold" style="margin-bottom: 2px;">GRADUACIÓN VISUAL:</div>
           <table class="rx-table" style="margin-bottom: 6px;">
-            <tr><th>Ojo</th><th>Esfera</th><th>Cilindro</th><th>Eje</th><th>DP</th></tr>
+            <tr><th>Ojo</th><th>Esfera</th><th>Cilindro</th><th>Eje</th><th>Adición</th></tr>
             <tr>
               <td><b>OD</b></td>
               <td>${r.od_esfera !== null ? (r.od_esfera > 0 ? '+' : '') + r.od_esfera : '—'}</td>
               <td>${r.od_cilindro !== null ? (r.od_cilindro > 0 ? '+' : '') + r.od_cilindro : '—'}</td>
               <td>${r.od_eje !== null ? r.od_eje + '°' : '—'}</td>
-              <td>${r.od_dp || '—'}</td>
+              <td>${r.od_adicion ? '+' + r.od_adicion : '—'}</td>
             </tr>
             <tr>
               <td><b>OI</b></td>
               <td>${r.oi_esfera !== null ? (r.oi_esfera > 0 ? '+' : '') + r.oi_esfera : '—'}</td>
               <td>${r.oi_cilindro !== null ? (r.oi_cilindro > 0 ? '+' : '') + r.oi_cilindro : '—'}</td>
               <td>${r.oi_eje !== null ? r.oi_eje + '°' : '—'}</td>
-              <td>${r.oi_dp || '—'}</td>
+              <td>${r.oi_adicion ? '+' + r.oi_adicion : '—'}</td>
             </tr>
           </table>
-
-          ${(r.od_adicion || r.oi_adicion || r.od_esfera_cerca || r.oi_esfera_cerca) ? `
-            <div class="bold" style="margin-bottom: 2px;">VISIÓN DE CERCA / ADICIÓN:</div>
-            <div style="font-size: 9.5px; margin-bottom: 3px;">ADD: OD ${r.od_adicion || '—'} | OI ${r.oi_adicion || '—'}</div>
-            <table class="rx-table" style="margin-bottom: 6px;">
-              <tr><th>Ojo</th><th>Esfera Cerca</th><th>Cilindro</th><th>Eje</th></tr>
-              <tr>
-                <td><b>OD</b></td>
-                <td>${r.od_esfera_cerca !== null ? (r.od_esfera_cerca > 0 ? '+' : '') + r.od_esfera_cerca : '—'}</td>
-                <td>${r.od_cilindro !== null ? (r.od_cilindro > 0 ? '+' : '') + r.od_cilindro : '—'}</td>
-                <td>${r.od_eje !== null ? r.od_eje + '°' : '—'}</td>
-              </tr>
-              <tr>
-                <td><b>OI</b></td>
-                <td>${r.oi_esfera_cerca !== null ? (r.oi_esfera_cerca > 0 ? '+' : '') + r.oi_esfera_cerca : '—'}</td>
-                <td>${r.oi_cilindro !== null ? (r.oi_cilindro > 0 ? '+' : '') + r.oi_cilindro : '—'}</td>
-                <td>${r.oi_eje !== null ? r.oi_eje + '°' : '—'}</td>
-              </tr>
-            </table>
-          ` : ''}
 
           ${(r.tipo_luna || r.material_luna || r.tratamientos) ? `
             <div class="divider"></div>
@@ -1457,31 +1416,25 @@ router.get('/contratos/:id/pdf', async (req, res, next) => {
       doc.fillColor('#800020').fontSize(10).font('Helvetica-Bold').text('GRADUACIÓN VISUAL / PRESCRIPCIÓN', 40, y);
       y += 15;
       doc.rect(40, y, 515, 45).stroke('#CBD5E1');
-      doc.fillColor('#0F172A').fontSize(8).font('Helvetica-Bold')
-         .text('OJO', 50, y + 5)
-         .text('ESFERA (LEJOS)', 100, y + 5)
-         .text('CILINDRO', 200, y + 5)
-         .text('EJE', 280, y + 5)
-         .text('DP', 340, y + 5)
-         .text('ADD', 400, y + 5)
-         .text('ESF. CERCA', 460, y + 5);
+      doc.fillColor('#0F172A').fontSize(8.5).font('Helvetica-Bold')
+         .text('OJO', 55, y + 5)
+         .text('ESFERA (SPH)', 130, y + 5)
+         .text('CILINDRO (CYL)', 240, y + 5)
+         .text('EJE (°)', 350, y + 5)
+         .text('ADICIÓN (ADD)', 445, y + 5);
 
       doc.font('Helvetica')
-         .text('OD (Derecho)', 50, y + 18)
-         .text(receta.od_esfera !== null ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—', 110, y + 18)
-         .text(receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—', 205, y + 18)
-         .text(receta.od_eje !== null ? receta.od_eje + '°' : '—', 285, y + 18)
-         .text(receta.od_dp ? receta.od_dp + ' mm' : '—', 340, y + 18)
-         .text(receta.od_adicion ? '+' + receta.od_adicion : '—', 405, y + 18)
-         .text(receta.od_esfera_cerca !== null ? (receta.od_esfera_cerca > 0 ? '+' : '') + receta.od_esfera_cerca : '—', 470, y + 18);
+         .text('OD (Derecho)', 55, y + 18)
+         .text(receta.od_esfera !== null ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—', 140, y + 18)
+         .text(receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—', 250, y + 18)
+         .text(receta.od_eje !== null ? receta.od_eje + '°' : '—', 360, y + 18)
+         .text(receta.od_adicion ? '+' + receta.od_adicion : '—', 455, y + 18);
 
-      doc.text('OI (Izquierdo)', 50, y + 30)
-         .text(receta.oi_esfera !== null ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—', 110, y + 30)
-         .text(receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—', 205, y + 30)
-         .text(receta.oi_eje !== null ? receta.oi_eje + '°' : '—', 285, y + 30)
-         .text(receta.oi_dp ? receta.oi_dp + ' mm' : '—', 340, y + 30)
-         .text(receta.oi_adicion ? '+' + receta.oi_adicion : '—', 405, y + 30)
-         .text(receta.oi_esfera_cerca !== null ? (receta.oi_esfera_cerca > 0 ? '+' : '') + receta.oi_esfera_cerca : '—', 470, y + 30);
+      doc.text('OI (Izquierdo)', 55, y + 30)
+         .text(receta.oi_esfera !== null ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—', 140, y + 30)
+         .text(receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—', 250, y + 30)
+         .text(receta.oi_eje !== null ? receta.oi_eje + '°' : '—', 360, y + 30)
+         .text(receta.oi_adicion ? '+' + receta.oi_adicion : '—', 455, y + 30);
 
       y += 55;
     }
