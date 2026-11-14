@@ -400,7 +400,6 @@ export default {
                     </div>
                     <span class="badge badge-gold" style="font-size: 0.72rem; text-transform: uppercase">Cálculo Automático</span>
                   </div>
-                  </div>
 
                   <!-- Configuración de Lunas y Tratamientos -->
                   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem">
