@@ -9,6 +9,18 @@ const PDFDocument = require('pdfkit');
 router.use(auth);
 
 // ============================================================================
+// HELPER: Cálculo algebraico de esfera de cerca (Esfera Lejos + Adición)
+// ============================================================================
+function calcEsferaCercaServer(esf, add) {
+  if (esf === null || add === null || esf === undefined || add === undefined || esf === '' || add === '') return null;
+  const e = parseFloat(String(esf).replace(',', '.'));
+  const a = parseFloat(String(add).replace(',', '.'));
+  if (isNaN(e) || isNaN(a)) return null;
+  const res = e + a;
+  return (res > 0 ? '+' : '') + res.toFixed(2);
+}
+
+// ============================================================================
 // HELPER: Generar Comprobante Oficial de Venta al concretar contrato
 // ============================================================================
 async function concretarVentaContrato(client, contratoId, reqUser) {
@@ -288,7 +300,7 @@ router.post('/contratos', async (req, res, next) => {
         b.cliente_id, sucursalId, usuarioId, b.edad_atencion || null,
         r.od_esfera || null, r.od_cilindro || null, r.od_eje || null, r.od_dp || null,
         r.oi_esfera || null, r.oi_cilindro || null, r.oi_eje || null, r.oi_dp || null,
-        r.od_adicion || null, r.oi_adicion || null, r.od_esfera_cerca || null, r.oi_esfera_cerca || null,
+        r.od_adicion || null, r.oi_adicion || null, r.od_esfera_cerca || calcEsferaCercaServer(r.od_esfera, r.od_adicion), r.oi_esfera_cerca || calcEsferaCercaServer(r.oi_esfera, r.oi_adicion),
         r.od_dp_cerca || null, r.oi_dp_cerca || null,
         r.tipo_luna || '', r.material_luna || '', r.tratamientos || '', r.color_tinte || '',
         r.indicaciones || '', r.observaciones || ''
@@ -782,7 +794,7 @@ router.post('/recetas', async (req, res, next) => {
       r.cliente_id, sucursalId, usuarioId, r.edad_atencion || null,
       r.od_esfera || null, r.od_cilindro || null, r.od_eje || null, r.od_dp || null,
       r.oi_esfera || null, r.oi_cilindro || null, r.oi_eje || null, r.oi_dp || null,
-      r.od_adicion || null, r.oi_adicion || null, r.od_esfera_cerca || null, r.oi_esfera_cerca || null,
+      r.od_adicion || null, r.oi_adicion || null, r.od_esfera_cerca || calcEsferaCercaServer(r.od_esfera, r.od_adicion), r.oi_esfera_cerca || calcEsferaCercaServer(r.oi_esfera, r.oi_adicion),
       r.od_dp_cerca || null, r.oi_dp_cerca || null,
       r.tipo_luna || '', r.material_luna || '', r.tratamientos || '', r.color_tinte || '',
       r.indicaciones || '', r.observaciones || ''
@@ -1156,6 +1168,30 @@ router.get('/contratos/:id/ticket', async (req, res, next) => {
         </table>
       `;
 
+      const odCerca = receta.od_esfera_cerca || calcEsferaCercaServer(receta.od_esfera, receta.od_adicion);
+      const oiCerca = receta.oi_esfera_cerca || calcEsferaCercaServer(receta.oi_esfera, receta.oi_adicion);
+
+      if (receta.od_adicion || receta.oi_adicion || odCerca || oiCerca) {
+        html += `
+          <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN DE CERCA RESULTANTE (Lejos + ADD) ]</b></div>
+          <table class="rx-table" style="margin-bottom: 4px;">
+            <tr><th>Ojo</th><th>Esf Cerca</th><th>Cil</th><th>Eje</th></tr>
+            <tr>
+              <td><b>OD</b></td>
+              <td><b>${odCerca || '—'}</b></td>
+              <td>${receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—'}</td>
+              <td>${receta.od_eje !== null ? receta.od_eje + '°' : '—'}</td>
+            </tr>
+            <tr>
+              <td><b>OI</b></td>
+              <td><b>${oiCerca || '—'}</b></td>
+              <td>${receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—'}</td>
+              <td>${receta.oi_eje !== null ? receta.oi_eje + '°' : '—'}</td>
+            </tr>
+          </table>
+        `;
+      }
+
       if (receta.tipo_luna || receta.material_luna || receta.tratamientos) {
         html += `
           <div style="font-size: 9.5px; margin-top: 3px;">
@@ -1320,6 +1356,32 @@ router.get('/recetas/:id/ticket', async (req, res, next) => {
             </tr>
           </table>
 
+          ${(() => {
+            const odC = r.od_esfera_cerca || calcEsferaCercaServer(r.od_esfera, r.od_adicion);
+            const oiC = r.oi_esfera_cerca || calcEsferaCercaServer(r.oi_esfera, r.oi_adicion);
+            if (r.od_adicion || r.oi_adicion || odC || oiC) {
+              return `
+                <div class="bold" style="margin-bottom: 2px;">VISIÓN DE CERCA RESULTANTE (Lejos + ADD):</div>
+                <table class="rx-table" style="margin-bottom: 6px;">
+                  <tr><th>Ojo</th><th>Esf Cerca</th><th>Cilindro</th><th>Eje</th></tr>
+                  <tr>
+                    <td><b>OD</b></td>
+                    <td><b>${odC || '—'}</b></td>
+                    <td>${r.od_cilindro !== null ? (r.od_cilindro > 0 ? '+' : '') + r.od_cilindro : '—'}</td>
+                    <td>${r.od_eje !== null ? r.od_eje + '°' : '—'}</td>
+                  </tr>
+                  <tr>
+                    <td><b>OI</b></td>
+                    <td><b>${oiC || '—'}</b></td>
+                    <td>${r.oi_cilindro !== null ? (r.oi_cilindro > 0 ? '+' : '') + r.oi_cilindro : '—'}</td>
+                    <td>${r.oi_eje !== null ? r.oi_eje + '°' : '—'}</td>
+                  </tr>
+                </table>
+              `;
+            }
+            return '';
+          })()}
+
           ${(r.tipo_luna || r.material_luna || r.tratamientos) ? `
             <div class="divider"></div>
             <div class="bold">RECOMENDACIÓN TÉCNICA:</div>
@@ -1416,25 +1478,31 @@ router.get('/contratos/:id/pdf', async (req, res, next) => {
       doc.fillColor('#800020').fontSize(10).font('Helvetica-Bold').text('GRADUACIÓN VISUAL / PRESCRIPCIÓN', 40, y);
       y += 15;
       doc.rect(40, y, 515, 45).stroke('#CBD5E1');
-      doc.fillColor('#0F172A').fontSize(8.5).font('Helvetica-Bold')
-         .text('OJO', 55, y + 5)
-         .text('ESFERA (SPH)', 130, y + 5)
-         .text('CILINDRO (CYL)', 240, y + 5)
-         .text('EJE (°)', 350, y + 5)
-         .text('ADICIÓN (ADD)', 445, y + 5);
+      doc.fillColor('#0F172A').fontSize(8).font('Helvetica-Bold')
+         .text('OJO', 50, y + 5)
+         .text('ESFERA (LEJOS)', 110, y + 5)
+         .text('CILINDRO', 200, y + 5)
+         .text('EJE', 280, y + 5)
+         .text('ADICIÓN (ADD)', 345, y + 5)
+         .text('ESF. CERCA', 440, y + 5);
+
+      const odCerca = receta.od_esfera_cerca || calcEsferaCercaServer(receta.od_esfera, receta.od_adicion);
+      const oiCerca = receta.oi_esfera_cerca || calcEsferaCercaServer(receta.oi_esfera, receta.oi_adicion);
 
       doc.font('Helvetica')
-         .text('OD (Derecho)', 55, y + 18)
-         .text(receta.od_esfera !== null ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—', 140, y + 18)
-         .text(receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—', 250, y + 18)
-         .text(receta.od_eje !== null ? receta.od_eje + '°' : '—', 360, y + 18)
-         .text(receta.od_adicion ? '+' + receta.od_adicion : '—', 455, y + 18);
+         .text('OD (Derecho)', 50, y + 18)
+         .text(receta.od_esfera !== null ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—', 120, y + 18)
+         .text(receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—', 205, y + 18)
+         .text(receta.od_eje !== null ? receta.od_eje + '°' : '—', 285, y + 18)
+         .text(receta.od_adicion ? '+' + receta.od_adicion : '—', 355, y + 18)
+         .font('Helvetica-Bold').text(odCerca || '—', 445, y + 18).font('Helvetica');
 
-      doc.text('OI (Izquierdo)', 55, y + 30)
-         .text(receta.oi_esfera !== null ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—', 140, y + 30)
-         .text(receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—', 250, y + 30)
-         .text(receta.oi_eje !== null ? receta.oi_eje + '°' : '—', 360, y + 30)
-         .text(receta.oi_adicion ? '+' + receta.oi_adicion : '—', 455, y + 30);
+      doc.text('OI (Izquierdo)', 50, y + 30)
+         .text(receta.oi_esfera !== null ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—', 120, y + 30)
+         .text(receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—', 205, y + 30)
+         .text(receta.oi_eje !== null ? receta.oi_eje + '°' : '—', 285, y + 30)
+         .text(receta.oi_adicion ? '+' + receta.oi_adicion : '—', 355, y + 30)
+         .font('Helvetica-Bold').text(oiCerca || '—', 445, y + 30).font('Helvetica');
 
       y += 55;
     }

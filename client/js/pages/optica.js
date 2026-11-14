@@ -340,11 +340,12 @@ export default {
                     <table class="data-table" style="font-size: 0.95rem; text-align: center; width: 100%">
                       <thead>
                         <tr style="background: var(--bg-secondary)">
-                          <th style="width: 80px">OJO</th>
-                          <th style="min-width: 140px">ESFERA (SPH)<br><small class="text-muted">Graduación (+ / -)</small></th>
-                          <th style="min-width: 140px">CILINDRO (CYL)<br><small class="text-muted">Astigmatismo (-)</small></th>
-                          <th style="min-width: 130px">EJE (°)<br><small class="text-muted">0° a 180°</small></th>
-                          <th style="min-width: 140px; background: rgba(201, 169, 110, 0.2); color: var(--accent-gold-dark)">ADICIÓN (ADD)<br><small>Graduación Adicional</small></th>
+                          <th style="width: 75px">OJO</th>
+                          <th style="min-width: 130px">ESFERA (SPH)<br><small class="text-muted">Lejos (+ / -)</small></th>
+                          <th style="min-width: 130px">CILINDRO (CYL)<br><small class="text-muted">Astigmatismo (-)</small></th>
+                          <th style="min-width: 120px">EJE (°)<br><small class="text-muted">0° a 180°</small></th>
+                          <th style="min-width: 130px; background: rgba(201, 169, 110, 0.2); color: var(--accent-gold-dark)">ADICIÓN (ADD)<br><small>Adicional (+)</small></th>
+                          <th style="min-width: 140px; background: rgba(201, 169, 110, 0.12); color: #1e3a8a">ESF. CERCA<br><small style="color: var(--accent-gold-dark)">= Lejos + ADD</small></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -352,7 +353,7 @@ export default {
                         <tr>
                           <td style="font-weight: 800; font-size: 1.15rem; color: #1e3a8a; background: rgba(59, 130, 246, 0.08); vertical-align: middle">OD</td>
                           <td style="padding: 0.5rem">
-                            <input type="text" id="rec-od-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal">
+                            <input type="text" id="rec-od-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal" oninput="window.optica.calcularCerca('od')">
                           </td>
                           <td style="padding: 0.5rem">
                             <input type="text" id="rec-od-cilindro" class="form-control text-center optica-rx-input" placeholder="-0.00" inputmode="decimal">
@@ -361,7 +362,10 @@ export default {
                             <input type="text" id="rec-od-eje" class="form-control text-center optica-rx-input" placeholder="0° - 180°" inputmode="numeric">
                           </td>
                           <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.1)">
-                            <input type="text" id="rec-od-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800">
+                            <input type="text" id="rec-od-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800" oninput="window.optica.calcularCerca('od')">
+                          </td>
+                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.06)">
+                            <input type="text" id="rec-od-esfera-cerca" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #fdfaf5; font-weight: 800; color: #1e3a8a; cursor: default" title="Resultado automático: Esfera Lejos + Adición">
                           </td>
                         </tr>
 
@@ -369,7 +373,7 @@ export default {
                         <tr>
                           <td style="font-weight: 800; font-size: 1.15rem; color: #047857; background: rgba(16, 185, 129, 0.08); vertical-align: middle">OI</td>
                           <td style="padding: 0.5rem">
-                            <input type="text" id="rec-oi-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal">
+                            <input type="text" id="rec-oi-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal" oninput="window.optica.calcularCerca('oi')">
                           </td>
                           <td style="padding: 0.5rem">
                             <input type="text" id="rec-oi-cilindro" class="form-control text-center optica-rx-input" placeholder="-0.00" inputmode="decimal">
@@ -378,11 +382,24 @@ export default {
                             <input type="text" id="rec-oi-eje" class="form-control text-center optica-rx-input" placeholder="0° - 180°" inputmode="numeric">
                           </td>
                           <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.1)">
-                            <input type="text" id="rec-oi-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800">
+                            <input type="text" id="rec-oi-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800" oninput="window.optica.calcularCerca('oi')">
+                          </td>
+                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.06)">
+                            <input type="text" id="rec-oi-esfera-cerca" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #fdfaf5; font-weight: 800; color: #047857; cursor: default" title="Resultado automático: Esfera Lejos + Adición">
                           </td>
                         </tr>
                       </tbody>
                     </table>
+                  </div>
+
+                  <!-- Banner Informativo de Relación Clínica -->
+                  <div style="margin-top: -0.25rem; margin-bottom: 1rem; padding: 0.55rem 0.85rem; background: rgba(201, 169, 110, 0.08); border-left: 3px solid var(--accent-gold); border-radius: 4px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 8px">
+                    <div style="display: flex; align-items: center; gap: 7px">
+                      <span style="font-size: 1.1rem">💡</span>
+                      <span><b>Cálculo Clínico:</b> Cuando existe <b>Adición (ADD)</b>, esta se suma a la <b>Esfera de Lejos</b> y el resultado automático corresponde a la <b>Esfera de Cerca</b>.</span>
+                    </div>
+                    <span class="badge badge-gold" style="font-size: 0.72rem; text-transform: uppercase">Cálculo Automático</span>
+                  </div>
                   </div>
 
                   <!-- Configuración de Lunas y Tratamientos -->
@@ -1908,6 +1925,28 @@ export default {
     this.actualizarPrecios();
   },
 
+  // Cálculo algebraico de esfera de cerca (Esfera Lejos + Adición)
+  calcularEsferaCerca(esferaStr, adicionStr) {
+    if (!esferaStr || !adicionStr) return null;
+    const esf = parseFloat(String(esferaStr).replace(',', '.'));
+    const add = parseFloat(String(adicionStr).replace(',', '.'));
+    if (isNaN(esf) || isNaN(add)) return null;
+    const cerca = esf + add;
+    const signo = cerca > 0 ? '+' : (cerca < 0 ? '' : '+');
+    return `${signo}${cerca.toFixed(2)}`;
+  },
+
+  calcularCerca(ojo) {
+    const esferaInput = document.getElementById(`rec-${ojo}-esfera`);
+    const addInput = document.getElementById(`rec-${ojo}-add`);
+    const cercaInput = document.getElementById(`rec-${ojo}-esfera-cerca`);
+
+    if (!esferaInput || !addInput || !cercaInput) return;
+
+    const res = this.calcularEsferaCerca(esferaInput.value, addInput.value);
+    cercaInput.value = res || '—';
+  },
+
   recolectarTratamientos() {
     const trat = [];
     document.querySelectorAll('.chk-tratamiento:checked').forEach(c => trat.push(c.value));
@@ -2037,6 +2076,8 @@ export default {
       if (tipo === 'completo' || tipo === 'cambio_montura' || tipo === 'medicion') {
         const odEsfera = document.getElementById('rec-od-esfera')?.value;
         const oiEsfera = document.getElementById('rec-oi-esfera')?.value;
+        const odAdd = document.getElementById('rec-od-add')?.value;
+        const oiAdd = document.getElementById('rec-oi-add')?.value;
 
         recetaPayload = {
           od_esfera: odEsfera || null,
@@ -2047,10 +2088,10 @@ export default {
           oi_cilindro: document.getElementById('rec-oi-cilindro')?.value || null,
           oi_eje: parseInt(document.getElementById('rec-oi-eje')?.value) || null,
           oi_dp: null,
-          od_adicion: document.getElementById('rec-od-add')?.value || null,
-          oi_adicion: document.getElementById('rec-oi-add')?.value || null,
-          od_esfera_cerca: null,
-          oi_esfera_cerca: null,
+          od_adicion: odAdd || null,
+          oi_adicion: oiAdd || null,
+          od_esfera_cerca: this.calcularEsferaCerca(odEsfera, odAdd),
+          oi_esfera_cerca: this.calcularEsferaCerca(oiEsfera, oiAdd),
           od_dp_cerca: null,
           oi_dp_cerca: null,
           tipo_luna: document.getElementById('rec-tipo-luna')?.value || 'monofocal',
@@ -2209,11 +2250,13 @@ export default {
     const elOdCil = document.getElementById('rec-od-cilindro'); if (elOdCil) elOdCil.value = '';
     const elOdEje = document.getElementById('rec-od-eje'); if (elOdEje) elOdEje.value = '';
     const elOdAdd = document.getElementById('rec-od-add'); if (elOdAdd) elOdAdd.value = '';
+    const elOdCerca = document.getElementById('rec-od-esfera-cerca'); if (elOdCerca) elOdCerca.value = '—';
 
     const elOiEsf = document.getElementById('rec-oi-esfera'); if (elOiEsf) elOiEsf.value = '';
     const elOiCil = document.getElementById('rec-oi-cilindro'); if (elOiCil) elOiCil.value = '';
     const elOiEje = document.getElementById('rec-oi-eje'); if (elOiEje) elOiEje.value = '';
     const elOiAdd = document.getElementById('rec-oi-add'); if (elOiAdd) elOiAdd.value = '';
+    const elOiCerca = document.getElementById('rec-oi-esfera-cerca'); if (elOiCerca) elOiCerca.value = '—';
 
     // Resetear productos adicionales
     this.nuevoContrato.productos_adicionales = [];
@@ -2460,22 +2503,25 @@ export default {
                   <th>CIL (CYL)</th>
                   <th>EJE (°)</th>
                   <th>ADICIÓN (ADD)</th>
+                  <th style="color: #1e3a8a">ESF. CERCA (RESULTADO)</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td style="font-weight: bold; color: #1e3a8a">OD</td>
-                  <td>${c.receta.od_esfera || '—'}</td>
-                  <td>${c.receta.od_cilindro || '—'}</td>
+                  <td>${c.receta.od_esfera !== null && c.receta.od_esfera !== undefined ? (c.receta.od_esfera > 0 ? '+' : '') + c.receta.od_esfera : '—'}</td>
+                  <td>${c.receta.od_cilindro !== null && c.receta.od_cilindro !== undefined ? (c.receta.od_cilindro > 0 ? '+' : '') + c.receta.od_cilindro : '—'}</td>
                   <td>${c.receta.od_eje !== null && c.receta.od_eje !== undefined ? `${c.receta.od_eje}°` : '—'}</td>
-                  <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.od_adicion || '—'}</td>
+                  <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.od_adicion ? '+' + c.receta.od_adicion : '—'}</td>
+                  <td style="font-weight: 800; color: #1e3a8a">${c.receta.od_esfera_cerca || (c.receta.od_adicion && c.receta.od_esfera ? window.optica.calcularEsferaCerca(c.receta.od_esfera, c.receta.od_adicion) : '—')}</td>
                 </tr>
                 <tr>
                   <td style="font-weight: bold; color: #047857">OI</td>
-                  <td>${c.receta.oi_esfera || '—'}</td>
-                  <td>${c.receta.oi_cilindro || '—'}</td>
+                  <td>${c.receta.oi_esfera !== null && c.receta.oi_esfera !== undefined ? (c.receta.oi_esfera > 0 ? '+' : '') + c.receta.oi_esfera : '—'}</td>
+                  <td>${c.receta.oi_cilindro !== null && c.receta.oi_cilindro !== undefined ? (c.receta.oi_cilindro > 0 ? '+' : '') + c.receta.oi_cilindro : '—'}</td>
                   <td>${c.receta.oi_eje !== null && c.receta.oi_eje !== undefined ? `${c.receta.oi_eje}°` : '—'}</td>
-                  <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.oi_adicion || '—'}</td>
+                  <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.oi_adicion ? '+' + c.receta.oi_adicion : '—'}</td>
+                  <td style="font-weight: 800; color: #047857">${c.receta.oi_esfera_cerca || (c.receta.oi_adicion && c.receta.oi_esfera ? window.optica.calcularEsferaCerca(c.receta.oi_esfera, c.receta.oi_adicion) : '—')}</td>
                 </tr>
               </tbody>
             </table>
