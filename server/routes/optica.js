@@ -885,6 +885,81 @@ router.get('/monturas', async (req, res, next) => {
   }
 });
 
+// GET /api/optica/buscar-adicional - Buscar accesorios y productos adicionales por código o nombre (soporta JM-VAR-..., JM-PRD-...)
+router.get('/buscar-adicional', async (req, res, next) => {
+  try {
+    const q = (req.query.q || '').trim();
+    const sucursalId = req.query.sucursal_id || req.user.sucursal_id || 1;
+
+    if (!q) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const term = `%${q}%`;
+
+    // 1. Buscar en producto_variantes (SKU de variante, ej. JM-VAR-xxxxxx, o nombre de variante)
+    const varRes = await db.query(`
+      SELECT 
+        p.id as producto_id,
+        p.codigo as producto_codigo,
+        p.nombre as producto_nombre,
+        c.nombre as categoria_nombre,
+        v.id as variante_id,
+        v.sku as variante_sku,
+        v.sku as codigo,
+        v.nombre_variante,
+        COALESCE(v.precio_venta, p.precio_venta) as precio_venta,
+        COALESCE(ivs.stock_actual, 0) as stock_actual
+      FROM producto_variantes v
+      JOIN productos p ON v.producto_id = p.id
+      LEFT JOIN categorias c ON p.categoria_id = c.id
+      LEFT JOIN inventario_variantes_sucursales ivs ON v.id = ivs.variante_id AND ivs.sucursal_id = $2
+      WHERE v.activo = true AND p.activo = true
+        AND (v.sku ILIKE $1 OR v.nombre_variante ILIKE $1 OR p.nombre ILIKE $1 OR p.codigo ILIKE $1)
+      ORDER BY 
+        CASE 
+          WHEN v.sku ILIKE $1 THEN 0 
+          WHEN v.nombre_variante ILIKE $1 THEN 1
+          ELSE 2 
+        END,
+        v.nombre_variante ASC
+      LIMIT 25
+    `, [term, sucursalId]);
+
+    // 2. Buscar en productos simples (sin variantes, ej. JM-PRD-xxxxxx)
+    const prodRes = await db.query(`
+      SELECT 
+        p.id as producto_id,
+        p.codigo as producto_codigo,
+        p.codigo as codigo,
+        p.nombre as producto_nombre,
+        c.nombre as categoria_nombre,
+        NULL as variante_id,
+        NULL as variante_sku,
+        '' as nombre_variante,
+        p.precio_venta,
+        COALESCE(isp.stock_actual, 0) as stock_actual
+      FROM productos p
+      LEFT JOIN categorias c ON p.categoria_id = c.id
+      LEFT JOIN inventario_sucursales isp ON p.id = isp.producto_id AND isp.sucursal_id = $2
+      WHERE p.activo = true AND p.tiene_variantes = false
+        AND (p.codigo ILIKE $1 OR p.nombre ILIKE $1 OR c.nombre ILIKE $1)
+      ORDER BY 
+        CASE 
+          WHEN p.codigo ILIKE $1 THEN 0 
+          ELSE 1 
+        END,
+        p.nombre ASC
+      LIMIT 25
+    `, [term, sucursalId]);
+
+    const results = [...varRes.rows, ...prodRes.rows];
+    res.json({ success: true, data: results });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ============================================================================
 // TRASLADOS ENTRE SUCURSALES
 // ============================================================================

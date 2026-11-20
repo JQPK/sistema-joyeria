@@ -584,7 +584,7 @@ export default {
                   <!-- Buscador de Adicionales -->
                   <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem">
                     <div style="flex: 1; position: relative">
-                      <input type="text" id="input-buscar-adicional" class="form-control" placeholder="Buscar accesorio o producto por código o nombre..." autocomplete="off" style="height: 44px; font-size: 0.95rem">
+                      <input type="text" id="input-buscar-adicional" class="form-control" placeholder="Buscar por código (ej. JM-VAR-..., JM-PRD-...) o nombre..." autocomplete="off" style="height: 44px; font-size: 0.95rem">
                     </div>
                     <button type="button" class="btn btn-secondary" onclick="window.optica.abrirScannerAdicional()" title="Escanear código de barras de accesorio" style="height: 44px; display: flex; align-items: center; gap: 6px">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
@@ -1583,9 +1583,43 @@ export default {
   async cargarCatalogoGeneral() {
     try {
       const activeSucursal = localStorage.getItem('activeSucursal') || 1;
-      const res = await api.get('/productos', { sucursal_id: activeSucursal, limit: 300 });
-      if (res.success) {
-        this.todosLosProductos = res.data || [];
+      const res = await api.get('/productos', { sucursal_id: activeSucursal, limit: 500 });
+      if (res.success && Array.isArray(res.data)) {
+        const flatItems = [];
+        res.data.forEach(p => {
+          if (p.tiene_variantes && Array.isArray(p.variantes) && p.variantes.length > 0) {
+            p.variantes.forEach(v => {
+              flatItems.push({
+                producto_id: p.id,
+                variante_id: v.id,
+                producto_nombre: p.nombre,
+                nombre_variante: v.nombre_variante,
+                producto_codigo: p.codigo,
+                variante_sku: v.sku,
+                codigo: v.sku, // Para búsqueda por JM-VAR-xxxxxx
+                categoria_nombre: p.categoria_nombre,
+                material_nombre: p.material_nombre,
+                precio_venta: parseFloat(v.precio_venta || p.precio_venta || 0),
+                stock_actual: parseInt(v.stock_actual || 0, 10)
+              });
+            });
+          } else {
+            flatItems.push({
+              producto_id: p.id,
+              variante_id: null,
+              producto_nombre: p.nombre,
+              nombre_variante: '',
+              producto_codigo: p.codigo,
+              variante_sku: null,
+              codigo: p.codigo, // Para búsqueda por JM-PRD-xxxxxx
+              categoria_nombre: p.categoria_nombre,
+              material_nombre: p.material_nombre,
+              precio_venta: parseFloat(p.precio_venta || 0),
+              stock_actual: parseInt(p.stock_actual || 0, 10)
+            });
+          }
+        });
+        this.todosLosProductos = flatItems;
       }
     } catch (e) {
       console.warn('Error cargando catálogo general:', e);
@@ -1729,7 +1763,7 @@ export default {
   // ==========================================================================
   // GESTIÓN DE PRODUCTOS Y ACCESORIOS ADICIONALES AL CONTRATO
   // ==========================================================================
-  buscarAdicionales(termino) {
+  async buscarAdicionales(termino) {
     const resEl = document.getElementById('lista-resultados-adicionales');
     if (!resEl) return;
 
@@ -1738,36 +1772,59 @@ export default {
       return;
     }
 
-    const term = termino.toLowerCase();
+    const term = termino.trim().toLowerCase();
     const source = (this.todosLosProductos && this.todosLosProductos.length > 0) 
       ? this.todosLosProductos 
       : this.monturasCatalogo;
 
-    const matches = source.filter(p => {
+    // 1. Filtrado local rápido en memoria (soporta código SKU de variante ej. JM-VAR-..., código producto, nombre, etc.)
+    let matches = source.filter(p => {
       const n = (p.producto_nombre || p.nombre || '').toLowerCase();
       const v = (p.nombre_variante || '').toLowerCase();
-      const c = (p.variante_sku || p.producto_codigo || p.codigo || '').toLowerCase();
+      const c = (p.codigo || p.variante_sku || p.producto_codigo || '').toLowerCase();
+      const skuVar = (p.variante_sku || '').toLowerCase();
+      const skuProd = (p.producto_codigo || '').toLowerCase();
       const cat = (p.categoria_nombre || '').toLowerCase();
-      return n.includes(term) || v.includes(term) || c.includes(term) || cat.includes(term);
+      return c.includes(term) || skuVar.includes(term) || skuProd.includes(term) || n.includes(term) || v.includes(term) || cat.includes(term);
     });
+
+    // 2. Si no hay suficientes resultados o es búsqueda directa por código (ej. "JM-", "VAR", números), consultar al endpoint backend
+    if (matches.length < 5 || term.startsWith('jm-') || term.includes('var') || term.length >= 3) {
+      try {
+        const activeSucursal = localStorage.getItem('activeSucursal') || 1;
+        const srvRes = await api.get('/optica/buscar-adicional', { q: termino.trim(), sucursal_id: activeSucursal });
+        if (srvRes.success && Array.isArray(srvRes.data) && srvRes.data.length > 0) {
+          const seen = new Set(matches.map(m => `${m.producto_id || m.id}-${m.variante_id || 'null'}`));
+          srvRes.data.forEach(item => {
+            const key = `${item.producto_id}-${item.variante_id || 'null'}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              matches.push(item);
+            }
+          });
+        }
+      } catch (err) {
+        // En caso de desconexión, se conservan los resultados locales
+      }
+    }
 
     if (matches.length === 0) {
       resEl.innerHTML = `
         <div style="padding: 1rem; color: var(--text-muted); font-size: 0.88rem; text-align: center">
-          No se encontraron productos con "<strong>${termino}</strong>". Puedes agregarlo manualmente con el botón <strong>+ Manual</strong>.
+          No se encontraron productos o subproductos con "<strong>${termino}</strong>". Puedes agregarlo manualmente con el botón <strong>+ Manual</strong>.
         </div>
       `;
       resEl.classList.remove('hidden');
       return;
     }
 
-    resEl.innerHTML = matches.slice(0, 15).map(m => {
+    resEl.innerHTML = matches.slice(0, 25).map(m => {
       const prodId = m.producto_id || m.id;
       const varId = m.variante_id || null;
       const nombreCompleto = varId ? `${m.producto_nombre || m.nombre} · ${m.nombre_variante}` : (m.producto_nombre || m.nombre);
       const stockLocal = parseInt(m.stock_actual || 0);
       const precio = parseFloat(m.precio_venta || 0);
-      const codigo = m.variante_sku || m.producto_codigo || m.codigo || '—';
+      const codigo = m.variante_sku || m.codigo || m.producto_codigo || '—';
 
       return `
         <div class="optica-item-hover" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--bg-secondary); display:flex; justify-content:space-between; align-items:center; cursor:pointer" onclick="window.optica.agregarProductoAdicional(${JSON.stringify(m).replace(/"/g, '&quot;')})">
@@ -1776,7 +1833,7 @@ export default {
             <div>
               <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary)">${nombreCompleto}</div>
               <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top:2px">
-                Cód: <span style="font-family:monospace; font-weight:600">${codigo}</span> · ${m.categoria_nombre || 'General'} · <span class="badge ${stockLocal > 0 ? 'badge-success' : 'badge-danger'}" style="font-size:0.75rem">${stockLocal} disp.</span>
+                Cód: <span style="font-family:monospace; font-weight:700; color:var(--accent-gold-dark); background:rgba(201,169,110,0.14); padding:1px 6px; border-radius:4px">${codigo}</span> · ${m.categoria_nombre || 'General'} · <span class="badge ${stockLocal > 0 ? 'badge-success' : 'badge-danger'}" style="font-size:0.75rem">${stockLocal} disp.</span>
               </div>
             </div>
           </div>
