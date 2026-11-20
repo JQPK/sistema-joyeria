@@ -80,6 +80,89 @@ async function ensureKardexTable() {
   }
 }
 
+// Procesa y enriquece los movimientos con saldos progresivos y detalles de ventas
+function procesarHistorial(rawMovs, stockActualTotal, producto, variante, sucursalNombreDefault = 'Tienda Principal') {
+  // 1. Sumar entradas y salidas de movimientos existentes
+  let totalEntradas = 0;
+  let totalSalidas = 0;
+  let totalAjustes = 0;
+
+  rawMovs.forEach(m => {
+    totalEntradas += parseInt(m.cantidad_entrada || 0, 10);
+    totalSalidas += parseInt(m.cantidad_salida || 0, 10);
+    if (m.tipo_movimiento && m.tipo_movimiento.startsWith('AJUSTE')) {
+      totalAjustes++;
+    }
+  });
+
+  const hasInitial = rawMovs.some(m => m.tipo_movimiento === 'INVENTARIO_INICIAL');
+  let movements = [...rawMovs];
+
+  // 2. Si no hay INVENTARIO_INICIAL explícito, calcular y añadir la fila inicial
+  if (!hasInitial) {
+    const stockInicialCalculado = Math.max(0, stockActualTotal + totalSalidas - totalEntradas);
+    const creationDate = (variante ? variante.created_at : producto.created_at) || producto.created_at || new Date().toISOString();
+
+    const initialEntry = {
+      id: 'init-0',
+      producto_id: producto.id,
+      variante_id: variante ? variante.id : null,
+      sucursal_id: rawMovs[0]?.sucursal_id || 1,
+      fecha: creationDate,
+      tipo_movimiento: 'INVENTARIO_INICIAL',
+      tipo_documento: 'INVENTARIO_INICIAL',
+      documento_referencia: 'CARGA_INICIAL',
+      cantidad_entrada: stockInicialCalculado,
+      cantidad_salida: 0,
+      stock_anterior: 0,
+      stock_saldo: stockInicialCalculado,
+      motivo: 'Inventario inicial registrado al crear el producto en catálogo',
+      notas: 'Carga inicial del sistema',
+      usuario_nombre: 'Sistema / Carga Catálogo',
+      usuario_username: 'sistema',
+      sucursal_nombre: rawMovs[0]?.sucursal_nombre || sucursalNombreDefault,
+      nombre_variante: variante ? variante.nombre_variante : null,
+      variante_sku: variante ? variante.sku : (producto.codigo || null),
+      detalle_operacion: `Creación inicial en catálogo con stock base de ${stockInicialCalculado} unid.`
+    };
+
+    movements.unshift(initialEntry);
+    totalEntradas += stockInicialCalculado;
+  }
+
+  // 3. Recalcular saldos continuos de forma progresiva (cronológica)
+  let runningSaldo = 0;
+  movements.forEach(m => {
+    const ent = parseInt(m.cantidad_entrada || 0, 10);
+    const sal = parseInt(m.cantidad_salida || 0, 10);
+
+    m.stock_anterior = runningSaldo;
+    runningSaldo = runningSaldo + ent - sal;
+    m.stock_saldo = runningSaldo;
+
+    // Enriquecer texto explicativo de la operación
+    if (m.tipo_movimiento === 'VENTA') {
+      const doc = m.documento_referencia || m.tipo_documento || 'Boleta';
+      const usr = m.usuario_nombre ? `${m.usuario_nombre}${m.usuario_username ? ` (${m.usuario_username})` : ''}` : 'Cajero';
+      const cln = m.cliente_nombre ? ` · Cliente: ${m.cliente_nombre}` : '';
+      const tot = m.venta_total ? ` · S/ ${parseFloat(m.venta_total).toFixed(2)}` : '';
+      const met = m.venta_metodo_pago ? ` (${m.venta_metodo_pago})` : '';
+      m.detalle_operacion = `Venta en ${m.sucursal_nombre || 'Tienda'} por ${usr} · Doc: ${doc}${cln}${tot}${met}`;
+    } else if (m.tipo_movimiento === 'INVENTARIO_INICIAL') {
+      m.detalle_operacion = `Creación inicial en catálogo con stock base de ${m.cantidad_entrada} unid.`;
+    } else {
+      m.detalle_operacion = m.motivo || m.notas || m.tipo_movimiento;
+    }
+  });
+
+  return {
+    movements,
+    totalEntradas,
+    totalSalidas,
+    totalAjustes
+  };
+}
+
 // GET /api/kardex/producto/:id - Obtener movimientos de kárdex de un producto o subproducto (variante)
 router.get('/producto/:id', async (req, res) => {
   try {
@@ -104,7 +187,6 @@ router.get('/producto/:id', async (req, res) => {
     `, [targetProductoId]);
 
     if (pRes.rows.length === 0) {
-      // Puede haber recibido el ID de la variante directamente en la URL
       const vCheck = await db.query('SELECT * FROM producto_variantes WHERE id = $1', [targetProductoId]);
       if (vCheck.rows.length > 0) {
         varianteId = targetProductoId;
@@ -131,6 +213,8 @@ router.get('/producto/:id', async (req, res) => {
       variantes = vRes.rows;
     }
 
+    const varianteActiva = varianteId ? (variantes.find(v => v.id === varianteId) || null) : null;
+
     // 3. Stock actual por sucursal
     let stockSucRows = [];
     try {
@@ -138,7 +222,6 @@ router.get('/producto/:id', async (req, res) => {
       let stockParams;
 
       if (varianteId) {
-        // Caso: variante / subproducto específico
         stockQuery = `
           SELECT s.id as sucursal_id, s.nombre as sucursal_nombre,
             COALESCE((SELECT stock_actual FROM inventario_variantes_sucursales WHERE variante_id = $1 AND sucursal_id = s.id LIMIT 1), 0) as stock_actual,
@@ -149,7 +232,6 @@ router.get('/producto/:id', async (req, res) => {
         `;
         stockParams = [varianteId];
       } else if (producto.tiene_variantes) {
-        // Caso: producto padre con variantes (consolidado)
         stockQuery = `
           SELECT s.id as sucursal_id, s.nombre as sucursal_nombre,
             COALESCE((SELECT SUM(ivs.stock_actual) FROM inventario_variantes_sucursales ivs JOIN producto_variantes pv ON ivs.variante_id = pv.id WHERE pv.producto_id = $1 AND ivs.sucursal_id = s.id), 0) as stock_actual,
@@ -160,7 +242,6 @@ router.get('/producto/:id', async (req, res) => {
         `;
         stockParams = [targetProductoId];
       } else {
-        // Caso: producto simple sin variantes
         stockQuery = `
           SELECT s.id as sucursal_id, s.nombre as sucursal_nombre,
             COALESCE(isp.stock_actual, 0) as stock_actual,
@@ -180,20 +261,27 @@ router.get('/producto/:id', async (req, res) => {
       stockSucRows = [];
     }
 
-    // 4. Construir consulta de movimientos
-    let movimientos = [];
+    // 4. Construir consulta de movimientos cronológicos (ASC para cálculo correlativo)
+    let rawMovs = [];
     try {
       let query = `
         SELECT 
           km.*,
           u.nombre as usuario_nombre,
+          u.username as usuario_username,
           s.nombre as sucursal_nombre,
           pv.nombre_variante,
-          pv.sku as variante_sku
+          pv.sku as variante_sku,
+          v.id as venta_id,
+          v.total as venta_total,
+          v.metodo_pago as venta_metodo_pago,
+          cl.nombre as cliente_nombre
         FROM kardex_movimientos km
         LEFT JOIN usuarios u ON km.usuario_id = u.id
         LEFT JOIN sucursales s ON km.sucursal_id = s.id
         LEFT JOIN producto_variantes pv ON km.variante_id = pv.id
+        LEFT JOIN ventas v ON km.documento_referencia = v.numero_comprobante
+        LEFT JOIN clientes cl ON v.cliente_id = cl.id
         WHERE km.producto_id = $1
       `;
       const params = [targetProductoId];
@@ -220,29 +308,26 @@ router.get('/producto/:id', async (req, res) => {
         params.push(fechaFin + ' 23:59:59');
       }
 
-      query += ' ORDER BY km.fecha DESC, km.id DESC LIMIT 300';
+      query += ' ORDER BY km.fecha ASC, km.id ASC LIMIT 500';
 
       const movRes = await db.query(query, params);
-      movimientos = movRes.rows;
+      rawMovs = movRes.rows;
     } catch (movErr) {
       console.error('[kardex] Error en query de movimientos:', movErr.message);
-      movimientos = [];
+      rawMovs = [];
     }
 
-    // 5. Métricas de resumen
-    let totalEntradas = 0;
-    let totalSalidas = 0;
-    let totalAjustes = 0;
-
-    movimientos.forEach(m => {
-      totalEntradas += parseInt(m.cantidad_entrada || 0, 10);
-      totalSalidas += parseInt(m.cantidad_salida || 0, 10);
-      if (m.tipo_movimiento && m.tipo_movimiento.startsWith('AJUSTE')) {
-        totalAjustes++;
-      }
-    });
-
     const stockActualTotal = stockSucRows.reduce((sum, r) => sum + parseInt(r.stock_actual || 0, 10), 0);
+    const { movements, totalEntradas, totalSalidas, totalAjustes } = procesarHistorial(
+      rawMovs,
+      stockActualTotal,
+      producto,
+      varianteActiva,
+      stockSucRows[0]?.sucursal_nombre
+    );
+
+    // Enviar en orden descendente para la vista UI (más reciente primero)
+    const movimientosDesc = [...movements].reverse();
 
     res.json({
       success: true,
@@ -256,9 +341,9 @@ router.get('/producto/:id', async (req, res) => {
           total_entradas: totalEntradas,
           total_salidas: totalSalidas,
           total_ajustes: totalAjustes,
-          total_registros: movimientos.length
+          total_registros: movements.length
         },
-        movimientos
+        movimientos: movimientosDesc
       }
     });
   } catch (err) {
@@ -294,25 +379,38 @@ router.get('/producto/:id/exportar', async (req, res) => {
     if (pRes.rows.length === 0) return res.status(404).send('Producto no encontrado');
     const prod = pRes.rows[0];
 
+    let varianteActiva = null;
+    if (varianteId) {
+      const vRes = await db.query('SELECT * FROM producto_variantes WHERE id = $1', [varianteId]);
+      varianteActiva = vRes.rows[0] || null;
+    }
+
+    // Stock actual
+    let stockSucRes;
+    if (varianteId) {
+      stockSucRes = await db.query('SELECT COALESCE(SUM(stock_actual), 0) as total FROM inventario_variantes_sucursales WHERE variante_id = $1', [varianteId]);
+    } else {
+      stockSucRes = await db.query('SELECT COALESCE(SUM(stock_actual), 0) as total FROM inventario_sucursales WHERE producto_id = $1', [targetProductoId]);
+    }
+    const stockActualTotal = parseInt(stockSucRes.rows[0]?.total || 0, 10);
+
     let query = `
       SELECT 
-        km.fecha,
-        km.tipo_movimiento,
-        km.tipo_documento,
-        km.documento_referencia,
-        s.nombre as sucursal_nombre,
+        km.*,
         u.nombre as usuario_nombre,
+        u.username as usuario_username,
+        s.nombre as sucursal_nombre,
         pv.nombre_variante,
-        km.cantidad_entrada,
-        km.cantidad_salida,
-        km.stock_anterior,
-        km.stock_saldo,
-        km.motivo,
-        km.notas
+        v.id as venta_id,
+        v.total as venta_total,
+        v.metodo_pago as venta_metodo_pago,
+        cl.nombre as cliente_nombre
       FROM kardex_movimientos km
       LEFT JOIN usuarios u ON km.usuario_id = u.id
       LEFT JOIN sucursales s ON km.sucursal_id = s.id
       LEFT JOIN producto_variantes pv ON km.variante_id = pv.id
+      LEFT JOIN ventas v ON km.documento_referencia = v.numero_comprobante
+      LEFT JOIN clientes cl ON v.cliente_id = cl.id
       WHERE km.producto_id = $1
     `;
     const params = [targetProductoId];
@@ -330,20 +428,21 @@ router.get('/producto/:id/exportar', async (req, res) => {
     query += ' ORDER BY km.fecha ASC, km.id ASC';
     const movRes = await db.query(query, params);
 
-    const dataExcel = movRes.rows.map(m => ({
+    const { movements } = procesarHistorial(movRes.rows, stockActualTotal, prod, varianteActiva);
+
+    const dataExcel = movements.map(m => ({
       'Fecha y Hora': new Date(m.fecha).toLocaleString('es-PE'),
       'Tipo Movimiento': m.tipo_movimiento,
-      'Variante': m.nombre_variante || '—',
+      'Variante / Subproducto': m.nombre_variante || '—',
       'Documento': m.tipo_documento || '—',
       'N° Referencia': m.documento_referencia || '—',
       'Tienda / Sucursal': m.sucursal_nombre || 'Principal',
-      'Responsable': m.usuario_nombre || 'Sistema',
-      'Entrada (+)': m.cantidad_entrada,
-      'Salida (-)': m.cantidad_salida,
+      'Responsable': m.usuario_nombre ? `${m.usuario_nombre}${m.usuario_username ? ` (${m.usuario_username})` : ''}` : 'Sistema',
+      'Entrada (+)': m.cantidad_entrada > 0 ? m.cantidad_entrada : 0,
+      'Salida (-)': m.cantidad_salida > 0 ? m.cantidad_salida : 0,
       'Stock Anterior': m.stock_anterior,
       'Saldo Resultante': m.stock_saldo,
-      'Motivo': m.motivo || '—',
-      'Notas': m.notas || ''
+      'Detalle de la Operación': m.detalle_operacion || m.motivo || '—'
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataExcel);
@@ -351,7 +450,7 @@ router.get('/producto/:id/exportar', async (req, res) => {
     XLSX.utils.book_append_sheet(wb, ws, 'Kardex');
 
     const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    const filename = `Kardex_${(prod.codigo || prod.nombre).replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`;
+    const filename = `Kardex_${(prod.codigo || prod.nombre).replace(/[^a-zA-Z0-9]/g, '_')}${varianteActiva ? `_${varianteActiva.sku}` : ''}.xlsx`;
 
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

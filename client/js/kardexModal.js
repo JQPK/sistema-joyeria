@@ -301,6 +301,10 @@ export const kardexModal = {
 
     // Métricas Resumen
     document.getElementById('kardex-stat-stock').textContent = resumen.stock_actual_total;
+    const stockSub = document.getElementById('kardex-stat-stock-sub');
+    if (stockSub && stock_sucursales && stock_sucursales.length > 0) {
+      stockSub.innerHTML = stock_sucursales.map(s => `${s.sucursal_nombre}: <b>${s.stock_actual}</b>`).join(' · ');
+    }
     document.getElementById('kardex-stat-entradas').textContent = resumen.total_entradas;
     document.getElementById('kardex-stat-salidas').textContent = resumen.total_salidas;
     document.getElementById('kardex-stat-ajustes').textContent = resumen.total_ajustes;
@@ -322,19 +326,23 @@ export const kardexModal = {
       const saldo = m.stock_saldo !== null && m.stock_saldo !== undefined ? m.stock_saldo : '—';
       const docRef = m.documento_referencia || m.tipo_documento || '—';
       const varianteBadge = m.nombre_variante ? `<br><small class="text-gold" style="font-size:0.75rem">${m.nombre_variante}</small>` : '';
+      const userDisplay = m.usuario_nombre 
+        ? `${m.usuario_nombre}${m.usuario_username ? `<br><small class="text-muted" style="font-size:0.75rem">@${m.usuario_username}</small>` : ''}` 
+        : '<small class="text-muted">Sistema</small>';
+      const detalleTexto = m.detalle_operacion || m.motivo || m.notas || '—';
 
       return `
         <tr>
-          <td><small class="text-muted">${fechaStr}</small></td>
+          <td style="white-space: nowrap;"><small class="text-muted">${fechaStr}</small></td>
           <td>${badgeOperacion}${varianteBadge}</td>
           <td><strong style="font-family: monospace; font-size: 0.85rem">${docRef}</strong></td>
           <td><span class="badge" style="font-size: 0.72rem">${m.sucursal_nombre || 'Principal'}</span></td>
-          <td><small class="text-muted">${m.usuario_nombre || 'Sistema'}</small></td>
+          <td>${userDisplay}</td>
           <td class="text-right" style="color: #10b981; font-weight: 700">${entrada > 0 ? `+${entrada}` : '—'}</td>
           <td class="text-right" style="color: var(--color-danger); font-weight: 700">${salida > 0 ? `-${salida}` : '—'}</td>
-          <td class="text-right fw-bold" style="font-size: 0.95rem; color: var(--text-primary)">${saldo}</td>
-          <td style="font-size: 0.8rem; color: var(--text-secondary); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis" title="${m.motivo || m.notas || ''}">
-            ${m.motivo || m.notas || '—'}
+          <td class="text-right fw-bold" style="font-size: 0.95rem; color: var(--text-primary); background: rgba(201,169,110,0.06);">${saldo}</td>
+          <td style="font-size: 0.82rem; color: var(--text-secondary); max-width: 280px; line-height: 1.3;" title="${detalleTexto}">
+            ${detalleTexto}
           </td>
         </tr>
       `;
