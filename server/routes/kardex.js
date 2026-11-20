@@ -44,12 +44,12 @@ router.get('/producto/:id', async (req, res, next) => {
       SELECT s.id as sucursal_id, s.nombre as sucursal_nombre,
         CASE 
           WHEN $2::INTEGER IS NOT NULL THEN (SELECT COALESCE(stock_actual, 0) FROM inventario_variantes_sucursales WHERE variante_id = $2 AND sucursal_id = s.id)
-          WHEN $3 = true THEN (SELECT COALESCE(SUM(stock_actual), 0) FROM inventario_variantes_sucursales ivs JOIN producto_variantes pv ON ivs.variante_id = pv.id WHERE pv.producto_id = $1 AND ivs.sucursal_id = s.id)
+          WHEN $3::BOOLEAN = true THEN (SELECT COALESCE(SUM(stock_actual), 0) FROM inventario_variantes_sucursales ivs JOIN producto_variantes pv ON ivs.variante_id = pv.id WHERE pv.producto_id = $1 AND ivs.sucursal_id = s.id)
           ELSE COALESCE(isp.stock_actual, 0)
         END as stock_actual,
         CASE 
           WHEN $2::INTEGER IS NOT NULL THEN (SELECT stock_original FROM inventario_variantes_sucursales WHERE variante_id = $2 AND sucursal_id = s.id)
-          WHEN $3 = true THEN (SELECT SUM(stock_original) FROM inventario_variantes_sucursales ivs JOIN producto_variantes pv ON ivs.variante_id = pv.id WHERE pv.producto_id = $1 AND ivs.sucursal_id = s.id)
+          WHEN $3::BOOLEAN = true THEN (SELECT SUM(stock_original) FROM inventario_variantes_sucursales ivs JOIN producto_variantes pv ON ivs.variante_id = pv.id WHERE pv.producto_id = $1 AND ivs.sucursal_id = s.id)
           ELSE isp.stock_original
         END as stock_original
       FROM sucursales s

@@ -171,7 +171,8 @@ export const kardexModal = {
 
       const params = {};
       const sucursalVal = document.getElementById('kardex-filtro-sucursal')?.value || this.currentSucursalId;
-      if (sucursalVal && sucursalVal !== 'todas') params.sucursal_id = sucursalVal;
+      // Forzar null para que api.get() NO inyecte sucursal_id de localStorage cuando se quiere "todas"
+      params.sucursal_id = (sucursalVal && sucursalVal !== 'todas') ? sucursalVal : null;
 
       const varianteVal = document.getElementById('kardex-filtro-variante')?.value || this.currentVarianteId;
       if (varianteVal) params.variante_id = varianteVal;
