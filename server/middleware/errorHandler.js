@@ -18,7 +18,7 @@ const errorHandler = (err, req, res, next) => {
   res.status(500).json({ 
     success: false, 
     message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: err.message  // siempre devolver para diagnóstico
   });
 };
 

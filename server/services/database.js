@@ -14,6 +14,13 @@ async function initializeDatabase() {
     const variantsSql = fs.readFileSync(variantsPath, 'utf8');
     await db.query(variantsSql);
     
+    // Add variante_id to detalle_ventas if it doesn't exist (needed early for Kardex & sales)
+    try {
+      await db.query(`ALTER TABLE detalle_ventas ADD COLUMN IF NOT EXISTS variante_id INTEGER REFERENCES producto_variantes(id) ON DELETE SET NULL;`);
+    } catch(e) {
+      console.log('variante_id already exists or error', e.message);
+    }
+    
     // Execute sucursales schema
     const sucursalesPath = path.join(__dirname, '../migrations/003_sucursales.sql');
     const sucursalesSql = fs.readFileSync(sucursalesPath, 'utf8');

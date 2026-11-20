@@ -3,7 +3,7 @@ import { auth } from './auth.js';
 
 export const kardexModal = {
   currentProductoId: null,
-  currentVarianteId: null,
+  currentVarianteId: '',
   currentSucursalId: '',
   kardexData: null,
 
@@ -19,12 +19,32 @@ export const kardexModal = {
     }
 
     this.currentProductoId = productoId;
-    this.currentVarianteId = varianteId || null;
+    this.currentVarianteId = varianteId ? String(varianteId) : '';
     this.currentSucursalId = localStorage.getItem('activeSucursal') || 'todas';
 
     this.ensureModalExists();
+
+    // Resetear filtros al abrir para evitar estado residual
+    const sucursalSelect = document.getElementById('kardex-filtro-sucursal');
+    if (sucursalSelect) sucursalSelect.value = this.currentSucursalId;
+
+    const varSelect = document.getElementById('kardex-filtro-variante');
+    if (varSelect) {
+      varSelect.innerHTML = '<option value="">Todas las variantes</option>';
+      varSelect.value = '';
+    }
+
+    const tipoSelect = document.getElementById('kardex-filtro-tipo');
+    if (tipoSelect) tipoSelect.value = '';
+
+    const desdeInput = document.getElementById('kardex-filtro-desde');
+    if (desdeInput) desdeInput.value = '';
+
+    const hastaInput = document.getElementById('kardex-filtro-hasta');
+    if (hastaInput) hastaInput.value = '';
+
     window.app.openModal('modal-kardex-producto');
-    await this.cargarDatos();
+    await this.cargarDatos(true);
   },
 
   ensureModalExists() {
@@ -73,7 +93,7 @@ export const kardexModal = {
               </select>
             </div>
             <div class="form-group mb-0" id="kardex-container-filtro-variante" style="display: none;">
-              <label class="form-label" style="font-size: 0.8rem">Variante</label>
+              <label class="form-label" style="font-size: 0.8rem">Subproducto / Variante</label>
               <select id="kardex-filtro-variante" class="form-control" onchange="window.kardexModal.onFiltroChange()">
                 <option value="">Todas las variantes</option>
               </select>
@@ -164,17 +184,23 @@ export const kardexModal = {
     document.body.appendChild(modalEl);
   },
 
-  async cargarDatos() {
+  async cargarDatos(isInit = false) {
     try {
       const tbody = document.getElementById('tbody-kardex-movimientos');
       if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding: 2rem">Cargando historial del producto...</td></tr>`;
 
       const params = {};
       const sucursalVal = document.getElementById('kardex-filtro-sucursal')?.value || this.currentSucursalId;
-      // Forzar null para que api.get() NO inyecte sucursal_id de localStorage cuando se quiere "todas"
       params.sucursal_id = (sucursalVal && sucursalVal !== 'todas') ? sucursalVal : null;
 
-      const varianteVal = document.getElementById('kardex-filtro-variante')?.value || this.currentVarianteId;
+      // Usar variante específica si fue pasada o seleccionada
+      let varianteVal = '';
+      if (isInit) {
+        varianteVal = this.currentVarianteId || '';
+      } else {
+        const sel = document.getElementById('kardex-filtro-variante');
+        varianteVal = sel ? sel.value : (this.currentVarianteId || '');
+      }
       if (varianteVal) params.variante_id = varianteVal;
 
       const tipoVal = document.getElementById('kardex-filtro-tipo')?.value;
@@ -187,60 +213,88 @@ export const kardexModal = {
       if (hastaVal) params.fecha_fin = hastaVal;
 
       const res = await api.get(`/kardex/producto/${this.currentProductoId}`, params);
-      if (!res.success || !res.data) throw new Error('No se pudo cargar el kárdex');
+      if (!res.success || !res.data) throw new Error(res.message || 'No se pudo cargar el kárdex');
 
       this.kardexData = res.data;
       this.renderUI();
     } catch (err) {
+      const errMsg = err.message || 'Error desconocido';
       if (window.app && typeof window.app.showToast === 'function') {
-        window.app.showToast('Error cargando Kárdex: ' + err.message, 'error');
+        window.app.showToast('Error cargando Kárdex: ' + errMsg, 'error');
       }
       const tbody = document.getElementById('tbody-kardex-movimientos');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger" style="padding: 2rem">${err.message}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger" style="padding: 2rem">${errMsg}</td></tr>`;
     }
   },
 
   renderUI() {
-    const { producto, variantes, stock_sucursales, resumen, movimientos } = this.kardexData;
+    const { producto, variantes, variante_seleccionada_id, stock_sucursales, resumen, movimientos } = this.kardexData;
+
+    // Actualizar ID de variante activa
+    if (variante_seleccionada_id) {
+      this.currentVarianteId = String(variante_seleccionada_id);
+    }
 
     // Encabezado
     const nombreEl = document.getElementById('kardex-modal-prod-nombre');
-    if (nombreEl) nombreEl.textContent = producto.nombre;
-
     const skuEl = document.getElementById('kardex-modal-prod-sku');
-    if (skuEl) skuEl.textContent = producto.codigo || `ID-${producto.id}`;
-
     const detEl = document.getElementById('kardex-modal-prod-detalles');
+
+    let currentVarObj = null;
+    if (this.currentVarianteId && variantes && variantes.length > 0) {
+      currentVarObj = variantes.find(v => String(v.id) === String(this.currentVarianteId));
+    }
+
+    if (nombreEl) {
+      if (currentVarObj) {
+        nombreEl.textContent = `${producto.nombre} · ${currentVarObj.nombre_variante}`;
+      } else {
+        nombreEl.textContent = producto.nombre;
+      }
+    }
+
+    if (skuEl) {
+      if (currentVarObj) {
+        skuEl.textContent = currentVarObj.sku || `VAR-${currentVarObj.id}`;
+      } else {
+        skuEl.textContent = producto.codigo || `ID-${producto.id}`;
+      }
+    }
+
     if (detEl) {
-      detEl.textContent = `Categoría: ${producto.categoria_nombre || '—'} · Material: ${producto.material_nombre || '—'} · Precio Venta: S/ ${parseFloat(producto.precio_venta).toFixed(2)}`;
+      const precioVenta = currentVarObj && currentVarObj.precio_venta ? currentVarObj.precio_venta : producto.precio_venta;
+      detEl.textContent = `Categoría: ${producto.categoria_nombre || '—'} · Material: ${producto.material_nombre || '—'} · Precio Venta: S/ ${parseFloat(precioVenta).toFixed(2)}`;
     }
 
     // Poblar Selector de Sucursales
     const sucursalSelect = document.getElementById('kardex-filtro-sucursal');
-    if (sucursalSelect && sucursalSelect.options.length <= 1) {
+    if (sucursalSelect) {
+      // Re-poblar opciones manteniendo la selección
+      const currentSelectedSuc = sucursalSelect.value || this.currentSucursalId || 'todas';
+      sucursalSelect.innerHTML = '<option value="todas">🌐 Vista Consolidada (Todas)</option>';
       (stock_sucursales || []).forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.sucursal_id;
         opt.textContent = `🏪 ${s.sucursal_nombre} (Stock: ${s.stock_actual})`;
         sucursalSelect.appendChild(opt);
       });
-      if (this.currentSucursalId) sucursalSelect.value = this.currentSucursalId;
+      sucursalSelect.value = currentSelectedSuc;
     }
 
-    // Poblar Selector de Variantes si tiene
+    // Poblar Selector de Variantes / Subproductos si tiene
     const varContainer = document.getElementById('kardex-container-filtro-variante');
     const varSelect = document.getElementById('kardex-filtro-variante');
     if (producto.tiene_variantes && (variantes || []).length > 0) {
       varContainer.style.display = 'block';
-      if (varSelect.options.length <= 1) {
-        variantes.forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v.id;
-          opt.textContent = `${v.nombre_variante} (${v.sku || '-'})`;
-          varSelect.appendChild(opt);
-        });
-        if (this.currentVarianteId) varSelect.value = this.currentVarianteId;
-      }
+      const prevVal = this.currentVarianteId || varSelect.value || '';
+      varSelect.innerHTML = '<option value="">Todas las variantes</option>';
+      variantes.forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.id;
+        opt.textContent = `${v.nombre_variante} (${v.sku || '-'})`;
+        varSelect.appendChild(opt);
+      });
+      if (prevVal) varSelect.value = String(prevVal);
     } else {
       varContainer.style.display = 'none';
     }
@@ -256,7 +310,7 @@ export const kardexModal = {
     if (!tbody) return;
 
     if (!movimientos || movimientos.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding: 2.5rem">No se encontraron movimientos registrados para este producto con los filtros aplicados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted" style="padding: 2.5rem">No se encontraron movimientos registrados para este producto o variante con los filtros aplicados.</td></tr>`;
       return;
     }
 
@@ -267,13 +321,14 @@ export const kardexModal = {
       const salida = parseInt(m.cantidad_salida || 0, 10);
       const saldo = m.stock_saldo !== null && m.stock_saldo !== undefined ? m.stock_saldo : '—';
       const docRef = m.documento_referencia || m.tipo_documento || '—';
+      const varianteBadge = m.nombre_variante ? `<br><small class="text-gold" style="font-size:0.75rem">${m.nombre_variante}</small>` : '';
 
       return `
         <tr>
           <td><small class="text-muted">${fechaStr}</small></td>
-          <td>${badgeOperacion}</td>
+          <td>${badgeOperacion}${varianteBadge}</td>
           <td><strong style="font-family: monospace; font-size: 0.85rem">${docRef}</strong></td>
-          <td><span class="badge" style="font-size: 0.72rem">${m.sucursal_nombre}</span></td>
+          <td><span class="badge" style="font-size: 0.72rem">${m.sucursal_nombre || 'Principal'}</span></td>
           <td><small class="text-muted">${m.usuario_nombre || 'Sistema'}</small></td>
           <td class="text-right" style="color: #10b981; font-weight: 700">${entrada > 0 ? `+${entrada}` : '—'}</td>
           <td class="text-right" style="color: var(--color-danger); font-weight: 700">${salida > 0 ? `-${salida}` : '—'}</td>
@@ -287,13 +342,15 @@ export const kardexModal = {
   },
 
   onFiltroChange() {
-    this.cargarDatos();
+    const sel = document.getElementById('kardex-filtro-variante');
+    if (sel) this.currentVarianteId = sel.value;
+    this.cargarDatos(false);
   },
 
   exportarExcel() {
     const token = auth.getToken();
     const sucursalVal = document.getElementById('kardex-filtro-sucursal')?.value || '';
-    const varianteVal = document.getElementById('kardex-filtro-variante')?.value || '';
+    const varianteVal = document.getElementById('kardex-filtro-variante')?.value || this.currentVarianteId || '';
     const url = `${API_URL}/kardex/producto/${this.currentProductoId}/exportar?token=${token}&sucursal_id=${sucursalVal}&variante_id=${varianteVal}`;
     window.open(url, '_blank');
   },

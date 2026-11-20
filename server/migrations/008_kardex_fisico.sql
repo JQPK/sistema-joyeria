@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS kardex_movimientos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Asegurar columna variante_id en detalle_ventas antes de hacer backfill
+ALTER TABLE detalle_ventas ADD COLUMN IF NOT EXISTS variante_id INTEGER REFERENCES producto_variantes(id) ON DELETE SET NULL;
+
 -- Índices optimizados para consultas veloces
 CREATE INDEX IF NOT EXISTS idx_kardex_prod ON kardex_movimientos(producto_id, fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_kardex_var ON kardex_movimientos(variante_id, fecha DESC);
@@ -49,7 +52,7 @@ BEGIN
   SELECT COUNT(*) INTO v_count FROM kardex_movimientos;
   
   IF v_count = 0 THEN
-    -- 1. Insertar ventas históricas completadas
+    -- 1. Insertar ventas históricas completadas con validación estricta de FKs
     INSERT INTO kardex_movimientos (
       producto_id, variante_id, sucursal_id, usuario_id, fecha,
       tipo_movimiento, tipo_documento, documento_referencia,
@@ -58,22 +61,26 @@ BEGIN
     )
     SELECT 
       dv.producto_id,
-      dv.variante_id,
-      COALESCE(v.sucursal_id, 1),
-      v.usuario_id,
-      v.fecha,
+      pv.id,
+      COALESCE(s.id, 1),
+      u.id,
+      COALESCE(v.fecha, NOW()),
       'VENTA',
       UPPER(COALESCE(v.tipo_comprobante, 'BOLETA')),
       v.numero_comprobante,
       0,
-      dv.cantidad,
+      COALESCE(dv.cantidad, 1),
       0, -- En histórico se calcula en vista
       0,
       'Venta en Punto de Venta (Registro histórico)',
       'Cliente: ' || COALESCE(cl.nombre, 'General'),
-      v.fecha
+      COALESCE(v.fecha, NOW())
     FROM detalle_ventas dv
+    JOIN productos p ON dv.producto_id = p.id
     JOIN ventas v ON dv.venta_id = v.id
+    LEFT JOIN producto_variantes pv ON dv.variante_id = pv.id
+    LEFT JOIN sucursales s ON v.sucursal_id = s.id
+    LEFT JOIN usuarios u ON v.usuario_id = u.id
     LEFT JOIN clientes cl ON v.cliente_id = cl.id
     WHERE v.estado = 'completada'
     ORDER BY v.fecha ASC;
