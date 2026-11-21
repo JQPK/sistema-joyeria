@@ -5,9 +5,19 @@ const { auth } = require('../middleware/auth');
 
 router.use(auth);
 
-// GET all
+// GET all or search
 router.get('/', async (req, res, next) => {
   try {
+    const search = req.query.search || req.query.q;
+    if (search && search.trim()) {
+      const term = `%${search.trim()}%`;
+      const result = await db.query(`
+        SELECT * FROM clientes
+        WHERE nombre ILIKE $1 OR dni_ruc ILIKE $1 OR telefono ILIKE $1
+        ORDER BY nombre ASC LIMIT 25
+      `, [term]);
+      return res.json({ success: true, data: result.rows });
+    }
     const result = await db.query('SELECT * FROM clientes ORDER BY nombre ASC');
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -18,11 +28,11 @@ router.get('/', async (req, res, next) => {
 // GET search
 router.get('/search', async (req, res, next) => {
   try {
-    const term = `%${req.query.q || ''}%`;
+    const term = `%${req.query.q || req.query.search || ''}%`;
     const result = await db.query(`
       SELECT * FROM clientes
       WHERE nombre ILIKE $1 OR dni_ruc ILIKE $1 OR telefono ILIKE $1
-      ORDER BY nombre ASC LIMIT 20
+      ORDER BY nombre ASC LIMIT 25
     `, [term]);
     res.json({ success: true, data: result.rows });
   } catch (err) {
@@ -33,12 +43,23 @@ router.get('/search', async (req, res, next) => {
 // POST create
 router.post('/', async (req, res, next) => {
   try {
-    const { nombre, dni_ruc, telefono, email, direccion, notas } = req.body;
+    const { nombre, tipo_documento, dni_ruc, fecha_nacimiento, edad, telefono, email, direccion, notas } = req.body;
     const result = await db.query(`
-      INSERT INTO clientes (nombre, dni_ruc, telefono, email, direccion, notas)
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id
-    `, [nombre, dni_ruc || '', telefono || '', email || '', direccion || '', notas || '']);
-    res.json({ success: true, id: result.rows[0].id });
+      INSERT INTO clientes (nombre, tipo_documento, dni_ruc, fecha_nacimiento, edad, telefono, email, direccion, notas)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *
+    `, [
+      nombre,
+      tipo_documento || 'DNI',
+      dni_ruc || '',
+      fecha_nacimiento || null,
+      edad || null,
+      telefono || '',
+      email || '',
+      direccion || '',
+      notas || ''
+    ]);
+    const cliente = result.rows[0];
+    res.json({ success: true, id: cliente.id, data: cliente });
   } catch (err) {
     next(err);
   }
@@ -51,7 +72,7 @@ router.put('/:id', async (req, res, next) => {
     const fields = [];
     const values = [];
     let paramIdx = 1;
-    const allowed = ['nombre', 'dni_ruc', 'telefono', 'email', 'direccion', 'notas'];
+    const allowed = ['nombre', 'tipo_documento', 'dni_ruc', 'fecha_nacimiento', 'edad', 'telefono', 'email', 'direccion', 'notas'];
 
     for (const key of allowed) {
       if (req.body[key] !== undefined) {

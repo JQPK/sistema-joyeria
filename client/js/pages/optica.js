@@ -244,22 +244,23 @@ export default {
           <div id="optica-view-nueva-atencion" class="optica-view hidden">
             <div id="wizard-container" style="max-width: 950px; margin: 0 auto">
               <!-- PASO 1: CLIENTE -->
-              <div class="card" style="margin-bottom: 1.25rem; border: 1px solid var(--accent-gold-light)">
-                <div class="card-header flex justify-between items-center" style="background: var(--bg-primary); border-bottom: 1px solid var(--bg-secondary)">
+              <div class="card optica-card-overflow" style="margin-bottom: 1.25rem; border: 1px solid var(--accent-gold-light)">
+                <div class="card-header flex justify-between items-center" style="background: var(--bg-primary); border-bottom: 1px solid var(--bg-secondary); flex-wrap: wrap; gap: 0.5rem">
                   <div class="flex items-center" style="gap: 0.5rem">
                     <span style="background: var(--accent-gold); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem">1</span>
                     <h3 style="margin: 0; font-size: 1.1rem">Datos del Cliente y Paciente</h3>
                   </div>
-                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.optica.abrirModalNuevoCliente()">
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="window.optica.abrirModalNuevoCliente()" style="display: flex; align-items: center; gap: 4px">
                     + Registrar Nuevo Cliente
                   </button>
                 </div>
                 <div class="card-body">
                   <div id="box-cliente-busqueda">
-                    <label class="form-label">Buscar Cliente Existente (Nombre, DNI o Teléfono)</label>
-                    <div style="position: relative">
-                      <input type="text" id="wizard-cliente-input" class="form-control" placeholder="Escribe para buscar cliente..." autocomplete="off">
-                      <div id="wizard-cliente-resultados" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius-md); box-shadow: var(--shadow-lg); z-index: 1000; max-height: 220px; overflow-y: auto"></div>
+                    <label class="form-label" style="font-weight: 600; margin-bottom: 6px">Buscar Cliente Existente (Nombre, DNI o Teléfono)</label>
+                    <div>
+                      <input type="text" id="wizard-cliente-input" class="form-control" placeholder="Escribe para buscar por nombre, DNI o teléfono..." autocomplete="off" style="height: 44px; font-size: 0.95rem">
+                      <!-- Lista de Resultados de Cliente (en flujo normal, visible, sin cortes ni solapamientos) -->
+                      <div id="wizard-cliente-resultados" class="hidden" style="margin-top: 0.5rem; margin-bottom: 0.75rem; background: white; border: 2px solid var(--accent-gold); border-radius: var(--border-radius-md); box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-height: 280px; overflow-y: auto"></div>
                     </div>
                   </div>
 
@@ -1475,17 +1476,19 @@ export default {
       const res = await api.get('/clientes', { search: termino.trim() });
       const clientes = res.data || [];
       if (clientes.length === 0) {
-        resEl.innerHTML = `<div style="padding: 0.75rem; color: var(--text-muted); font-size: 0.85rem">No se encontraron clientes. Puedes registrarlo arriba.</div>`;
+        resEl.innerHTML = `<div style="padding: 0.85rem; color: var(--text-muted); font-size: 0.9rem; text-align: center">No se encontraron clientes con "${termino}". Puedes registrarlo arriba con "+ Registrar Nuevo Cliente".</div>`;
         resEl.classList.remove('hidden');
         return;
       }
 
-      resEl.innerHTML = clientes.slice(0, 8).map(cl => `
-        <div class="optica-item-hover" style="padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--bg-secondary)" onclick="window.optica.seleccionarCliente(${JSON.stringify(cl).replace(/"/g, '&quot;')})">
-          <div style="font-weight: 600">${cl.nombre}</div>
-          <div style="font-size: 0.75rem; color: var(--text-secondary)">
-            ${cl.tipo_documento || 'Doc'}: ${cl.dni_ruc || '—'} · Tel: ${cl.telefono || '—'}
-            ${cl.edad ? ` · ${cl.edad} años` : ''}
+      resEl.innerHTML = clientes.slice(0, 10).map(cl => `
+        <div class="optica-item-hover" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--bg-secondary); cursor: pointer; transition: background 0.15s ease" onclick="window.optica.seleccionarCliente(${JSON.stringify(cl).replace(/"/g, '&quot;')})">
+          <div style="font-weight: 700; color: var(--text-primary); font-size: 0.95rem">${cl.nombre}</div>
+          <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap">
+            <span><strong>${cl.tipo_documento || 'Doc'}:</strong> ${cl.dni_ruc || '—'}</span>
+            <span>·</span>
+            <span><strong>Tel:</strong> ${cl.telefono || '—'}</span>
+            ${cl.edad ? `<span>·</span><span><strong>Edad:</strong> ${cl.edad} años</span>` : (cl.fecha_nacimiento ? `<span>·</span><span><strong>Edad:</strong> ${this.calcularEdad(cl.fecha_nacimiento)} años</span>` : '')}
           </div>
         </div>
       `).join('');
@@ -1496,6 +1499,7 @@ export default {
   },
 
   seleccionarCliente(cliente) {
+    if (!cliente) return;
     this.nuevoContrato.cliente = cliente;
     document.getElementById('wizard-cliente-resultados')?.classList.add('hidden');
     document.getElementById('box-cliente-busqueda')?.classList.add('hidden');
@@ -1503,13 +1507,24 @@ export default {
     const selBox = document.getElementById('box-cliente-seleccionado');
     if (selBox) selBox.classList.remove('hidden');
 
-    document.getElementById('w-clie-nombre').textContent = cliente.nombre;
-    document.getElementById('w-clie-doc').textContent = `${cliente.tipo_documento || 'DNI'}: ${cliente.dni_ruc || '—'}`;
-    document.getElementById('w-clie-tel').textContent = cliente.telefono || '—';
-    document.getElementById('w-clie-edad').textContent = cliente.edad ? `${cliente.edad} años` : (cliente.fecha_nacimiento ? `${this.calcularEdad(cliente.fecha_nacimiento)} años` : 'No especificada');
+    const elNombre = document.getElementById('w-clie-nombre');
+    if (elNombre) elNombre.textContent = cliente.nombre || '—';
+
+    const elDoc = document.getElementById('w-clie-doc');
+    if (elDoc) elDoc.textContent = `${cliente.tipo_documento || 'DNI'}: ${cliente.dni_ruc || '—'}`;
+
+    const elTel = document.getElementById('w-clie-tel');
+    if (elTel) elTel.textContent = cliente.telefono || '—';
+
+    const elEdad = document.getElementById('w-clie-edad');
+    if (elEdad) {
+      elEdad.textContent = cliente.edad ? `${cliente.edad} años` : (cliente.fecha_nacimiento ? `${this.calcularEdad(cliente.fecha_nacimiento)} años` : 'No especificada');
+    }
 
     // Verificar si el cliente tiene recetas registradas
-    this.verificarRecetasPreviasCliente(cliente.id);
+    if (cliente.id) {
+      this.verificarRecetasPreviasCliente(cliente.id);
+    }
   },
 
   deseleccionarCliente() {
@@ -1620,9 +1635,12 @@ export default {
     try {
       const res = await api.post('/clientes', payload);
       if (res.success) {
+        const clienteRegistrado = res.data || { id: res.id, ...payload };
         app.showToast('Cliente registrado con éxito', 'success');
         app.closeModal('modal-optica-nuevo-cliente');
-        this.seleccionarCliente(res.data);
+        this.seleccionarCliente(clienteRegistrado);
+      } else {
+        throw new Error(res.message || 'No se pudo registrar el cliente');
       }
     } catch (e) {
       app.showToast('Error registrando cliente: ' + e.message, 'error');
