@@ -401,59 +401,61 @@ export default {
                     <span class="badge badge-gold" style="font-size: 0.72rem; text-transform: uppercase">Cálculo Automático</span>
                   </div>
 
-                  <!-- Configuración de Lunas y Tratamientos -->
-                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem">
-                    <div class="form-group mb-0">
-                      <label class="form-label">Diseño de Luna</label>
-                      <select id="rec-tipo-luna" class="form-control">
-                        <option value="monofocal">Monofocal (Visión única)</option>
-                        <option value="bifocal">Bifocal (Flattop / Invisible)</option>
-                        <option value="progresivo">Progresivo / Multifocal</option>
-                        <option value="descanso">Descanso / Neutro</option>
-                        <option value="contacto">Lentes de Contacto</option>
-                        <option value="otro">Otro diseño</option>
-                      </select>
+                  <!-- Configuración de Lunas y Tratamientos (Solo Contrato Completo) -->
+                  <div id="box-lunas-especificaciones">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem">
+                      <div class="form-group mb-0">
+                        <label class="form-label">Diseño de Luna</label>
+                        <select id="rec-tipo-luna" class="form-control">
+                          <option value="monofocal">Monofocal (Visión única)</option>
+                          <option value="bifocal">Bifocal (Flattop / Invisible)</option>
+                          <option value="progresivo">Progresivo / Multifocal</option>
+                          <option value="descanso">Descanso / Neutro</option>
+                          <option value="contacto">Lentes de Contacto</option>
+                          <option value="otro">Otro diseño</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group mb-0">
+                        <label class="form-label">Material de Luna</label>
+                        <select id="rec-material-luna" class="form-control">
+                          <option value="resina_cr39">Resina Orgánica CR-39</option>
+                          <option value="policarbonato">Policarbonato (Alto impacto)</option>
+                          <option value="alto_indice">Alto Índice 1.61 / 1.67</option>
+                          <option value="vidrio">Cristal / Vidrio mineral</option>
+                          <option value="otro">Otro material</option>
+                        </select>
+                      </div>
+
+                      <div class="form-group mb-0">
+                        <label class="form-label">Color / Tinte</label>
+                        <input type="text" id="rec-color-tinte" class="form-control" placeholder="Blanco, Gris, Café, G-15, etc.">
+                      </div>
                     </div>
 
-                    <div class="form-group mb-0">
-                      <label class="form-label">Material de Luna</label>
-                      <select id="rec-material-luna" class="form-control">
-                        <option value="resina_cr39">Resina Orgánica CR-39</option>
-                        <option value="policarbonato">Policarbonato (Alto impacto)</option>
-                        <option value="alto_indice">Alto Índice 1.61 / 1.67</option>
-                        <option value="vidrio">Cristal / Vidrio mineral</option>
-                        <option value="otro">Otro material</option>
-                      </select>
-                    </div>
-
-                    <div class="form-group mb-0">
-                      <label class="form-label">Color / Tinte</label>
-                      <input type="text" id="rec-color-tinte" class="form-control" placeholder="Blanco, Gris, Café, G-15, etc.">
-                    </div>
-                  </div>
-
-                  <!-- Tratamientos y Filtros -->
-                  <div style="margin-top: 1rem">
-                    <label class="form-label">Filtros y Tratamientos Especiales</label>
-                    <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; background: var(--bg-primary); padding: 0.75rem; border-radius: var(--border-radius-md); border: 1px solid var(--bg-secondary)">
-                      <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                        <input type="checkbox" class="chk-tratamiento" value="antirreflejo"> Antirreflejo (AR)
-                      </label>
-                      <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                        <input type="checkbox" class="chk-tratamiento" value="fotocromatico"> Fotocromático (Transition)
-                      </label>
-                      <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                        <input type="checkbox" class="chk-tratamiento" value="filtro_azul"> Filtro Luz Azul (Blue Defense)
-                      </label>
-                      <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                        <input type="checkbox" class="chk-tratamiento" value="uv400"> Filtro UV 400
-                      </label>
-                      <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                        <input type="checkbox" class="chk-tratamiento" value="polarizado"> Polarizado
-                      </label>
-                      <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                        <input type="checkbox" class="chk-tratamiento" value="antirrayas"> Anti-rayas endurecido
-                      </label>
+                    <!-- Tratamientos y Filtros -->
+                    <div style="margin-top: 1rem">
+                      <label class="form-label">Filtros y Tratamientos Especiales</label>
+                      <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; background: var(--bg-primary); padding: 0.75rem; border-radius: var(--border-radius-md); border: 1px solid var(--bg-secondary)">
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
+                          <input type="checkbox" class="chk-tratamiento" value="antirreflejo"> Antirreflejo (AR)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
+                          <input type="checkbox" class="chk-tratamiento" value="fotocromatico"> Fotocromático (Transition)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
+                          <input type="checkbox" class="chk-tratamiento" value="filtro_azul"> Filtro Luz Azul (Blue Defense)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
+                          <input type="checkbox" class="chk-tratamiento" value="uv400"> Filtro UV 400
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
+                          <input type="checkbox" class="chk-tratamiento" value="polarizado"> Polarizado
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
+                          <input type="checkbox" class="chk-tratamiento" value="antirrayas"> Anti-rayas endurecido
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -631,7 +633,7 @@ export default {
               <div class="card" style="margin-bottom: 1.5rem; border: 1px solid var(--accent-gold-light)">
                 <div class="card-header flex justify-between items-center" style="background: var(--bg-primary); border-bottom: 1px solid var(--bg-secondary)">
                   <div class="flex items-center" style="gap: 0.5rem">
-                    <span style="background: var(--accent-gold); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem">6</span>
+                    <span id="badge-paso-resumen" style="background: var(--accent-gold); color: white; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem">6</span>
                     <h3 style="margin: 0; font-size: 1.1rem">Fechas, Resumen Económico y Pago</h3>
                   </div>
                   <div class="text-gold fw-bold" id="resumen-total-preview" style="font-size: 1.25rem">Total: S/ 0.00</div>
@@ -648,12 +650,12 @@ export default {
                       <div style="background: var(--bg-primary); padding: 1rem; border-radius: var(--border-radius-md); border: 1px solid var(--bg-secondary)">
                         <div style="font-weight: 700; margin-bottom: 0.75rem; color: var(--accent-gold-dark)">Desglose del Contrato</div>
                         
-                        <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
+                        <div id="row-costo-montura" class="flex justify-between items-center" style="margin-bottom: 0.5rem">
                           <span class="text-muted">Montura:</span>
                           <span class="fw-bold" id="lbl-costo-montura">S/ 0.00</span>
                         </div>
 
-                        <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
+                        <div id="row-costo-lunas" class="flex justify-between items-center" style="margin-bottom: 0.5rem">
                           <span class="text-muted">Lunas y Tratamientos:</span>
                           <div style="display: flex; align-items: center; gap: 4px">
                             <span class="fw-bold">S/</span>
@@ -661,18 +663,27 @@ export default {
                           </div>
                         </div>
 
-                        <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
-                          <span class="text-muted">Servicio / Reparación / Adaptación:</span>
+                        <div id="row-costo-servicio" class="flex justify-between items-center hidden" style="margin-bottom: 0.5rem">
+                          <span class="text-muted" id="lbl-nombre-servicio">Servicio / Reparación / Adaptación:</span>
                           <span class="fw-bold" id="lbl-costo-servicio">S/ 0.00</span>
                         </div>
 
+                        <!-- EXAMEN / MEDICIÓN VISUAL SOLA -->
+                        <div id="row-costo-medicion" class="flex justify-between items-center hidden" style="margin-bottom: 0.5rem">
+                          <span class="text-muted">Examen / Medición Visual:</span>
+                          <div style="display: flex; align-items: center; gap: 4px">
+                            <span class="fw-bold">S/</span>
+                            <input type="number" id="w-costo-medicion" class="form-control" style="width: 85px; text-align: right; padding: 2px 6px; height: 30px" value="0.00" min="0" step="1" oninput="window.optica.actualizarPrecios()">
+                          </div>
+                        </div>
+
                         <!-- PRODUCTOS ADICIONALES -->
-                        <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
+                        <div id="row-costo-adicionales" class="flex justify-between items-center" style="margin-bottom: 0.5rem">
                           <span class="text-muted">Productos Adicionales:</span>
                           <span class="fw-bold text-gold" id="lbl-costo-adicionales">S/ 0.00</span>
                         </div>
 
-                        <div class="flex justify-between items-center" style="margin-bottom: 0.5rem">
+                        <div id="row-costo-descuento" class="flex justify-between items-center" style="margin-bottom: 0.5rem">
                           <span class="text-muted">Descuento Especial:</span>
                           <div style="display: flex; align-items: center; gap: 4px">
                             <span class="fw-bold text-danger">- S/</span>
@@ -1339,41 +1350,92 @@ export default {
     });
 
     const secReceta = document.getElementById('seccion-receta-oftalmica');
+    const boxLunasSpecs = document.getElementById('box-lunas-especificaciones');
     const secMontura = document.getElementById('seccion-montura-taller');
+    const secAdicionales = document.getElementById('seccion-productos-adicionales');
     const boxMontura = document.getElementById('box-seleccion-montura');
     const boxCambio = document.getElementById('box-cambio-montura-detalles');
     const boxRep = document.getElementById('box-reparacion-detalles');
     const tituloMontura = document.getElementById('titulo-seccion-montura');
 
+    // Desglose del Contrato en Paso Resumen
+    const rowMontura = document.getElementById('row-costo-montura');
+    const rowLunas = document.getElementById('row-costo-lunas');
+    const rowServicio = document.getElementById('row-costo-servicio');
+    const rowMedicion = document.getElementById('row-costo-medicion');
+    const rowAdicionales = document.getElementById('row-costo-adicionales');
+    const lblNombreServicio = document.getElementById('lbl-nombre-servicio');
+    const badgePasoResumen = document.getElementById('badge-paso-resumen');
+
     // Adaptar secciones visibles según tipo
     if (tipo === 'completo') {
-      secReceta.classList.remove('hidden');
-      secMontura.classList.remove('hidden');
-      boxMontura.classList.remove('hidden');
-      boxCambio.classList.add('hidden');
-      boxRep.classList.add('hidden');
-      tituloMontura.textContent = 'Selección de Montura de Vitrina';
+      secReceta?.classList.remove('hidden');
+      boxLunasSpecs?.classList.remove('hidden');
+      secMontura?.classList.remove('hidden');
+      secAdicionales?.classList.remove('hidden');
+      boxMontura?.classList.remove('hidden');
+      boxCambio?.classList.add('hidden');
+      boxRep?.classList.add('hidden');
+      if (tituloMontura) tituloMontura.textContent = 'Selección de Montura de Vitrina';
       this.nuevoContrato.montura_tipo = 'inventario_local';
+
+      rowMontura?.classList.remove('hidden');
+      rowLunas?.classList.remove('hidden');
+      rowServicio?.classList.add('hidden');
+      rowMedicion?.classList.add('hidden');
+      rowAdicionales?.classList.remove('hidden');
+      if (badgePasoResumen) badgePasoResumen.textContent = '6';
     } else if (tipo === 'cambio_montura') {
-      secReceta.classList.remove('hidden');
-      secMontura.classList.remove('hidden');
-      boxMontura.classList.remove('hidden');
-      boxCambio.classList.remove('hidden');
-      boxRep.classList.add('hidden');
-      tituloMontura.textContent = 'Nueva Montura y Reutilización de Lunas';
+      secReceta?.classList.remove('hidden');
+      boxLunasSpecs?.classList.add('hidden');
+      secMontura?.classList.remove('hidden');
+      secAdicionales?.classList.remove('hidden');
+      boxMontura?.classList.remove('hidden');
+      boxCambio?.classList.remove('hidden');
+      boxRep?.classList.add('hidden');
+      if (tituloMontura) tituloMontura.textContent = 'Nueva Montura y Reutilización de Lunas';
       this.nuevoContrato.montura_tipo = 'inventario_local';
+
+      rowMontura?.classList.remove('hidden');
+      rowLunas?.classList.add('hidden');
+      rowServicio?.classList.remove('hidden');
+      if (lblNombreServicio) lblNombreServicio.textContent = 'Servicio Montaje / Adaptación:';
+      rowMedicion?.classList.add('hidden');
+      rowAdicionales?.classList.remove('hidden');
+      if (badgePasoResumen) badgePasoResumen.textContent = '6';
     } else if (tipo === 'reparacion') {
-      secReceta.classList.add('hidden');
-      secMontura.classList.remove('hidden');
-      boxMontura.classList.add('hidden');
-      boxCambio.classList.add('hidden');
-      boxRep.classList.remove('hidden');
-      tituloMontura.textContent = 'Detalles de Reparación y Taller';
+      secReceta?.classList.add('hidden');
+      boxLunasSpecs?.classList.add('hidden');
+      secMontura?.classList.remove('hidden');
+      secAdicionales?.classList.remove('hidden');
+      boxMontura?.classList.add('hidden');
+      boxCambio?.classList.add('hidden');
+      boxRep?.classList.remove('hidden');
+      if (tituloMontura) tituloMontura.textContent = 'Detalles de Reparación y Taller';
       this.nuevoContrato.montura_tipo = 'propia_cliente';
+
+      rowMontura?.classList.add('hidden');
+      rowLunas?.classList.add('hidden');
+      rowServicio?.classList.remove('hidden');
+      if (lblNombreServicio) lblNombreServicio.textContent = 'Servicio de Reparación:';
+      rowMedicion?.classList.add('hidden');
+      rowAdicionales?.classList.remove('hidden');
+      if (badgePasoResumen) badgePasoResumen.textContent = '5';
     } else if (tipo === 'medicion') {
-      secReceta.classList.remove('hidden');
-      secMontura.classList.add('hidden');
+      // Medición visual sola: Solo mostrar datos del paciente, tipo de servicio y tabla de medidas de los ojos (OD/OI).
+      // Se ocultan: lunas y tratamientos (diseño, material, tinte, filtros), paso 4 montura y paso 5 adicionales.
+      secReceta?.classList.remove('hidden');
+      boxLunasSpecs?.classList.add('hidden');
+      secMontura?.classList.add('hidden');
+      secAdicionales?.classList.add('hidden');
       this.nuevoContrato.montura_tipo = 'ninguna';
+
+      rowMontura?.classList.add('hidden');
+      rowLunas?.classList.add('hidden');
+      rowServicio?.classList.add('hidden');
+      rowMedicion?.classList.remove('hidden');
+      rowAdicionales?.classList.add('hidden');
+      if (badgePasoResumen) badgePasoResumen.textContent = '4';
     }
 
     this.actualizarPrecios();
@@ -2013,15 +2075,17 @@ export default {
   actualizarPrecios() {
     const tipo = this.nuevoContrato.tipo_servicio;
     let costoMontura = 0;
-    let costoLunas = parseFloat(document.getElementById('w-costo-lunas')?.value || 0);
+    let costoLunas = 0;
     let costoServicio = 0;
 
     if (tipo === 'completo') {
       const inputPr = document.getElementById('montura-sel-precio-input');
-      costoMontura = inputPr ? parseFloat(inputPr.value || 0) : this.nuevoContrato.montura_precio;
+      costoMontura = inputPr ? parseFloat(inputPr.value || 0) : (this.nuevoContrato.montura_precio || 0);
+      costoLunas = parseFloat(document.getElementById('w-costo-lunas')?.value || 0);
+      costoServicio = 0;
     } else if (tipo === 'cambio_montura') {
       const inputPr = document.getElementById('montura-sel-precio-input');
-      costoMontura = inputPr ? parseFloat(inputPr.value || 0) : this.nuevoContrato.montura_precio;
+      costoMontura = inputPr ? parseFloat(inputPr.value || 0) : (this.nuevoContrato.montura_precio || 0);
       costoServicio = parseFloat(document.getElementById('cambio-costo-montaje')?.value || 0);
       costoLunas = 0;
     } else if (tipo === 'reparacion') {
@@ -2030,14 +2094,17 @@ export default {
       costoServicio = parseFloat(document.getElementById('rep-costo')?.value || 0);
     } else if (tipo === 'medicion') {
       costoMontura = 0;
-      costoServicio = parseFloat(document.getElementById('w-costo-lunas')?.value || 0);
+      costoLunas = 0;
+      costoServicio = parseFloat(document.getElementById('w-costo-medicion')?.value || 0);
     }
 
-    // Calcular costo de productos y accesorios adicionales
+    // Calcular costo de productos y accesorios adicionales (solo si no es medición)
     let costoAdicionales = 0;
-    (this.nuevoContrato.productos_adicionales || []).forEach(item => {
-      costoAdicionales += (item.cantidad * item.precio_unitario);
-    });
+    if (tipo !== 'medicion') {
+      (this.nuevoContrato.productos_adicionales || []).forEach(item => {
+        costoAdicionales += (item.cantidad * item.precio_unitario);
+      });
+    }
 
     const descuento = parseFloat(document.getElementById('w-descuento')?.value || 0);
     const subtotal = costoMontura + costoLunas + costoServicio + costoAdicionales;
@@ -2150,10 +2217,10 @@ export default {
           oi_esfera_cerca: this.calcularEsferaCerca(oiEsfera, oiAdd),
           od_dp_cerca: null,
           oi_dp_cerca: null,
-          tipo_luna: document.getElementById('rec-tipo-luna')?.value || 'monofocal',
-          material_luna: document.getElementById('rec-material-luna')?.value || 'resina_cr39',
-          tratamientos: this.nuevoContrato.receta.tratamientos.join(','),
-          color_tinte: document.getElementById('rec-color-tinte')?.value || '',
+          tipo_luna: tipo === 'medicion' ? null : (document.getElementById('rec-tipo-luna')?.value || 'monofocal'),
+          material_luna: tipo === 'medicion' ? null : (document.getElementById('rec-material-luna')?.value || 'resina_cr39'),
+          tratamientos: tipo === 'medicion' ? '' : (this.nuevoContrato.receta?.tratamientos || []).join(','),
+          color_tinte: tipo === 'medicion' ? null : (document.getElementById('rec-color-tinte')?.value || ''),
           indicaciones: document.getElementById('rec-indicaciones')?.value || '',
           observaciones: document.getElementById('rec-observaciones')?.value || ''
         };
@@ -2165,6 +2232,7 @@ export default {
       const prLunas = parseFloat(document.getElementById('w-costo-lunas')?.value || 0);
       const prRep = parseFloat(document.getElementById('rep-costo')?.value || 0);
       const prMontaje = parseFloat(document.getElementById('cambio-costo-montaje')?.value || 0);
+      const prMedicion = parseFloat(document.getElementById('w-costo-medicion')?.value || 0);
 
       if ((tipo === 'completo' || tipo === 'cambio_montura') && this.nuevoContrato.montura_producto_id) {
         items.push({
@@ -2182,9 +2250,10 @@ export default {
       if (tipo === 'completo' && prLunas > 0) {
         const disLuna = document.getElementById('rec-tipo-luna')?.value || 'Monofocal';
         const matLuna = document.getElementById('rec-material-luna')?.value || 'CR-39';
+        const tratam = (this.nuevoContrato.receta?.tratamientos || []).join(', ');
         items.push({
           tipo_item: 'lunas',
-          descripcion: `Lunas oftálmicas: ${disLuna} (${matLuna}) ${this.nuevoContrato.receta.tratamientos.join(', ')}`,
+          descripcion: `Lunas oftálmicas: ${disLuna} (${matLuna})${tratam ? ' - ' + tratam : ''}`,
           cantidad: 1,
           precio_unitario: prLunas,
           descuento_item: 0,
@@ -2215,30 +2284,32 @@ export default {
         });
       }
 
-      if (tipo === 'medicion' && prLunas > 0) {
+      if (tipo === 'medicion') {
         items.push({
           tipo_item: 'servicio',
-          descripcion: 'Servicio de medición de vista / Examen visual',
+          descripcion: 'Servicio de medición de vista / Examen visual' + (prMedicion === 0 ? ' (Cortesía / Gratuito)' : ''),
           cantidad: 1,
-          precio_unitario: prLunas,
+          precio_unitario: prMedicion,
           descuento_item: 0,
-          subtotal_item: prLunas
+          subtotal_item: prMedicion
         });
       }
 
-      // Incorporar productos y accesorios adicionales elegidos
-      (this.nuevoContrato.productos_adicionales || []).forEach(ad => {
-        items.push({
-          tipo_item: 'accesorio',
-          producto_id: ad.producto_id || null,
-          variante_id: ad.variante_id || null,
-          descripcion: ad.descripcion,
-          cantidad: ad.cantidad,
-          precio_unitario: ad.precio_unitario,
-          descuento_item: 0,
-          subtotal_item: ad.cantidad * ad.precio_unitario
+      // Incorporar productos y accesorios adicionales elegidos (solo si no es medición)
+      if (tipo !== 'medicion') {
+        (this.nuevoContrato.productos_adicionales || []).forEach(ad => {
+          items.push({
+            tipo_item: 'accesorio',
+            producto_id: ad.producto_id || null,
+            variante_id: ad.variante_id || null,
+            descripcion: ad.descripcion,
+            cantidad: ad.cantidad,
+            precio_unitario: ad.precio_unitario,
+            descuento_item: 0,
+            subtotal_item: ad.cantidad * ad.precio_unitario
+          });
         });
-      });
+      }
 
       const totalCalculado = this.nuevoContrato.total || 0;
       const adelanto = parseFloat(document.getElementById('w-adelanto')?.value || 0);
@@ -2323,6 +2394,7 @@ export default {
 
     document.querySelectorAll('.chk-tratamiento').forEach(c => c.checked = false);
     const elLunas = document.getElementById('w-costo-lunas'); if (elLunas) elLunas.value = '0.00';
+    const elMed = document.getElementById('w-costo-medicion'); if (elMed) elMed.value = '0.00';
     const elDesc = document.getElementById('w-descuento'); if (elDesc) elDesc.value = '0.00';
     const elAdel = document.getElementById('w-adelanto'); if (elAdel) elAdel.value = '0.00';
     const elObs = document.getElementById('w-observaciones'); if (elObs) elObs.value = '';
