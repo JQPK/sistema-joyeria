@@ -515,7 +515,20 @@ router.post('/contratos', async (req, res, next) => {
 
     await logActivity(db, usuarioId, 'CONTRATO_OPTICA_CREADO', `Contrato ${codigoContrato} por S/ ${total.toFixed(2)} (Adelanto: S/ ${adelanto.toFixed(2)})`);
 
-    res.json({ success: true, id: contratoId, codigo_contrato: codigoContrato });
+    res.json({
+      success: true,
+      id: contratoId,
+      codigo_contrato: codigoContrato,
+      data: {
+        id: contratoId,
+        codigo_contrato: codigoContrato,
+        total,
+        total_pagado: totalPagado,
+        saldo_pendiente: saldoPendiente,
+        estado: 'registrado',
+        cliente_id: b.cliente_id
+      }
+    });
   } catch (err) {
     await client.query('ROLLBACK');
     next(err);

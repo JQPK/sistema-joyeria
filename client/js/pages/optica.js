@@ -2359,8 +2359,15 @@ export default {
 
       const res = await api.post('/optica/contratos', payload);
       if (res.success) {
+        const contratoCreado = res.data || {
+          id: res.id,
+          codigo_contrato: res.codigo_contrato,
+          total: totalCalculado,
+          saldo_pendiente: Math.max(0, totalCalculado - adelanto),
+          cliente_nombre: this.nuevoContrato.cliente?.nombre || 'Cliente'
+        };
         app.showToast('¡Contrato y orden de trabajo generados con éxito!', 'success');
-        this.mostrarModalExito(res.data);
+        this.mostrarModalExito(contratoCreado);
         this.resetNuevoContrato();
       }
     } catch (err) {
@@ -2371,15 +2378,23 @@ export default {
   },
 
   mostrarModalExito(contrato) {
-    document.getElementById('exito-codigo-contrato').textContent = contrato.codigo_contrato;
-    document.getElementById('exito-mensaje-contrato').textContent = `Cliente: ${this.nuevoContrato.cliente?.nombre || 'Cliente'}. Total: S/ ${parseFloat(contrato.total).toFixed(2)}. Saldo restante: S/ ${parseFloat(contrato.saldo_pendiente).toFixed(2)}`;
+    if (!contrato) return;
+    const clienteNombre = this.nuevoContrato.cliente?.nombre || contrato.cliente_nombre || 'Cliente';
+    const totalMonto = parseFloat(contrato.total || 0).toFixed(2);
+    const saldoMonto = parseFloat(contrato.saldo_pendiente || 0).toFixed(2);
+
+    const elCod = document.getElementById('exito-codigo-contrato');
+    if (elCod) elCod.textContent = contrato.codigo_contrato || 'OPT';
+
+    const elMsg = document.getElementById('exito-mensaje-contrato');
+    if (elMsg) elMsg.textContent = `Cliente: ${clienteNombre}. Total: S/ ${totalMonto}. Saldo restante: S/ ${saldoMonto}`;
 
     const btnTicket = document.getElementById('btn-exito-ticket');
-    if (btnTicket) {
+    if (btnTicket && contrato.id) {
       btnTicket.onclick = () => this.imprimirTicketContrato(contrato.id);
     }
     const btnPdf = document.getElementById('btn-exito-pdf');
-    if (btnPdf) {
+    if (btnPdf && contrato.id) {
       btnPdf.onclick = () => this.abrirPdfContrato(contrato.id);
     }
 
