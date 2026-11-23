@@ -386,21 +386,38 @@ window.app = {
       printOverrides = document.createElement('style');
       printOverrides.id = 'global-print-overrides';
       printOverrides.innerHTML = `
+        @page {
+          size: auto;
+          margin: 0mm;
+        }
         @media print {
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: auto !important;
+            overflow: visible !important;
+          }
           body > *:not(#global-print-area):not(#global-print-overrides) {
             display: none !important;
           }
           #global-print-area {
             display: block !important;
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            background: white;
-            color: black;
-            z-index: 999999;
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            color: black !important;
+            page-break-after: avoid !important;
+            page-break-inside: auto !important;
+          }
+          .ticket {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 auto !important;
+            page-break-inside: auto !important;
           }
         }
         @media screen {

@@ -1193,8 +1193,10 @@ router.get('/contratos/:id/ticket', async (req, res, next) => {
         <meta charset="utf-8">
         <title>Orden Óptica ${c.codigo_contrato}</title>
         <style>
-          body { font-family: monospace; font-size: 11px; margin: 0; padding: 6px; color: #000; }
-          .ticket { width: 100%; max-width: 290px; margin: 0 auto; }
+          @page { size: auto; margin: 0mm; }
+          html, body { margin: 0; padding: 0; height: auto; }
+          body { font-family: monospace; font-size: 11px; margin: 0; padding: 4px; color: #000; }
+          .ticket { width: 100%; max-width: 290px; margin: 0 auto; page-break-inside: auto; }
           .center { text-align: center; }
           .right { text-align: right; }
           .bold { font-weight: bold; }
@@ -1204,8 +1206,9 @@ router.get('/contratos/:id/ticket', async (req, res, next) => {
           th, td { padding: 2px 0; }
           .rx-table th, .rx-table td { text-align: center; border: 1px solid #666; padding: 2px; font-size: 9.5px; }
           @media print {
-            body { padding: 0; }
+            body { padding: 0; margin: 0; }
             .no-print { display: none; }
+            .ticket { width: 100%; max-width: 100%; }
           }
         </style>
       </head>
@@ -1399,15 +1402,21 @@ router.get('/recetas/:id/ticket', async (req, res, next) => {
         <meta charset="utf-8">
         <title>Receta Visual #${r.id}</title>
         <style>
-          body { font-family: monospace; font-size: 11px; margin: 0; padding: 6px; color: #000; }
-          .ticket { width: 100%; max-width: 290px; margin: 0 auto; }
+          @page { size: auto; margin: 0mm; }
+          html, body { margin: 0; padding: 0; height: auto; }
+          body { font-family: monospace; font-size: 11px; margin: 0; padding: 4px; color: #000; }
+          .ticket { width: 100%; max-width: 290px; margin: 0 auto; page-break-inside: auto; }
           .center { text-align: center; }
           .bold { font-weight: bold; }
           .divider { border-top: 1px dashed #000; margin: 5px 0; }
           .double-divider { border-top: 2px solid #000; margin: 6px 0; }
           table { width: 100%; border-collapse: collapse; font-size: 10px; }
           .rx-table th, .rx-table td { text-align: center; border: 1px solid #000; padding: 3px; }
-          @media print { .no-print { display: none; } }
+          @media print {
+            body { padding: 0; margin: 0; }
+            .no-print { display: none; }
+            .ticket { width: 100%; max-width: 100%; }
+          }
         </style>
       </head>
       <body>

@@ -467,17 +467,19 @@ router.get('/:id/ticket', async (req, res, next) => {
         <meta charset="utf-8">
         <title>Ticket ${venta.numero_comprobante}</title>
         <style>
+          @page { size: auto; margin: 0mm; }
+          html, body { margin: 0; padding: 0; height: auto; }
           body { font-family: 'Courier New', Courier, monospace; font-size: 12px; margin: 0; padding: 10px; color: #000; background: #fff; }
-          .ticket { width: 100%; max-width: 300px; margin: 0 auto; }
+          .ticket { width: 100%; max-width: 300px; margin: 0 auto; page-break-inside: auto; }
           .text-center { text-align: center; }
           .text-right { text-align: right; }
           .bold { font-weight: bold; }
           .mb { margin-bottom: 8px; }
           table { width: 100%; border-collapse: collapse; font-size: 12px; }
           @media print {
-            @page { margin: 0; }
             body { padding: 0; margin: 0; }
             .no-print { display: none; }
+            .ticket { width: 100%; max-width: 100%; }
           }
         </style>
       </head>
