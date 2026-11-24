@@ -33,12 +33,15 @@ export default {
       oi_esfera_cerca: '',
       od_dp_cerca: '',
       oi_dp_cerca: '',
+      od_adicion_intermedia: '',
+      oi_adicion_intermedia: '',
+      od_esfera_intermedia: '',
+      oi_esfera_intermedia: '',
       tipo_luna: 'monofocal',
+      tipo_luna_otro: '',
       material_luna: 'resina_cr39',
-      tratamientos: [],
-      color_tinte: '',
-      indicaciones: '',
-      observaciones: ''
+      material_luna_otro: '',
+      color_tinte: ''
     },
     montura_tipo: 'inventario_local', // 'inventario_local', 'inventario_traslado', 'propia_cliente', 'ninguna'
     montura_producto_id: null,
@@ -327,7 +330,7 @@ export default {
                 </div>
               </div>
 
-              <!-- PASO 3: GRADUACIÓN Y RECETA (OD / OI / ADD) -->
+              <!-- PASO 3: GRADUACIÓN Y RECETA (OD / OI / ADICIONALES) -->
               <div id="seccion-receta-oftalmica" class="card" style="margin-bottom: 1.25rem; border: 1px solid var(--accent-gold-light)">
                 <div class="card-header flex justify-between items-center" style="background: var(--bg-primary); border-bottom: 1px solid var(--bg-secondary)">
                   <div class="flex items-center" style="gap: 0.5rem">
@@ -337,7 +340,8 @@ export default {
                   <span class="badge badge-gold">Valores algebraicos (+ / -)</span>
                 </div>
                 <div class="card-body">
-                  <div class="table-responsive" style="margin-bottom: 1rem">
+                  <!-- GRILLA PRINCIPAL: VISIÓN DE LEJOS Y DISTANCIA PUPILAR -->
+                  <div class="table-responsive" style="margin-bottom: 0.85rem">
                     <table class="data-table" style="font-size: 0.95rem; text-align: center; width: 100%">
                       <thead>
                         <tr style="background: var(--bg-secondary)">
@@ -345,8 +349,7 @@ export default {
                           <th style="min-width: 130px">ESFERA (SPH)<br><small class="text-muted">Lejos (+ / -)</small></th>
                           <th style="min-width: 130px">CILINDRO (CYL)<br><small class="text-muted">Astigmatismo (-)</small></th>
                           <th style="min-width: 120px">EJE (°)<br><small class="text-muted">0° a 180°</small></th>
-                          <th style="min-width: 130px; background: rgba(201, 169, 110, 0.2); color: var(--accent-gold-dark)">ADICIÓN (ADD)<br><small>Adicional (+)</small></th>
-                          <th style="min-width: 140px; background: rgba(201, 169, 110, 0.12); color: #1e3a8a">ESF. CERCA<br><small style="color: var(--accent-gold-dark)">= Lejos + ADD</small></th>
+                          <th style="min-width: 130px; background: rgba(59, 130, 246, 0.08); color: #1e3a8a">DIST. PUPILAR<br><small class="text-muted">(D.P. mm)</small></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -354,7 +357,7 @@ export default {
                         <tr>
                           <td style="font-weight: 800; font-size: 1.15rem; color: #1e3a8a; background: rgba(59, 130, 246, 0.08); vertical-align: middle">OD</td>
                           <td style="padding: 0.5rem">
-                            <input type="text" id="rec-od-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal" oninput="window.optica.calcularCerca('od')">
+                            <input type="text" id="rec-od-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal" oninput="window.optica.recalcularAdicionales('od')">
                           </td>
                           <td style="padding: 0.5rem">
                             <input type="text" id="rec-od-cilindro" class="form-control text-center optica-rx-input" placeholder="-0.00" inputmode="decimal">
@@ -362,11 +365,8 @@ export default {
                           <td style="padding: 0.5rem">
                             <input type="text" id="rec-od-eje" class="form-control text-center optica-rx-input" placeholder="0° - 180°" inputmode="numeric">
                           </td>
-                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.1)">
-                            <input type="text" id="rec-od-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800" oninput="window.optica.calcularCerca('od')">
-                          </td>
-                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.06)">
-                            <input type="text" id="rec-od-esfera-cerca" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #fdfaf5; font-weight: 800; color: #1e3a8a; cursor: default" title="Resultado automático: Esfera Lejos + Adición">
+                          <td style="padding: 0.5rem; background: rgba(59, 130, 246, 0.04)">
+                            <input type="text" id="rec-od-dp" class="form-control text-center optica-rx-input" placeholder="31.5" inputmode="decimal" style="color: #1e3a8a; font-weight: 700">
                           </td>
                         </tr>
 
@@ -374,7 +374,7 @@ export default {
                         <tr>
                           <td style="font-weight: 800; font-size: 1.15rem; color: #047857; background: rgba(16, 185, 129, 0.08); vertical-align: middle">OI</td>
                           <td style="padding: 0.5rem">
-                            <input type="text" id="rec-oi-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal" oninput="window.optica.calcularCerca('oi')">
+                            <input type="text" id="rec-oi-esfera" class="form-control text-center optica-rx-input" placeholder="+0.00" inputmode="decimal" oninput="window.optica.recalcularAdicionales('oi')">
                           </td>
                           <td style="padding: 0.5rem">
                             <input type="text" id="rec-oi-cilindro" class="form-control text-center optica-rx-input" placeholder="-0.00" inputmode="decimal">
@@ -382,32 +382,124 @@ export default {
                           <td style="padding: 0.5rem">
                             <input type="text" id="rec-oi-eje" class="form-control text-center optica-rx-input" placeholder="0° - 180°" inputmode="numeric">
                           </td>
-                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.1)">
-                            <input type="text" id="rec-oi-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800" oninput="window.optica.calcularCerca('oi')">
-                          </td>
-                          <td style="padding: 0.5rem; background: rgba(201, 169, 110, 0.06)">
-                            <input type="text" id="rec-oi-esfera-cerca" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #fdfaf5; font-weight: 800; color: #047857; cursor: default" title="Resultado automático: Esfera Lejos + Adición">
+                          <td style="padding: 0.5rem; background: rgba(16, 185, 129, 0.04)">
+                            <input type="text" id="rec-oi-dp" class="form-control text-center optica-rx-input" placeholder="31.5" inputmode="decimal" style="color: #047857; font-weight: 700">
                           </td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
-                  <!-- Banner Informativo de Relación Clínica -->
-                  <div style="margin-top: -0.25rem; margin-bottom: 1rem; padding: 0.55rem 0.85rem; background: rgba(201, 169, 110, 0.08); border-left: 3px solid var(--accent-gold); border-radius: 4px; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 8px">
-                    <div style="display: flex; align-items: center; gap: 7px">
-                      <span style="font-size: 1.1rem">💡</span>
-                      <span><b>Cálculo Clínico:</b> Cuando existe <b>Adición (ADD)</b>, esta se suma a la <b>Esfera de Lejos</b> y el resultado automático corresponde a la <b>Esfera de Cerca</b>.</span>
-                    </div>
-                    <span class="badge badge-gold" style="font-size: 0.72rem; text-transform: uppercase">Cálculo Automático</span>
+                  <!-- CASILLAS PARA HABILITAR ADICIONALES (CERCA / INTERMEDIO) -->
+                  <div style="margin-top: 0.5rem; margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 0.75rem">
+                    <label style="flex: 1; min-width: 250px; display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 1rem; background: var(--bg-primary); border: 1.5px solid var(--accent-gold-light); border-radius: var(--border-radius-md); cursor: pointer; user-select: none; transition: all 0.2s ease">
+                      <input type="checkbox" id="chk-habilitar-cerca" style="width: 18px; height: 18px; accent-color: var(--accent-gold)" onchange="window.optica.toggleAdicionalCerca()">
+                      <div>
+                        <div style="font-weight: 700; color: #800020; font-size: 0.95rem">🔍 Agregar Adicional de CERCA</div>
+                        <small class="text-muted">Habilita graduación para lectura / visión cercana</small>
+                      </div>
+                    </label>
+
+                    <label style="flex: 1; min-width: 250px; display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 1rem; background: var(--bg-primary); border: 1.5px solid var(--accent-gold-light); border-radius: var(--border-radius-md); cursor: pointer; user-select: none; transition: all 0.2s ease">
+                      <input type="checkbox" id="chk-habilitar-intermedio" style="width: 18px; height: 18px; accent-color: var(--accent-gold)" onchange="window.optica.toggleAdicionalIntermedio()">
+                      <div>
+                        <div style="font-weight: 700; color: #1e3a8a; font-size: 0.95rem">💻 Agregar Adicional INTERMEDIO</div>
+                        <small class="text-muted">Habilita graduación para pantallas / distancia intermedia</small>
+                      </div>
+                    </label>
                   </div>
 
-                  <!-- Configuración de Lunas y Tratamientos (Solo Contrato Completo) -->
+                  <!-- SUB-GRILLA REACTIVA: VISIÓN DE CERCA -->
+                  <div id="box-adicional-cerca" class="hidden" style="margin-bottom: 1rem; padding: 0.85rem; background: rgba(201, 169, 110, 0.08); border-left: 4px solid var(--accent-gold); border-radius: 6px">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem">
+                      <h4 style="margin: 0; font-size: 0.95rem; color: #800020; font-weight: 800">📖 Visión de Cerca (Lejos + ADD Cerca = Esfera Cerca)</h4>
+                      <span class="badge badge-gold" style="font-size: 0.72rem">Cálculo Automático</span>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="data-table" style="font-size: 0.9rem; text-align: center; width: 100%">
+                        <thead>
+                          <tr style="background: rgba(201, 169, 110, 0.15)">
+                            <th style="width: 65px">OJO</th>
+                            <th style="min-width: 120px">ADD CERCA (+)<br><small>Adición</small></th>
+                            <th style="min-width: 140px; color: #1e3a8a">ESF. CERCA (= Lejos + ADD)<br><small>Resultado automático</small></th>
+                            <th style="min-width: 110px">D.P. CERCA<br><small>(mm)</small></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style="font-weight: 800; color: #1e3a8a">OD</td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-od-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800" oninput="window.optica.calcularCerca('od')">
+                            </td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-od-esfera-cerca" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #ffffff; font-weight: 800; color: #1e3a8a; cursor: default">
+                            </td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-od-dp-cerca" class="form-control text-center optica-rx-input" placeholder="29.5" inputmode="decimal">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-weight: 800; color: #047857">OI</td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-oi-add" class="form-control text-center optica-rx-input" placeholder="+2.00" inputmode="decimal" style="color: var(--accent-gold-dark); font-weight: 800" oninput="window.optica.calcularCerca('oi')">
+                            </td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-oi-esfera-cerca" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #ffffff; font-weight: 800; color: #047857; cursor: default">
+                            </td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-oi-dp-cerca" class="form-control text-center optica-rx-input" placeholder="29.5" inputmode="decimal">
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- SUB-GRILLA REACTIVA: VISIÓN INTERMEDIA -->
+                  <div id="box-adicional-intermedio" class="hidden" style="margin-bottom: 1rem; padding: 0.85rem; background: rgba(59, 130, 246, 0.08); border-left: 4px solid #1e3a8a; border-radius: 6px">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem">
+                      <h4 style="margin: 0; font-size: 0.95rem; color: #1e3a8a; font-weight: 800">💻 Visión Intermedia (Lejos + ADD Intermedio = Esfera Intermedia)</h4>
+                      <span class="badge" style="background: #1e3a8a; color: white; font-size: 0.72rem">Cálculo Automático</span>
+                    </div>
+                    <div class="table-responsive">
+                      <table class="data-table" style="font-size: 0.9rem; text-align: center; width: 100%">
+                        <thead>
+                          <tr style="background: rgba(59, 130, 246, 0.12)">
+                            <th style="width: 65px">OJO</th>
+                            <th style="min-width: 140px">ADD INTERMEDIO (+)<br><small>Adición</small></th>
+                            <th style="min-width: 140px; color: #1e3a8a">ESF. INTERMEDIA (= Lejos + ADD)<br><small>Resultado automático</small></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td style="font-weight: 800; color: #1e3a8a">OD</td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-od-add-intermedio" class="form-control text-center optica-rx-input" placeholder="+1.25" inputmode="decimal" style="color: #1e3a8a; font-weight: 800" oninput="window.optica.calcularIntermedio('od')">
+                            </td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-od-esfera-intermedio" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #ffffff; font-weight: 800; color: #1e3a8a; cursor: default">
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="font-weight: 800; color: #047857">OI</td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-oi-add-intermedio" class="form-control text-center optica-rx-input" placeholder="+1.25" inputmode="decimal" style="color: #1e3a8a; font-weight: 800" oninput="window.optica.calcularIntermedio('oi')">
+                            </td>
+                            <td style="padding: 0.4rem">
+                              <input type="text" id="rec-oi-esfera-intermedio" class="form-control text-center optica-rx-input" placeholder="—" readonly style="background: #ffffff; font-weight: 800; color: #047857; cursor: default">
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- CONFIGURACIÓN DE LUNAS (Diseño, Material, Color/Tinte) -->
                   <div id="box-lunas-especificaciones">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem">
                       <div class="form-group mb-0">
                         <label class="form-label">Diseño de Luna</label>
-                        <select id="rec-tipo-luna" class="form-control">
+                        <select id="rec-tipo-luna" class="form-control" onchange="window.optica.toggleOtroDiseno()">
                           <option value="monofocal">Monofocal (Visión única)</option>
                           <option value="bifocal">Bifocal (Flattop / Invisible)</option>
                           <option value="progresivo">Progresivo / Multifocal</option>
@@ -415,59 +507,29 @@ export default {
                           <option value="contacto">Lentes de Contacto</option>
                           <option value="otro">Otro diseño</option>
                         </select>
+                        <div id="box-tipo-luna-otro" class="hidden" style="margin-top: 0.5rem">
+                          <input type="text" id="rec-tipo-luna-otro" class="form-control" placeholder="Escribir qué diseño de luna...">
+                        </div>
                       </div>
 
                       <div class="form-group mb-0">
                         <label class="form-label">Material de Luna</label>
-                        <select id="rec-material-luna" class="form-control">
+                        <select id="rec-material-luna" class="form-control" onchange="window.optica.toggleOtroMaterial()">
                           <option value="resina_cr39">Resina Orgánica CR-39</option>
                           <option value="policarbonato">Policarbonato (Alto impacto)</option>
                           <option value="alto_indice">Alto Índice 1.61 / 1.67</option>
                           <option value="vidrio">Cristal / Vidrio mineral</option>
                           <option value="otro">Otro material</option>
                         </select>
+                        <div id="box-material-luna-otro" class="hidden" style="margin-top: 0.5rem">
+                          <input type="text" id="rec-material-luna-otro" class="form-control" placeholder="Escribir qué material de luna...">
+                        </div>
                       </div>
 
                       <div class="form-group mb-0">
                         <label class="form-label">Color / Tinte</label>
                         <input type="text" id="rec-color-tinte" class="form-control" placeholder="Blanco, Gris, Café, G-15, etc.">
                       </div>
-                    </div>
-
-                    <!-- Tratamientos y Filtros -->
-                    <div style="margin-top: 1rem">
-                      <label class="form-label">Filtros y Tratamientos Especiales</label>
-                      <div style="display: flex; flex-wrap: wrap; gap: 0.75rem; background: var(--bg-primary); padding: 0.75rem; border-radius: var(--border-radius-md); border: 1px solid var(--bg-secondary)">
-                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                          <input type="checkbox" class="chk-tratamiento" value="antirreflejo"> Antirreflejo (AR)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                          <input type="checkbox" class="chk-tratamiento" value="fotocromatico"> Fotocromático (Transition)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                          <input type="checkbox" class="chk-tratamiento" value="filtro_azul"> Filtro Luz Azul (Blue Defense)
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                          <input type="checkbox" class="chk-tratamiento" value="uv400"> Filtro UV 400
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                          <input type="checkbox" class="chk-tratamiento" value="polarizado"> Polarizado
-                        </label>
-                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem">
-                          <input type="checkbox" class="chk-tratamiento" value="antirrayas"> Anti-rayas endurecido
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem">
-                    <div class="form-group mb-0">
-                      <label class="form-label">Indicaciones Oftálmicas</label>
-                      <input type="text" id="rec-indicaciones" class="form-control" placeholder="Uso permanente, descanso, lectura...">
-                    </div>
-                    <div class="form-group mb-0">
-                      <label class="form-label">Observaciones de la Graduación</label>
-                      <input type="text" id="rec-observaciones" class="form-control" placeholder="Notas clínicas adicionales...">
                     </div>
                   </div>
                 </div>
@@ -1554,34 +1616,81 @@ export default {
     if (!this.clienteUltimaReceta) return;
     const r = this.clienteUltimaReceta;
 
-    document.getElementById('rec-od-esfera').value = r.od_esfera || '';
-    document.getElementById('rec-od-cilindro').value = r.od_cilindro || '';
-    document.getElementById('rec-od-eje').value = r.od_eje || '';
-    document.getElementById('rec-od-dp').value = r.od_dp || '';
-    document.getElementById('rec-od-add').value = r.od_adicion || '';
-    document.getElementById('rec-od-esfera-cerca').value = r.od_esfera_cerca || '';
-    document.getElementById('rec-od-dp-cerca').value = r.od_dp_cerca || '';
+    // 1. Visión de Lejos y D.P.
+    const odEsf = document.getElementById('rec-od-esfera'); if (odEsf) odEsf.value = r.od_esfera || '';
+    const odCil = document.getElementById('rec-od-cilindro'); if (odCil) odCil.value = r.od_cilindro || '';
+    const odEje = document.getElementById('rec-od-eje'); if (odEje) odEje.value = r.od_eje !== null && r.od_eje !== undefined ? r.od_eje : '';
+    const odDp = document.getElementById('rec-od-dp'); if (odDp) odDp.value = r.od_dp || '';
 
-    document.getElementById('rec-oi-esfera').value = r.oi_esfera || '';
-    document.getElementById('rec-oi-cilindro').value = r.oi_cilindro || '';
-    document.getElementById('rec-oi-eje').value = r.oi_eje || '';
-    document.getElementById('rec-oi-dp').value = r.oi_dp || '';
-    document.getElementById('rec-oi-add').value = r.oi_adicion || '';
-    document.getElementById('rec-oi-esfera-cerca').value = r.oi_esfera_cerca || '';
-    document.getElementById('rec-oi-dp-cerca').value = r.oi_dp_cerca || '';
+    const oiEsf = document.getElementById('rec-oi-esfera'); if (oiEsf) oiEsf.value = r.oi_esfera || '';
+    const oiCil = document.getElementById('rec-oi-cilindro'); if (oiCil) oiCil.value = r.oi_cilindro || '';
+    const oiEje = document.getElementById('rec-oi-eje'); if (oiEje) oiEje.value = r.oi_eje !== null && r.oi_eje !== undefined ? r.oi_eje : '';
+    const oiDp = document.getElementById('rec-oi-dp'); if (oiDp) oiDp.value = r.oi_dp || '';
 
-    if (r.tipo_luna) document.getElementById('rec-tipo-luna').value = r.tipo_luna;
-    if (r.material_luna) document.getElementById('rec-material-luna').value = r.material_luna;
-    if (r.color_tinte) document.getElementById('rec-color-tinte').value = r.color_tinte;
-    if (r.indicaciones) document.getElementById('rec-indicaciones').value = r.indicaciones;
-    if (r.observaciones) document.getElementById('rec-observaciones').value = r.observaciones;
+    // 2. Adicional de Cerca
+    const tieneCerca = !!(r.od_adicion || r.oi_adicion || r.od_esfera_cerca || r.oi_esfera_cerca);
+    const chkCerca = document.getElementById('chk-habilitar-cerca');
+    const boxCerca = document.getElementById('box-adicional-cerca');
+    if (chkCerca) chkCerca.checked = tieneCerca;
+    if (boxCerca) {
+      if (tieneCerca) {
+        boxCerca.classList.remove('hidden');
+        const odAdd = document.getElementById('rec-od-add'); if (odAdd) odAdd.value = r.od_adicion || '';
+        const oiAdd = document.getElementById('rec-oi-add'); if (oiAdd) oiAdd.value = r.oi_adicion || '';
+        const odDpC = document.getElementById('rec-od-dp-cerca'); if (odDpC) odDpC.value = r.od_dp_cerca || '';
+        const oiDpC = document.getElementById('rec-oi-dp-cerca'); if (oiDpC) oiDpC.value = r.oi_dp_cerca || '';
+        this.calcularCerca('od');
+        this.calcularCerca('oi');
+      } else {
+        boxCerca.classList.add('hidden');
+      }
+    }
 
-    // Tratamientos
-    if (r.tratamientos) {
-      const arr = r.tratamientos.split(',');
-      document.querySelectorAll('.chk-tratamiento').forEach(chk => {
-        chk.checked = arr.includes(chk.value);
-      });
+    // 3. Adicional Intermedio
+    const tieneIntermedio = !!(r.od_adicion_intermedia || r.oi_adicion_intermedia || r.od_esfera_intermedia || r.oi_esfera_intermedia);
+    const chkInter = document.getElementById('chk-habilitar-intermedio');
+    const boxInter = document.getElementById('box-adicional-intermedio');
+    if (chkInter) chkInter.checked = tieneIntermedio;
+    if (boxInter) {
+      if (tieneIntermedio) {
+        boxInter.classList.remove('hidden');
+        const odAddInt = document.getElementById('rec-od-add-intermedio'); if (odAddInt) odAddInt.value = r.od_adicion_intermedia || '';
+        const oiAddInt = document.getElementById('rec-oi-add-intermedio'); if (oiAddInt) oiAddInt.value = r.oi_adicion_intermedia || '';
+        this.calcularIntermedio('od');
+        this.calcularIntermedio('oi');
+      } else {
+        boxInter.classList.add('hidden');
+      }
+    }
+
+    // 4. Especificaciones de Lunas
+    if (r.tipo_luna) {
+      const selTipo = document.getElementById('rec-tipo-luna');
+      if (selTipo) {
+        selTipo.value = r.tipo_luna;
+        this.toggleOtroDiseno();
+        if (r.tipo_luna === 'otro' && r.tipo_luna_otro) {
+          const inpOtro = document.getElementById('rec-tipo-luna-otro');
+          if (inpOtro) inpOtro.value = r.tipo_luna_otro;
+        }
+      }
+    }
+
+    if (r.material_luna) {
+      const selMat = document.getElementById('rec-material-luna');
+      if (selMat) {
+        selMat.value = r.material_luna;
+        this.toggleOtroMaterial();
+        if (r.material_luna === 'otro' && r.material_luna_otro) {
+          const inpMatOtro = document.getElementById('rec-material-luna-otro');
+          if (inpMatOtro) inpMatOtro.value = r.material_luna_otro;
+        }
+      }
+    }
+
+    if (r.color_tinte) {
+      const inpColor = document.getElementById('rec-color-tinte');
+      if (inpColor) inpColor.value = r.color_tinte;
     }
 
     app.showToast('Receta previa cargada correctamente en el formulario', 'success');
@@ -2061,15 +2170,21 @@ export default {
     this.actualizarPrecios();
   },
 
-  // Cálculo algebraico de esfera de cerca (Esfera Lejos + Adición)
-  calcularEsferaCerca(esferaStr, adicionStr) {
-    if (!esferaStr || !adicionStr) return null;
+  // Cálculo algebraico genérico (Esfera Lejos + Adición)
+  calcularSumaAlgebraica(esferaStr, adicionStr) {
+    if (esferaStr === undefined || esferaStr === null || String(esferaStr).trim() === '' ||
+        adicionStr === undefined || adicionStr === null || String(adicionStr).trim() === '') return null;
     const esf = parseFloat(String(esferaStr).replace(',', '.'));
     const add = parseFloat(String(adicionStr).replace(',', '.'));
     if (isNaN(esf) || isNaN(add)) return null;
-    const cerca = esf + add;
-    const signo = cerca > 0 ? '+' : (cerca < 0 ? '' : '+');
-    return `${signo}${cerca.toFixed(2)}`;
+    const res = esf + add;
+    const signo = res > 0 ? '+' : (res < 0 ? '' : '+');
+    return `${signo}${res.toFixed(2)}`;
+  },
+
+  // Cálculo algebraico de esfera de cerca (Esfera Lejos + Adición Cerca)
+  calcularEsferaCerca(esferaStr, adicionStr) {
+    return this.calcularSumaAlgebraica(esferaStr, adicionStr);
   },
 
   calcularCerca(ojo) {
@@ -2083,10 +2198,92 @@ export default {
     cercaInput.value = res || '—';
   },
 
-  recolectarTratamientos() {
-    const trat = [];
-    document.querySelectorAll('.chk-tratamiento:checked').forEach(c => trat.push(c.value));
-    this.nuevoContrato.receta.tratamientos = trat;
+  calcularIntermedio(ojo) {
+    const esferaInput = document.getElementById(`rec-${ojo}-esfera`);
+    const addInput = document.getElementById(`rec-${ojo}-add-intermedio`);
+    const intermedioInput = document.getElementById(`rec-${ojo}-esfera-intermedio`);
+
+    if (!esferaInput || !addInput || !intermedioInput) return;
+
+    const res = this.calcularSumaAlgebraica(esferaInput.value, addInput.value);
+    intermedioInput.value = res || '—';
+  },
+
+  recalcularAdicionales(ojo) {
+    if (document.getElementById('chk-habilitar-cerca')?.checked) {
+      this.calcularCerca(ojo);
+    }
+    if (document.getElementById('chk-habilitar-intermedio')?.checked) {
+      this.calcularIntermedio(ojo);
+    }
+  },
+
+  toggleAdicionalCerca() {
+    const chk = document.getElementById('chk-habilitar-cerca');
+    const box = document.getElementById('box-adicional-cerca');
+    if (!chk || !box) return;
+
+    if (chk.checked) {
+      box.classList.remove('hidden');
+      this.calcularCerca('od');
+      this.calcularCerca('oi');
+    } else {
+      box.classList.add('hidden');
+      const odAdd = document.getElementById('rec-od-add'); if (odAdd) odAdd.value = '';
+      const oiAdd = document.getElementById('rec-oi-add'); if (oiAdd) oiAdd.value = '';
+      const odC = document.getElementById('rec-od-esfera-cerca'); if (odC) odC.value = '—';
+      const oiC = document.getElementById('rec-oi-esfera-cerca'); if (oiC) oiC.value = '—';
+      const odDpC = document.getElementById('rec-od-dp-cerca'); if (odDpC) odDpC.value = '';
+      const oiDpC = document.getElementById('rec-oi-dp-cerca'); if (oiDpC) oiDpC.value = '';
+    }
+  },
+
+  toggleAdicionalIntermedio() {
+    const chk = document.getElementById('chk-habilitar-intermedio');
+    const box = document.getElementById('box-adicional-intermedio');
+    if (!chk || !box) return;
+
+    if (chk.checked) {
+      box.classList.remove('hidden');
+      this.calcularIntermedio('od');
+      this.calcularIntermedio('oi');
+    } else {
+      box.classList.add('hidden');
+      const odAdd = document.getElementById('rec-od-add-intermedio'); if (odAdd) odAdd.value = '';
+      const oiAdd = document.getElementById('rec-oi-add-intermedio'); if (oiAdd) oiAdd.value = '';
+      const odInt = document.getElementById('rec-od-esfera-intermedio'); if (odInt) odInt.value = '—';
+      const oiInt = document.getElementById('rec-oi-esfera-intermedio'); if (oiInt) oiInt.value = '—';
+    }
+  },
+
+  toggleOtroDiseno() {
+    const sel = document.getElementById('rec-tipo-luna');
+    const box = document.getElementById('box-tipo-luna-otro');
+    const inp = document.getElementById('rec-tipo-luna-otro');
+    if (!sel || !box) return;
+
+    if (sel.value === 'otro') {
+      box.classList.remove('hidden');
+      if (inp) inp.focus();
+    } else {
+      box.classList.add('hidden');
+      if (inp) inp.value = '';
+    }
+  },
+
+  toggleOtroMaterial() {
+    const sel = document.getElementById('rec-material-luna');
+    const box = document.getElementById('box-material-luna-otro');
+    const inp = document.getElementById('rec-material-luna-otro');
+    if (!sel || !box) return;
+
+    if (sel.value === 'otro') {
+      box.classList.remove('hidden');
+      if (inp) inp.focus();
+    } else {
+      box.classList.add('hidden');
+      if (inp) inp.value = '';
+    }
   },
 
   // Resumen Económico Reactivo
@@ -2217,30 +2414,48 @@ export default {
       if (tipo === 'completo' || tipo === 'cambio_montura' || tipo === 'medicion') {
         const odEsfera = document.getElementById('rec-od-esfera')?.value;
         const oiEsfera = document.getElementById('rec-oi-esfera')?.value;
-        const odAdd = document.getElementById('rec-od-add')?.value;
-        const oiAdd = document.getElementById('rec-oi-add')?.value;
+
+        const habilitarCerca = document.getElementById('chk-habilitar-cerca')?.checked;
+        const habilitarIntermedio = document.getElementById('chk-habilitar-intermedio')?.checked;
+
+        const odAdd = habilitarCerca ? (document.getElementById('rec-od-add')?.value || null) : null;
+        const oiAdd = habilitarCerca ? (document.getElementById('rec-oi-add')?.value || null) : null;
+        const odDpCerca = habilitarCerca ? (document.getElementById('rec-od-dp-cerca')?.value || null) : null;
+        const oiDpCerca = habilitarCerca ? (document.getElementById('rec-oi-dp-cerca')?.value || null) : null;
+
+        const odAddInt = habilitarIntermedio ? (document.getElementById('rec-od-add-intermedio')?.value || null) : null;
+        const oiAddInt = habilitarIntermedio ? (document.getElementById('rec-oi-add-intermedio')?.value || null) : null;
+
+        const tipoLunaSel = tipo === 'medicion' ? null : (document.getElementById('rec-tipo-luna')?.value || 'monofocal');
+        const tipoLunaOtro = (tipo !== 'medicion' && tipoLunaSel === 'otro') ? (document.getElementById('rec-tipo-luna-otro')?.value?.trim() || null) : null;
+
+        const matLunaSel = tipo === 'medicion' ? null : (document.getElementById('rec-material-luna')?.value || 'resina_cr39');
+        const matLunaOtro = (tipo !== 'medicion' && matLunaSel === 'otro') ? (document.getElementById('rec-material-luna-otro')?.value?.trim() || null) : null;
 
         recetaPayload = {
           od_esfera: odEsfera || null,
           od_cilindro: document.getElementById('rec-od-cilindro')?.value || null,
           od_eje: parseInt(document.getElementById('rec-od-eje')?.value) || null,
-          od_dp: null,
+          od_dp: document.getElementById('rec-od-dp')?.value || null,
           oi_esfera: oiEsfera || null,
           oi_cilindro: document.getElementById('rec-oi-cilindro')?.value || null,
           oi_eje: parseInt(document.getElementById('rec-oi-eje')?.value) || null,
-          oi_dp: null,
-          od_adicion: odAdd || null,
-          oi_adicion: oiAdd || null,
-          od_esfera_cerca: this.calcularEsferaCerca(odEsfera, odAdd),
-          oi_esfera_cerca: this.calcularEsferaCerca(oiEsfera, oiAdd),
-          od_dp_cerca: null,
-          oi_dp_cerca: null,
-          tipo_luna: tipo === 'medicion' ? null : (document.getElementById('rec-tipo-luna')?.value || 'monofocal'),
-          material_luna: tipo === 'medicion' ? null : (document.getElementById('rec-material-luna')?.value || 'resina_cr39'),
-          tratamientos: tipo === 'medicion' ? '' : (this.nuevoContrato.receta?.tratamientos || []).join(','),
-          color_tinte: tipo === 'medicion' ? null : (document.getElementById('rec-color-tinte')?.value || ''),
-          indicaciones: document.getElementById('rec-indicaciones')?.value || '',
-          observaciones: document.getElementById('rec-observaciones')?.value || ''
+          oi_dp: document.getElementById('rec-oi-dp')?.value || null,
+          od_adicion: odAdd,
+          oi_adicion: oiAdd,
+          od_esfera_cerca: habilitarCerca ? this.calcularEsferaCerca(odEsfera, odAdd) : null,
+          oi_esfera_cerca: habilitarCerca ? this.calcularEsferaCerca(oiEsfera, oiAdd) : null,
+          od_dp_cerca: odDpCerca,
+          oi_dp_cerca: oiDpCerca,
+          od_adicion_intermedia: odAddInt,
+          oi_adicion_intermedia: oiAddInt,
+          od_esfera_intermedia: habilitarIntermedio ? this.calcularSumaAlgebraica(odEsfera, odAddInt) : null,
+          oi_esfera_intermedia: habilitarIntermedio ? this.calcularSumaAlgebraica(oiEsfera, oiAddInt) : null,
+          tipo_luna: tipoLunaSel,
+          tipo_luna_otro: tipoLunaOtro,
+          material_luna: matLunaSel,
+          material_luna_otro: matLunaOtro,
+          color_tinte: tipo === 'medicion' ? null : (document.getElementById('rec-color-tinte')?.value || '')
         };
       }
 
@@ -2266,12 +2481,19 @@ export default {
       }
 
       if (tipo === 'completo' && prLunas > 0) {
-        const disLuna = document.getElementById('rec-tipo-luna')?.value || 'Monofocal';
-        const matLuna = document.getElementById('rec-material-luna')?.value || 'CR-39';
-        const tratam = (this.nuevoContrato.receta?.tratamientos || []).join(', ');
+        let disLuna = document.getElementById('rec-tipo-luna')?.value || 'Monofocal';
+        if (disLuna === 'otro') {
+          const customDis = document.getElementById('rec-tipo-luna-otro')?.value?.trim();
+          disLuna = customDis ? `Otro (${customDis})` : 'Otro diseño';
+        }
+        let matLuna = document.getElementById('rec-material-luna')?.value || 'CR-39';
+        if (matLuna === 'otro') {
+          const customMat = document.getElementById('rec-material-luna-otro')?.value?.trim();
+          matLuna = customMat ? `Otro (${customMat})` : 'Otro material';
+        }
         items.push({
           tipo_item: 'lunas',
-          descripcion: `Lunas oftálmicas: ${disLuna} (${matLuna})${tratam ? ' - ' + tratam : ''}`,
+          descripcion: `Lunas oftálmicas: ${disLuna} (${matLuna})`,
           cantidad: 1,
           precio_unitario: prLunas,
           descuento_item: 0,
@@ -2405,18 +2627,45 @@ export default {
     this.deseleccionarCliente();
     this.deseleccionarMontura();
 
-    // Resetear prescripción
+    // Resetear prescripción de Lejos y D.P.
     const elOdEsf = document.getElementById('rec-od-esfera'); if (elOdEsf) elOdEsf.value = '';
     const elOdCil = document.getElementById('rec-od-cilindro'); if (elOdCil) elOdCil.value = '';
     const elOdEje = document.getElementById('rec-od-eje'); if (elOdEje) elOdEje.value = '';
-    const elOdAdd = document.getElementById('rec-od-add'); if (elOdAdd) elOdAdd.value = '';
-    const elOdCerca = document.getElementById('rec-od-esfera-cerca'); if (elOdCerca) elOdCerca.value = '—';
+    const elOdDp = document.getElementById('rec-od-dp'); if (elOdDp) elOdDp.value = '';
 
     const elOiEsf = document.getElementById('rec-oi-esfera'); if (elOiEsf) elOiEsf.value = '';
     const elOiCil = document.getElementById('rec-oi-cilindro'); if (elOiCil) elOiCil.value = '';
     const elOiEje = document.getElementById('rec-oi-eje'); if (elOiEje) elOiEje.value = '';
+    const elOiDp = document.getElementById('rec-oi-dp'); if (elOiDp) elOiDp.value = '';
+
+    // Resetear Adicional Cerca
+    const chkCerca = document.getElementById('chk-habilitar-cerca'); if (chkCerca) chkCerca.checked = false;
+    const boxCerca = document.getElementById('box-adicional-cerca'); if (boxCerca) boxCerca.classList.add('hidden');
+    const elOdAdd = document.getElementById('rec-od-add'); if (elOdAdd) elOdAdd.value = '';
+    const elOdCerca = document.getElementById('rec-od-esfera-cerca'); if (elOdCerca) elOdCerca.value = '—';
+    const elOdDpC = document.getElementById('rec-od-dp-cerca'); if (elOdDpC) elOdDpC.value = '';
     const elOiAdd = document.getElementById('rec-oi-add'); if (elOiAdd) elOiAdd.value = '';
     const elOiCerca = document.getElementById('rec-oi-esfera-cerca'); if (elOiCerca) elOiCerca.value = '—';
+    const elOiDpC = document.getElementById('rec-oi-dp-cerca'); if (elOiDpC) elOiDpC.value = '';
+
+    // Resetear Adicional Intermedio
+    const chkInter = document.getElementById('chk-habilitar-intermedio'); if (chkInter) chkInter.checked = false;
+    const boxInter = document.getElementById('box-adicional-intermedio'); if (boxInter) boxInter.classList.add('hidden');
+    const elOdAddInt = document.getElementById('rec-od-add-intermedio'); if (elOdAddInt) elOdAddInt.value = '';
+    const elOdInt = document.getElementById('rec-od-esfera-intermedio'); if (elOdInt) elOdInt.value = '—';
+    const elOiAddInt = document.getElementById('rec-oi-add-intermedio'); if (elOiAddInt) elOiAddInt.value = '';
+    const elOiInt = document.getElementById('rec-oi-esfera-intermedio'); if (elOiInt) elOiInt.value = '—';
+
+    // Resetear especificaciones de lunas
+    const elTipoLuna = document.getElementById('rec-tipo-luna'); if (elTipoLuna) elTipoLuna.value = 'monofocal';
+    const boxTipoOtro = document.getElementById('box-tipo-luna-otro'); if (boxTipoOtro) boxTipoOtro.classList.add('hidden');
+    const inpTipoOtro = document.getElementById('rec-tipo-luna-otro'); if (inpTipoOtro) inpTipoOtro.value = '';
+
+    const elMatLuna = document.getElementById('rec-material-luna'); if (elMatLuna) elMatLuna.value = 'resina_cr39';
+    const boxMatOtro = document.getElementById('box-material-luna-otro'); if (boxMatOtro) boxMatOtro.classList.add('hidden');
+    const inpMatOtro = document.getElementById('rec-material-luna-otro'); if (inpMatOtro) inpMatOtro.value = '';
+
+    const elColor = document.getElementById('rec-color-tinte'); if (elColor) elColor.value = '';
 
     // Resetear productos adicionales
     this.nuevoContrato.productos_adicionales = [];
@@ -2425,7 +2674,6 @@ export default {
     if (adicIn) adicIn.value = '';
     document.getElementById('lista-resultados-adicionales')?.classList.add('hidden');
 
-    document.querySelectorAll('.chk-tratamiento').forEach(c => c.checked = false);
     const elLunas = document.getElementById('w-costo-lunas'); if (elLunas) elLunas.value = '0.00';
     const elMed = document.getElementById('w-costo-medicion'); if (elMed) elMed.value = '0.00';
     const elDesc = document.getElementById('w-descuento'); if (elDesc) elDesc.value = '0.00';
@@ -2654,17 +2902,19 @@ export default {
         ${c.receta ? `
           <div style="background: var(--bg-card); border: 1px solid var(--bg-secondary); border-radius: var(--border-radius-md); padding: 0.75rem; margin-bottom: 1rem">
             <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; color: var(--accent-gold-dark)">
-              Graduación Visual
+              Graduación Visual - Prescripción
             </div>
-            <table class="data-table" style="font-size: 0.85rem; text-align: center">
+
+            <!-- Visión de Lejos -->
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px">[ VISIÓN DE LEJOS ]</div>
+            <table class="data-table" style="font-size: 0.85rem; text-align: center; margin-bottom: 0.75rem">
               <thead>
                 <tr style="background: var(--bg-secondary)">
                   <th>OJO</th>
                   <th>ESF (SPH)</th>
                   <th>CIL (CYL)</th>
                   <th>EJE (°)</th>
-                  <th>ADICIÓN (ADD)</th>
-                  <th style="color: #1e3a8a">ESF. CERCA (RESULTADO)</th>
+                  <th>DIST. PUPILAR (D.P.)</th>
                 </tr>
               </thead>
               <tbody>
@@ -2673,24 +2923,77 @@ export default {
                   <td>${c.receta.od_esfera !== null && c.receta.od_esfera !== undefined ? (c.receta.od_esfera > 0 ? '+' : '') + c.receta.od_esfera : '—'}</td>
                   <td>${c.receta.od_cilindro !== null && c.receta.od_cilindro !== undefined ? (c.receta.od_cilindro > 0 ? '+' : '') + c.receta.od_cilindro : '—'}</td>
                   <td>${c.receta.od_eje !== null && c.receta.od_eje !== undefined ? `${c.receta.od_eje}°` : '—'}</td>
-                  <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.od_adicion ? '+' + c.receta.od_adicion : '—'}</td>
-                  <td style="font-weight: 800; color: #1e3a8a">${c.receta.od_esfera_cerca || (c.receta.od_adicion && c.receta.od_esfera ? window.optica.calcularEsferaCerca(c.receta.od_esfera, c.receta.od_adicion) : '—')}</td>
+                  <td>${c.receta.od_dp ? `${c.receta.od_dp} mm` : '—'}</td>
                 </tr>
                 <tr>
                   <td style="font-weight: bold; color: #047857">OI</td>
                   <td>${c.receta.oi_esfera !== null && c.receta.oi_esfera !== undefined ? (c.receta.oi_esfera > 0 ? '+' : '') + c.receta.oi_esfera : '—'}</td>
                   <td>${c.receta.oi_cilindro !== null && c.receta.oi_cilindro !== undefined ? (c.receta.oi_cilindro > 0 ? '+' : '') + c.receta.oi_cilindro : '—'}</td>
                   <td>${c.receta.oi_eje !== null && c.receta.oi_eje !== undefined ? `${c.receta.oi_eje}°` : '—'}</td>
-                  <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.oi_adicion ? '+' + c.receta.oi_adicion : '—'}</td>
-                  <td style="font-weight: 800; color: #047857">${c.receta.oi_esfera_cerca || (c.receta.oi_adicion && c.receta.oi_esfera ? window.optica.calcularEsferaCerca(c.receta.oi_esfera, c.receta.oi_adicion) : '—')}</td>
+                  <td>${c.receta.oi_dp ? `${c.receta.oi_dp} mm` : '—'}</td>
                 </tr>
               </tbody>
             </table>
+
+            <!-- Visión de Cerca (si aplica) -->
+            ${(c.receta.od_adicion || c.receta.oi_adicion) ? `
+              <div style="font-size: 0.8rem; font-weight: 700; color: #800020; margin-bottom: 4px">[ VISIÓN DE CERCA ]</div>
+              <table class="data-table" style="font-size: 0.85rem; text-align: center; margin-bottom: 0.75rem">
+                <thead>
+                  <tr style="background: rgba(201, 169, 110, 0.15)">
+                    <th>OJO</th>
+                    <th>ADD CERCA (+)</th>
+                    <th style="color: #1e3a8a">ESF. CERCA RESULTANTE</th>
+                    <th>D.P. CERCA</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="font-weight: bold; color: #1e3a8a">OD</td>
+                    <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.od_adicion ? '+' + c.receta.od_adicion : '—'}</td>
+                    <td style="font-weight: 800; color: #1e3a8a">${c.receta.od_esfera_cerca || (c.receta.od_adicion && c.receta.od_esfera ? window.optica.calcularEsferaCerca(c.receta.od_esfera, c.receta.od_adicion) : '—')}</td>
+                    <td>${c.receta.od_dp_cerca ? `${c.receta.od_dp_cerca} mm` : '—'}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight: bold; color: #047857">OI</td>
+                    <td style="font-weight: bold; color: var(--accent-gold-dark)">${c.receta.oi_adicion ? '+' + c.receta.oi_adicion : '—'}</td>
+                    <td style="font-weight: 800; color: #047857">${c.receta.oi_esfera_cerca || (c.receta.oi_adicion && c.receta.oi_esfera ? window.optica.calcularEsferaCerca(c.receta.oi_esfera, c.receta.oi_adicion) : '—')}</td>
+                    <td>${c.receta.oi_dp_cerca ? `${c.receta.oi_dp_cerca} mm` : '—'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            ` : ''}
+
+            <!-- Visión Intermedia (si aplica) -->
+            ${(c.receta.od_adicion_intermedia || c.receta.oi_adicion_intermedia) ? `
+              <div style="font-size: 0.8rem; font-weight: 700; color: #1e3a8a; margin-bottom: 4px">[ VISIÓN INTERMEDIA ]</div>
+              <table class="data-table" style="font-size: 0.85rem; text-align: center; margin-bottom: 0.75rem">
+                <thead>
+                  <tr style="background: rgba(59, 130, 246, 0.12)">
+                    <th>OJO</th>
+                    <th>ADD INTERMEDIO (+)</th>
+                    <th style="color: #1e3a8a">ESF. INTERMEDIA RESULTANTE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="font-weight: bold; color: #1e3a8a">OD</td>
+                    <td style="font-weight: bold; color: #1e3a8a">${c.receta.od_adicion_intermedia ? '+' + c.receta.od_adicion_intermedia : '—'}</td>
+                    <td style="font-weight: 800; color: #1e3a8a">${c.receta.od_esfera_intermedia || (c.receta.od_adicion_intermedia && c.receta.od_esfera ? window.optica.calcularSumaAlgebraica(c.receta.od_esfera, c.receta.od_adicion_intermedia) : '—')}</td>
+                  </tr>
+                  <tr>
+                    <td style="font-weight: bold; color: #047857">OI</td>
+                    <td style="font-weight: bold; color: #1e3a8a">${c.receta.oi_adicion_intermedia ? '+' + c.receta.oi_adicion_intermedia : '—'}</td>
+                    <td style="font-weight: 800; color: #047857">${c.receta.oi_esfera_intermedia || (c.receta.oi_adicion_intermedia && c.receta.oi_esfera ? window.optica.calcularSumaAlgebraica(c.receta.oi_esfera, c.receta.oi_adicion_intermedia) : '—')}</td>
+                  </tr>
+                </tbody>
+              </table>
+            ` : ''}
+
             <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); display: flex; gap: 1rem; flex-wrap: wrap">
-              <span><strong>Diseño:</strong> ${c.receta.tipo_luna || '—'}</span>
-              <span><strong>Material:</strong> ${c.receta.material_luna || '—'}</span>
-              <span><strong>Tratamientos:</strong> ${c.receta.tratamientos || 'Ninguno'}</span>
-              ${c.receta.indicaciones ? `<span><strong>Indicaciones:</strong> ${c.receta.indicaciones}</span>` : ''}
+              <span><strong>Diseño:</strong> ${c.receta.tipo_luna === 'otro' && c.receta.tipo_luna_otro ? c.receta.tipo_luna_otro : (c.receta.tipo_luna || '—')}</span>
+              <span><strong>Material:</strong> ${c.receta.material_luna === 'otro' && c.receta.material_luna_otro ? c.receta.material_luna_otro : (c.receta.material_luna || '—')}</span>
+              ${c.receta.color_tinte ? `<span><strong>Color / Tinte:</strong> ${c.receta.color_tinte}</span>` : ''}
             </div>
           </div>
         ` : ''}

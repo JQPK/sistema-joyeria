@@ -9,9 +9,9 @@ const PDFDocument = require('pdfkit');
 router.use(auth);
 
 // ============================================================================
-// HELPER: Cálculo algebraico de esfera de cerca (Esfera Lejos + Adición)
+// HELPER: Cálculo algebraico de esfera resultante (Esfera Lejos + Adición)
 // ============================================================================
-function calcEsferaCercaServer(esf, add) {
+function calcEsferaAlgebraicaServer(esf, add) {
   if (esf === null || add === null || esf === undefined || add === undefined || esf === '' || add === '') return null;
   const e = parseFloat(String(esf).replace(',', '.'));
   const a = parseFloat(String(add).replace(',', '.'));
@@ -19,6 +19,8 @@ function calcEsferaCercaServer(esf, add) {
   const res = e + a;
   return (res > 0 ? '+' : '') + res.toFixed(2);
 }
+const calcEsferaCercaServer = calcEsferaAlgebraicaServer;
+const calcEsferaIntermediaServer = calcEsferaAlgebraicaServer;
 
 // ============================================================================
 // HELPER: Generar Comprobante Oficial de Venta al concretar contrato
@@ -288,13 +290,17 @@ router.post('/contratos', async (req, res, next) => {
           od_esfera, od_cilindro, od_eje, od_dp,
           oi_esfera, oi_cilindro, oi_eje, oi_dp,
           od_adicion, oi_adicion, od_esfera_cerca, oi_esfera_cerca, od_dp_cerca, oi_dp_cerca,
-          tipo_luna, material_luna, tratamientos, color_tinte, indicaciones, observaciones
+          od_adicion_intermedia, oi_adicion_intermedia, od_esfera_intermedia, oi_esfera_intermedia,
+          tipo_luna, tipo_luna_otro, material_luna, material_luna_otro,
+          tratamientos, color_tinte, indicaciones, observaciones
         ) VALUES (
           $1, $2, $3, $4,
           $5, $6, $7, $8,
           $9, $10, $11, $12,
           $13, $14, $15, $16, $17, $18,
-          $19, $20, $21, $22, $23, $24
+          $19, $20, $21, $22,
+          $23, $24, $25, $26,
+          $27, $28, $29, $30
         ) RETURNING id
       `, [
         b.cliente_id, sucursalId, usuarioId, b.edad_atencion || null,
@@ -302,7 +308,9 @@ router.post('/contratos', async (req, res, next) => {
         r.oi_esfera || null, r.oi_cilindro || null, r.oi_eje || null, r.oi_dp || null,
         r.od_adicion || null, r.oi_adicion || null, r.od_esfera_cerca || calcEsferaCercaServer(r.od_esfera, r.od_adicion), r.oi_esfera_cerca || calcEsferaCercaServer(r.oi_esfera, r.oi_adicion),
         r.od_dp_cerca || null, r.oi_dp_cerca || null,
-        r.tipo_luna || '', r.material_luna || '', r.tratamientos || '', r.color_tinte || '',
+        r.od_adicion_intermedia || null, r.oi_adicion_intermedia || null, r.od_esfera_intermedia || calcEsferaIntermediaServer(r.od_esfera, r.od_adicion_intermedia), r.oi_esfera_intermedia || calcEsferaIntermediaServer(r.oi_esfera, r.oi_adicion_intermedia),
+        r.tipo_luna || '', r.tipo_luna_otro || '', r.material_luna || '', r.material_luna_otro || '',
+        r.tratamientos || '', r.color_tinte || '',
         r.indicaciones || '', r.observaciones || ''
       ]);
       recetaId = recInsert.rows[0].id;
@@ -795,13 +803,17 @@ router.post('/recetas', async (req, res, next) => {
         od_esfera, od_cilindro, od_eje, od_dp,
         oi_esfera, oi_cilindro, oi_eje, oi_dp,
         od_adicion, oi_adicion, od_esfera_cerca, oi_esfera_cerca, od_dp_cerca, oi_dp_cerca,
-        tipo_luna, material_luna, tratamientos, color_tinte, indicaciones, observaciones
+        od_adicion_intermedia, oi_adicion_intermedia, od_esfera_intermedia, oi_esfera_intermedia,
+        tipo_luna, tipo_luna_otro, material_luna, material_luna_otro,
+        tratamientos, color_tinte, indicaciones, observaciones
       ) VALUES (
         $1, $2, $3, $4,
         $5, $6, $7, $8,
         $9, $10, $11, $12,
         $13, $14, $15, $16, $17, $18,
-        $19, $20, $21, $22, $23, $24
+        $19, $20, $21, $22,
+        $23, $24, $25, $26,
+        $27, $28, $29, $30
       ) RETURNING id
     `, [
       r.cliente_id, sucursalId, usuarioId, r.edad_atencion || null,
@@ -809,7 +821,9 @@ router.post('/recetas', async (req, res, next) => {
       r.oi_esfera || null, r.oi_cilindro || null, r.oi_eje || null, r.oi_dp || null,
       r.od_adicion || null, r.oi_adicion || null, r.od_esfera_cerca || calcEsferaCercaServer(r.od_esfera, r.od_adicion), r.oi_esfera_cerca || calcEsferaCercaServer(r.oi_esfera, r.oi_adicion),
       r.od_dp_cerca || null, r.oi_dp_cerca || null,
-      r.tipo_luna || '', r.material_luna || '', r.tratamientos || '', r.color_tinte || '',
+      r.od_adicion_intermedia || null, r.oi_adicion_intermedia || null, r.od_esfera_intermedia || calcEsferaIntermediaServer(r.od_esfera, r.od_adicion_intermedia), r.oi_esfera_intermedia || calcEsferaIntermediaServer(r.oi_esfera, r.oi_adicion_intermedia),
+      r.tipo_luna || '', r.tipo_luna_otro || '', r.material_luna || '', r.material_luna_otro || '',
+      r.tratamientos || '', r.color_tinte || '',
       r.indicaciones || '', r.observaciones || ''
     ]);
 
@@ -1241,54 +1255,76 @@ router.get('/contratos/:id/ticket', async (req, res, next) => {
         <div class="bold center">GRADUACIÓN VISUAL</div>
         <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN DE LEJOS ]</b></div>
         <table class="rx-table" style="margin-bottom: 4px;">
-          <tr><th>Ojo</th><th>Esf</th><th>Cil</th><th>Eje</th><th>Add</th></tr>
+          <tr><th>Ojo</th><th>Esf</th><th>Cil</th><th>Eje</th><th>D.P.</th></tr>
           <tr>
             <td><b>OD</b></td>
-            <td>${receta.od_esfera !== null ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—'}</td>
-            <td>${receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—'}</td>
-            <td>${receta.od_eje !== null ? receta.od_eje + '°' : '—'}</td>
-            <td>${receta.od_adicion !== null && receta.od_adicion !== undefined ? '+' + receta.od_adicion : '—'}</td>
+            <td>${receta.od_esfera !== null && receta.od_esfera !== undefined ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—'}</td>
+            <td>${receta.od_cilindro !== null && receta.od_cilindro !== undefined ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—'}</td>
+            <td>${receta.od_eje !== null && receta.od_eje !== undefined ? receta.od_eje + '°' : '—'}</td>
+            <td>${receta.od_dp ? receta.od_dp + 'mm' : '—'}</td>
           </tr>
           <tr>
             <td><b>OI</b></td>
-            <td>${receta.oi_esfera !== null ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—'}</td>
-            <td>${receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—'}</td>
-            <td>${receta.oi_eje !== null ? receta.oi_eje + '°' : '—'}</td>
-            <td>${receta.oi_adicion !== null && receta.oi_adicion !== undefined ? '+' + receta.oi_adicion : '—'}</td>
+            <td>${receta.oi_esfera !== null && receta.oi_esfera !== undefined ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—'}</td>
+            <td>${receta.oi_cilindro !== null && receta.oi_cilindro !== undefined ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—'}</td>
+            <td>${receta.oi_eje !== null && receta.oi_eje !== undefined ? receta.oi_eje + '°' : '—'}</td>
+            <td>${receta.oi_dp ? receta.oi_dp + 'mm' : '—'}</td>
           </tr>
         </table>
       `;
 
-      const odCerca = receta.od_esfera_cerca || calcEsferaCercaServer(receta.od_esfera, receta.od_adicion);
-      const oiCerca = receta.oi_esfera_cerca || calcEsferaCercaServer(receta.oi_esfera, receta.oi_adicion);
-
-      if (receta.od_adicion || receta.oi_adicion || odCerca || oiCerca) {
+      if (receta.od_adicion || receta.oi_adicion || receta.od_esfera_cerca || receta.oi_esfera_cerca) {
+        const odCerca = receta.od_esfera_cerca || calcEsferaCercaServer(receta.od_esfera, receta.od_adicion);
+        const oiCerca = receta.oi_esfera_cerca || calcEsferaCercaServer(receta.oi_esfera, receta.oi_adicion);
         html += `
-          <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN DE CERCA RESULTANTE (Lejos + ADD) ]</b></div>
+          <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN DE CERCA RESULTANTE ]</b></div>
           <table class="rx-table" style="margin-bottom: 4px;">
-            <tr><th>Ojo</th><th>Esf Cerca</th><th>Cil</th><th>Eje</th></tr>
+            <tr><th>Ojo</th><th>ADD</th><th>Esf Cerca</th><th>D.P.</th></tr>
             <tr>
               <td><b>OD</b></td>
+              <td>${receta.od_adicion ? '+' + receta.od_adicion : '—'}</td>
               <td><b>${odCerca || '—'}</b></td>
-              <td>${receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—'}</td>
-              <td>${receta.od_eje !== null ? receta.od_eje + '°' : '—'}</td>
+              <td>${receta.od_dp_cerca ? receta.od_dp_cerca + 'mm' : '—'}</td>
             </tr>
             <tr>
               <td><b>OI</b></td>
+              <td>${receta.oi_adicion ? '+' + receta.oi_adicion : '—'}</td>
               <td><b>${oiCerca || '—'}</b></td>
-              <td>${receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—'}</td>
-              <td>${receta.oi_eje !== null ? receta.oi_eje + '°' : '—'}</td>
+              <td>${receta.oi_dp_cerca ? receta.oi_dp_cerca + 'mm' : '—'}</td>
             </tr>
           </table>
         `;
       }
 
-      if (receta.tipo_luna || receta.material_luna || receta.tratamientos) {
+      if (receta.od_adicion_intermedia || receta.oi_adicion_intermedia || receta.od_esfera_intermedia || receta.oi_esfera_intermedia) {
+        const odInter = receta.od_esfera_intermedia || calcEsferaIntermediaServer(receta.od_esfera, receta.od_adicion_intermedia);
+        const oiInter = receta.oi_esfera_intermedia || calcEsferaIntermediaServer(receta.oi_esfera, receta.oi_adicion_intermedia);
+        html += `
+          <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN INTERMEDIA RESULTANTE ]</b></div>
+          <table class="rx-table" style="margin-bottom: 4px;">
+            <tr><th>Ojo</th><th>ADD Int</th><th>Esf Intermedia</th></tr>
+            <tr>
+              <td><b>OD</b></td>
+              <td>${receta.od_adicion_intermedia ? '+' + receta.od_adicion_intermedia : '—'}</td>
+              <td><b>${odInter || '—'}</b></td>
+            </tr>
+            <tr>
+              <td><b>OI</b></td>
+              <td>${receta.oi_adicion_intermedia ? '+' + receta.oi_adicion_intermedia : '—'}</td>
+              <td><b>${oiInter || '—'}</b></td>
+            </tr>
+          </table>
+        `;
+      }
+
+      const disLuna = receta.tipo_luna === 'otro' && receta.tipo_luna_otro ? receta.tipo_luna_otro : (receta.tipo_luna && receta.tipo_luna !== 'otro' ? receta.tipo_luna : '');
+      const matLuna = receta.material_luna === 'otro' && receta.material_luna_otro ? receta.material_luna_otro : (receta.material_luna && receta.material_luna !== 'otro' ? receta.material_luna : '');
+      if (disLuna || matLuna || receta.color_tinte) {
         html += `
           <div style="font-size: 9.5px; margin-top: 3px;">
-            ${receta.tipo_luna ? `<div>• Luna: ${receta.tipo_luna}</div>` : ''}
-            ${receta.material_luna ? `<div>• Mat: ${receta.material_luna}</div>` : ''}
-            ${receta.tratamientos ? `<div>• Trat: ${receta.tratamientos}</div>` : ''}
+            ${disLuna ? `<div>• Luna: ${disLuna}</div>` : ''}
+            ${matLuna ? `<div>• Material: ${matLuna}</div>` : ''}
+            ${receta.color_tinte ? `<div>• Color: ${receta.color_tinte}</div>` : ''}
           </div>
         `;
       }
@@ -1435,43 +1471,44 @@ router.get('/recetas/:id/ticket', async (req, res, next) => {
           <div class="divider"></div>
           
           <div class="bold" style="margin-bottom: 2px;">GRADUACIÓN VISUAL:</div>
+          <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN DE LEJOS ]</b></div>
           <table class="rx-table" style="margin-bottom: 6px;">
-            <tr><th>Ojo</th><th>Esfera</th><th>Cilindro</th><th>Eje</th><th>Adición</th></tr>
+            <tr><th>Ojo</th><th>Esfera</th><th>Cilindro</th><th>Eje</th><th>D.P.</th></tr>
             <tr>
               <td><b>OD</b></td>
-              <td>${r.od_esfera !== null ? (r.od_esfera > 0 ? '+' : '') + r.od_esfera : '—'}</td>
-              <td>${r.od_cilindro !== null ? (r.od_cilindro > 0 ? '+' : '') + r.od_cilindro : '—'}</td>
-              <td>${r.od_eje !== null ? r.od_eje + '°' : '—'}</td>
-              <td>${r.od_adicion ? '+' + r.od_adicion : '—'}</td>
+              <td>${r.od_esfera !== null && r.od_esfera !== undefined ? (r.od_esfera > 0 ? '+' : '') + r.od_esfera : '—'}</td>
+              <td>${r.od_cilindro !== null && r.od_cilindro !== undefined ? (r.od_cilindro > 0 ? '+' : '') + r.od_cilindro : '—'}</td>
+              <td>${r.od_eje !== null && r.od_eje !== undefined ? r.od_eje + '°' : '—'}</td>
+              <td>${r.od_dp ? r.od_dp + 'mm' : '—'}</td>
             </tr>
             <tr>
               <td><b>OI</b></td>
-              <td>${r.oi_esfera !== null ? (r.oi_esfera > 0 ? '+' : '') + r.oi_esfera : '—'}</td>
-              <td>${r.oi_cilindro !== null ? (r.oi_cilindro > 0 ? '+' : '') + r.oi_cilindro : '—'}</td>
-              <td>${r.oi_eje !== null ? r.oi_eje + '°' : '—'}</td>
-              <td>${r.oi_adicion ? '+' + r.oi_adicion : '—'}</td>
+              <td>${r.oi_esfera !== null && r.oi_esfera !== undefined ? (r.oi_esfera > 0 ? '+' : '') + r.oi_esfera : '—'}</td>
+              <td>${r.oi_cilindro !== null && r.oi_cilindro !== undefined ? (r.oi_cilindro > 0 ? '+' : '') + r.oi_cilindro : '—'}</td>
+              <td>${r.oi_eje !== null && r.oi_eje !== undefined ? r.oi_eje + '°' : '—'}</td>
+              <td>${r.oi_dp ? r.oi_dp + 'mm' : '—'}</td>
             </tr>
           </table>
 
           ${(() => {
-            const odC = r.od_esfera_cerca || calcEsferaCercaServer(r.od_esfera, r.od_adicion);
-            const oiC = r.oi_esfera_cerca || calcEsferaCercaServer(r.oi_esfera, r.oi_adicion);
-            if (r.od_adicion || r.oi_adicion || odC || oiC) {
+            if (r.od_adicion || r.oi_adicion || r.od_esfera_cerca || r.oi_esfera_cerca) {
+              const odC = r.od_esfera_cerca || calcEsferaCercaServer(r.od_esfera, r.od_adicion);
+              const oiC = r.oi_esfera_cerca || calcEsferaCercaServer(r.oi_esfera, r.oi_adicion);
               return `
-                <div class="bold" style="margin-bottom: 2px;">VISIÓN DE CERCA RESULTANTE (Lejos + ADD):</div>
+                <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN DE CERCA RESULTANTE ]</b></div>
                 <table class="rx-table" style="margin-bottom: 6px;">
-                  <tr><th>Ojo</th><th>Esf Cerca</th><th>Cilindro</th><th>Eje</th></tr>
+                  <tr><th>Ojo</th><th>ADD</th><th>Esf Cerca</th><th>D.P.</th></tr>
                   <tr>
                     <td><b>OD</b></td>
+                    <td>${r.od_adicion ? '+' + r.od_adicion : '—'}</td>
                     <td><b>${odC || '—'}</b></td>
-                    <td>${r.od_cilindro !== null ? (r.od_cilindro > 0 ? '+' : '') + r.od_cilindro : '—'}</td>
-                    <td>${r.od_eje !== null ? r.od_eje + '°' : '—'}</td>
+                    <td>${r.od_dp_cerca ? r.od_dp_cerca + 'mm' : '—'}</td>
                   </tr>
                   <tr>
                     <td><b>OI</b></td>
+                    <td>${r.oi_adicion ? '+' + r.oi_adicion : '—'}</td>
                     <td><b>${oiC || '—'}</b></td>
-                    <td>${r.oi_cilindro !== null ? (r.oi_cilindro > 0 ? '+' : '') + r.oi_cilindro : '—'}</td>
-                    <td>${r.oi_eje !== null ? r.oi_eje + '°' : '—'}</td>
+                    <td>${r.oi_dp_cerca ? r.oi_dp_cerca + 'mm' : '—'}</td>
                   </tr>
                 </table>
               `;
@@ -1479,16 +1516,44 @@ router.get('/recetas/:id/ticket', async (req, res, next) => {
             return '';
           })()}
 
-          ${(r.tipo_luna || r.material_luna || r.tratamientos) ? `
-            <div class="divider"></div>
-            <div class="bold">RECOMENDACIÓN TÉCNICA:</div>
-            ${r.tipo_luna ? `<div>• Tipo Luna: ${r.tipo_luna}</div>` : ''}
-            ${r.material_luna ? `<div>• Material: ${r.material_luna}</div>` : ''}
-            ${r.tratamientos ? `<div>• Tratamientos: ${r.tratamientos}</div>` : ''}
-          ` : ''}
+          ${(() => {
+            if (r.od_adicion_intermedia || r.oi_adicion_intermedia || r.od_esfera_intermedia || r.oi_esfera_intermedia) {
+              const odI = r.od_esfera_intermedia || calcEsferaIntermediaServer(r.od_esfera, r.od_adicion_intermedia);
+              const oiI = r.oi_esfera_intermedia || calcEsferaIntermediaServer(r.oi_esfera, r.oi_adicion_intermedia);
+              return `
+                <div style="font-size: 9.5px; margin-bottom: 2px;"><b>[ VISIÓN INTERMEDIA RESULTANTE ]</b></div>
+                <table class="rx-table" style="margin-bottom: 6px;">
+                  <tr><th>Ojo</th><th>ADD Int</th><th>Esf Intermedia</th></tr>
+                  <tr>
+                    <td><b>OD</b></td>
+                    <td>${r.od_adicion_intermedia ? '+' + r.od_adicion_intermedia : '—'}</td>
+                    <td><b>${odI || '—'}</b></td>
+                  </tr>
+                  <tr>
+                    <td><b>OI</b></td>
+                    <td>${r.oi_adicion_intermedia ? '+' + r.oi_adicion_intermedia : '—'}</td>
+                    <td><b>${oiI || '—'}</b></td>
+                  </tr>
+                </table>
+              `;
+            }
+            return '';
+          })()}
 
-          ${r.indicaciones ? `<div style="margin-top: 4px;"><b>Indicaciones:</b> ${r.indicaciones}</div>` : ''}
-          ${r.observaciones ? `<div style="margin-top: 2px;"><b>Obs:</b> ${r.observaciones}</div>` : ''}
+          ${(() => {
+            const disLuna = r.tipo_luna === 'otro' && r.tipo_luna_otro ? r.tipo_luna_otro : (r.tipo_luna && r.tipo_luna !== 'otro' ? r.tipo_luna : '');
+            const matLuna = r.material_luna === 'otro' && r.material_luna_otro ? r.material_luna_otro : (r.material_luna && r.material_luna !== 'otro' ? r.material_luna : '');
+            if (disLuna || matLuna || r.color_tinte) {
+              return `
+                <div class="divider"></div>
+                <div class="bold">RECOMENDACIÓN TÉCNICA:</div>
+                ${disLuna ? `<div>• Tipo Luna: ${disLuna}</div>` : ''}
+                ${matLuna ? `<div>• Material: ${matLuna}</div>` : ''}
+                ${r.color_tinte ? `<div>• Color: ${r.color_tinte}</div>` : ''}
+              `;
+            }
+            return '';
+          })()}
 
           <div class="double-divider"></div>
           <div class="center" style="font-size: 9px; margin-top: 20px;">
@@ -1574,34 +1639,94 @@ router.get('/contratos/:id/pdf', async (req, res, next) => {
     if (receta) {
       doc.fillColor('#800020').fontSize(10).font('Helvetica-Bold').text('GRADUACIÓN VISUAL / PRESCRIPCIÓN', 40, y);
       y += 15;
+
+      // 1. Visión de Lejos y D.P.
       doc.rect(40, y, 515, 45).stroke('#CBD5E1');
       doc.fillColor('#0F172A').fontSize(8).font('Helvetica-Bold')
          .text('OJO', 50, y + 5)
-         .text('ESFERA (LEJOS)', 110, y + 5)
-         .text('CILINDRO', 200, y + 5)
-         .text('EJE', 280, y + 5)
-         .text('ADICIÓN (ADD)', 345, y + 5)
-         .text('ESF. CERCA', 440, y + 5);
-
-      const odCerca = receta.od_esfera_cerca || calcEsferaCercaServer(receta.od_esfera, receta.od_adicion);
-      const oiCerca = receta.oi_esfera_cerca || calcEsferaCercaServer(receta.oi_esfera, receta.oi_adicion);
+         .text('ESFERA (SPH)', 120, y + 5)
+         .text('CILINDRO (CYL)', 210, y + 5)
+         .text('EJE (°)', 310, y + 5)
+         .text('DIST. PUPILAR (D.P.)', 410, y + 5);
 
       doc.font('Helvetica')
          .text('OD (Derecho)', 50, y + 18)
-         .text(receta.od_esfera !== null ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—', 120, y + 18)
-         .text(receta.od_cilindro !== null ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—', 205, y + 18)
-         .text(receta.od_eje !== null ? receta.od_eje + '°' : '—', 285, y + 18)
-         .text(receta.od_adicion ? '+' + receta.od_adicion : '—', 355, y + 18)
-         .font('Helvetica-Bold').text(odCerca || '—', 445, y + 18).font('Helvetica');
+         .text(receta.od_esfera !== null && receta.od_esfera !== undefined ? (receta.od_esfera > 0 ? '+' : '') + receta.od_esfera : '—', 120, y + 18)
+         .text(receta.od_cilindro !== null && receta.od_cilindro !== undefined ? (receta.od_cilindro > 0 ? '+' : '') + receta.od_cilindro : '—', 210, y + 18)
+         .text(receta.od_eje !== null && receta.od_eje !== undefined ? receta.od_eje + '°' : '—', 310, y + 18)
+         .text(receta.od_dp ? receta.od_dp + ' mm' : '—', 410, y + 18);
 
       doc.text('OI (Izquierdo)', 50, y + 30)
-         .text(receta.oi_esfera !== null ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—', 120, y + 30)
-         .text(receta.oi_cilindro !== null ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—', 205, y + 30)
-         .text(receta.oi_eje !== null ? receta.oi_eje + '°' : '—', 285, y + 30)
-         .text(receta.oi_adicion ? '+' + receta.oi_adicion : '—', 355, y + 30)
-         .font('Helvetica-Bold').text(oiCerca || '—', 445, y + 30).font('Helvetica');
+         .text(receta.oi_esfera !== null && receta.oi_esfera !== undefined ? (receta.oi_esfera > 0 ? '+' : '') + receta.oi_esfera : '—', 120, y + 30)
+         .text(receta.oi_cilindro !== null && receta.oi_cilindro !== undefined ? (receta.oi_cilindro > 0 ? '+' : '') + receta.oi_cilindro : '—', 210, y + 30)
+         .text(receta.oi_eje !== null && receta.oi_eje !== undefined ? receta.oi_eje + '°' : '—', 310, y + 30)
+         .text(receta.oi_dp ? receta.oi_dp + ' mm' : '—', 410, y + 30);
 
-      y += 55;
+      y += 50;
+
+      // 2. Visión de Cerca (si aplica)
+      if (receta.od_adicion || receta.oi_adicion || receta.od_esfera_cerca || receta.oi_esfera_cerca) {
+        const odCerca = receta.od_esfera_cerca || calcEsferaCercaServer(receta.od_esfera, receta.od_adicion);
+        const oiCerca = receta.oi_esfera_cerca || calcEsferaCercaServer(receta.oi_esfera, receta.oi_adicion);
+
+        doc.rect(40, y, 515, 45).stroke('#C9A96E');
+        doc.fillColor('#800020').fontSize(8).font('Helvetica-Bold')
+           .text('OJO', 50, y + 5)
+           .text('ADD CERCA (+)', 140, y + 5)
+           .text('ESF. CERCA (Lejos + ADD)', 260, y + 5)
+           .text('D.P. CERCA', 410, y + 5);
+
+        doc.font('Helvetica').fillColor('#0F172A')
+           .text('OD (Derecho)', 50, y + 18)
+           .text(receta.od_adicion ? '+' + receta.od_adicion : '—', 140, y + 18)
+           .font('Helvetica-Bold').text(odCerca || '—', 260, y + 18).font('Helvetica')
+           .text(receta.od_dp_cerca ? receta.od_dp_cerca + ' mm' : '—', 410, y + 18);
+
+        doc.text('OI (Izquierdo)', 50, y + 30)
+           .text(receta.oi_adicion ? '+' + receta.oi_adicion : '—', 140, y + 30)
+           .font('Helvetica-Bold').text(oiCerca || '—', 260, y + 30).font('Helvetica')
+           .text(receta.oi_dp_cerca ? receta.oi_dp_cerca + ' mm' : '—', 410, y + 30);
+
+        y += 50;
+      }
+
+      // 3. Visión Intermedia (si aplica)
+      if (receta.od_adicion_intermedia || receta.oi_adicion_intermedia || receta.od_esfera_intermedia || receta.oi_esfera_intermedia) {
+        const odInter = receta.od_esfera_intermedia || calcEsferaIntermediaServer(receta.od_esfera, receta.od_adicion_intermedia);
+        const oiInter = receta.oi_esfera_intermedia || calcEsferaIntermediaServer(receta.oi_esfera, receta.oi_adicion_intermedia);
+
+        doc.rect(40, y, 515, 45).stroke('#1E3A8A');
+        doc.fillColor('#1E3A8A').fontSize(8).font('Helvetica-Bold')
+           .text('OJO', 50, y + 5)
+           .text('ADD INTERMEDIO (+)', 160, y + 5)
+           .text('ESF. INTERMEDIA (Lejos + ADD)', 320, y + 5);
+
+        doc.font('Helvetica').fillColor('#0F172A')
+           .text('OD (Derecho)', 50, y + 18)
+           .text(receta.od_adicion_intermedia ? '+' + receta.od_adicion_intermedia : '—', 160, y + 18)
+           .font('Helvetica-Bold').text(odInter || '—', 320, y + 18).font('Helvetica');
+
+        doc.text('OI (Izquierdo)', 50, y + 30)
+           .text(receta.oi_adicion_intermedia ? '+' + receta.oi_adicion_intermedia : '—', 160, y + 30)
+           .font('Helvetica-Bold').text(oiInter || '—', 320, y + 30).font('Helvetica');
+
+        y += 50;
+      }
+
+      // 4. Especificaciones de Lunas
+      const disLuna = receta.tipo_luna === 'otro' && receta.tipo_luna_otro ? receta.tipo_luna_otro : (receta.tipo_luna && receta.tipo_luna !== 'otro' ? receta.tipo_luna : '');
+      const matLuna = receta.material_luna === 'otro' && receta.material_luna_otro ? receta.material_luna_otro : (receta.material_luna && receta.material_luna !== 'otro' ? receta.material_luna : '');
+      if (disLuna || matLuna || receta.color_tinte) {
+        const specs = [
+          disLuna ? `Diseño: ${disLuna}` : null,
+          matLuna ? `Material: ${matLuna}` : null,
+          receta.color_tinte ? `Color/Tinte: ${receta.color_tinte}` : null
+        ].filter(Boolean).join(' · ');
+        doc.fillColor('#475569').fontSize(8).font('Helvetica-Bold').text('ESPECIFICACIONES DE LUNA:', 40, y);
+        doc.font('Helvetica').text(specs, 175, y);
+        y += 15;
+      }
+      y += 10;
     }
 
     // Detalle de ítems
